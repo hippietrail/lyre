@@ -42,9 +42,9 @@ async function handleInteraction(interaction) {
         case 'lakaud':
             await curr.execute4(interaction);
             break;
-            case 'curr':
-                await curr.execute5(interaction);
-                break;
+        case 'curr':
+            await curr.execute5(interaction);
+            break;
             default:
             console.error(`Unknown command ${interaction.commandName}`);
         }

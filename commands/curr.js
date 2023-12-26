@@ -10,19 +10,37 @@ currUrl.searchParams.set('apikey', process.env.APILAYER_TOKEN);
 let globalCachedApilayerData = null;
 let globalFormattedDate = '';
 
+// a map of ISO currency codes to various information
+const globalCodeToInfo = {
+    'AUD': { sym: '$', defVal: 1, name: 'Aussie dollar' },
+    'BTC': { sym: '₿', defVal: 1, name: 'Bitcoin' },
+    'CNY': { sym: '¥', defVal: 100, name: 'Chinese yuan' },
+    'EUR': { sym: '€', defVal: 1, name: 'Euro' },
+    'GBP': { sym: '£', defVal: 1, name: 'UK Pound' },
+    'GEL': { sym: '₾', defVal: 1, name: 'Georgian lari' },
+    'JPY': { sym: '¥', defVal: 100, name: 'Japanese yen' },
+    'KHR': { sym: '៛', defVal: 10_000, name: 'Cambodian riel' },
+    'KRW': { sym: '₩', defVal: 1000, name: 'South Korean won' },
+    'LAK': { sym: '₭', defVal: 100_000, name: 'Lao kip' },
+    'MYR': { sym: 'RM', defVal: 100, name: 'Malaysian ringgit' },
+    'THB': { sym: '฿', defVal: 100, name: 'Thai baht' },
+    'USD': { sym: '$', defVal: 1, name: 'US Dollar' },
+    'VND': { sym: '₫', defVal: 10_000, name: 'Vietnamese dong' },
+}
+
 // a map of currency symbols to ISO currency codes
 const globalSymToCode = {
-    '$': { iso: 'AUD', isAmbiguous: true, defVal: 1, name: 'Aussie dollar' }, // symbol also used by: USD
-    '฿': { iso: 'THB', isAmbiguous: false, defVal: 100, name: 'Thai baht' },
-    '€': { iso: 'EUR', isAmbiguous: false, defVal: 1, name: 'Euro' },
-    '£': { iso: 'GBP', isAmbiguous: false, defVal: 1, name: 'UK Pound' },
-    '₾': { iso: 'GEL', isAmbiguous: false, defVal: 1, name: 'Georgian lari' },
-    '₭': { iso: 'LAK', isAmbiguous: false, defVal: 100_000, name: 'Lao kip' },
-    '₩': { iso: 'KRW', isAmbiguous: false, defVal: 1000, name: 'South Korean won' },
-    '¥': { iso: 'JPY', isAmbiguous: true, defVal: 100, name: 'Japanese yen' }, // symbol also used by : CNY
-    '៛': { iso: 'KHR', isAmbiguous: false, defVal: 100, name: 'Cambodian riel' },
-    '₫': { iso: 'VND', isAmbiguous: false, defVal: 1000, name: 'Vietnamese dong' },
-    '₿': { iso: 'BTC', isAmbiguous: false, defVal: 1, name: 'Bitcoin' },
+    '$': { iso: 'AUD', isAmbiguous: true }, // symbol also used by: USD
+    '฿': { iso: 'THB', isAmbiguous: false },
+    '€': { iso: 'EUR', isAmbiguous: false},
+    '£': { iso: 'GBP', isAmbiguous: false },
+    '₾': { iso: 'GEL', isAmbiguous: false },
+    '₭': { iso: 'LAK', isAmbiguous: false },
+    '₩': { iso: 'KRW', isAmbiguous: false },
+    '¥': { iso: 'JPY', isAmbiguous: true }, // symbol also used by : CNY
+    '៛': { iso: 'KHR', isAmbiguous: false },
+    '₫': { iso: 'VND', isAmbiguous: false },
+    '₿': { iso: 'BTC', isAmbiguous: false},
 }
 
 class Token {
@@ -73,13 +91,6 @@ function getDefaultCodeForSym(sym) {
  *
  * @return {Object} The data retrieved from the apilayer API.
  */
-/*
-Does this take more than 3 seconds? If so, your interaction must be deferred with await
-interaction.deferReply(), then responded to via await interaction.editReply(). Await is
-not strictly necessary, but makes more sense.
-
-https://stackoverflow.com/a/76940718/527702
- */
 async function getApilayerData() {
     let needsRefresh = false;
     if (globalCachedApilayerData === undefined || globalCachedApilayerData === null) {
@@ -116,16 +127,16 @@ function createCurrencyConverterSlashCommand(code1, name1, code2, name2) {
 }
 
 export const data = createCurrencyConverterSlashCommand('aud', 'Aussie dollar', 'thb', 'Thai baht');
-export const execute = async interaction => fooToBar(interaction, "AUD", "THB", 1, 100);
+export const execute = async interaction => cur1ToCur2(interaction, "AUD", "THB", 1, 100);
 
 export const data2 = createCurrencyConverterSlashCommand('thb', 'Thai baht', 'aud', 'Aussie dollar');
-export const execute2 = async interaction => fooToBar(interaction, "THB", "AUD", 100, 1);
+export const execute2 = async interaction => cur1ToCur2(interaction, "THB", "AUD", 100, 1);
 
 export const data3 = createCurrencyConverterSlashCommand('aud', 'Aussie dollar', 'lak', 'Lao kip');
-export const execute3 = async interaction => fooToBar(interaction, "AUD", "LAK", 1, 100_000);
+export const execute3 = async interaction => cur1ToCur2(interaction, "AUD", "LAK", 1, 100_000);
 
 export const data4 = createCurrencyConverterSlashCommand('lak', 'Lao kip', 'aud', 'Aussie dollar');
-export const execute4 = async interaction => fooToBar(interaction, "LAK", "AUD", 100_000, 1);
+export const execute4 = async interaction => cur1ToCur2(interaction, "LAK", "AUD", 100_000, 1);
 
 export const data5 = new SlashCommandBuilder()
     .setName('curr')
@@ -251,12 +262,11 @@ async function curr(interaction) {
     }
 }
 
-// FOO to BAR using getString freeform
-async function fooToBar(interaction, foo, bar, fooDefaultAmount, barDefaultAmount) {
+async function cur1ToCur2(interaction, cur1, cur2, cur1DefaultAmount, cur2DefaultAmount) {
     await interaction.deferReply();
     try {
         const freeform = interaction.options.getString('freeform');
-        console.log(`f2b: ${foo}${bar} freeform: '${freeform}'`);
+        console.log(`f2b: ${cur1}${cur2} freeform: '${freeform}'`);
 
         const apilayerData = await getApilayerData();
 
@@ -271,8 +281,8 @@ async function fooToBar(interaction, foo, bar, fooDefaultAmount, barDefaultAmoun
 
                 if (pre === "" && suf === "") {
                     const amount = parseFloat(number);
-                    const fooToBarResult = calculateCur1ToCur2Result(apilayerData, foo, bar, amount);
-                    const reply = `${fooToBarResult} (as of ${globalFormattedDate})`;
+                    const result = calculateCur1ToCur2Result(apilayerData, cur1, cur2, amount);
+                    const reply = `${result} (as of ${globalFormattedDate})`;
                     await interaction.editReply(reply);
                 } else {
                     // TODO handle cases where pre and/or suf are not empty
@@ -285,8 +295,8 @@ async function fooToBar(interaction, foo, bar, fooDefaultAmount, barDefaultAmoun
             }
         } else {
             console.log('No param.');
-            const fooToBarAndBarToFooResults = calculateDefaultCur1ToCur2Results(apilayerData, foo, bar, fooDefaultAmount, barDefaultAmount);
-            const reply = `${fooToBarAndBarToFooResults} (as of ${globalFormattedDate})`;
+            const results = calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2, cur1DefaultAmount, cur2DefaultAmount);
+            const reply = `${results} (as of ${globalFormattedDate})`;
             await interaction.editReply(reply);
         }
     } catch (error) {
