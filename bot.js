@@ -36,16 +36,16 @@ async function handleInteraction(interaction) {
         case 'thbaud':
             await curr.execute2(interaction);
             break;
-        case 'curr':
+        case 'audlak':
             await curr.execute3(interaction);
             break;
-        case 'audlak':
+        case 'lakaud':
             await curr.execute4(interaction);
             break;
-        case 'lakaud':
-            await curr.execute5(interaction);
-            break;
-        default:
+            case 'curr':
+                await curr.execute5(interaction);
+                break;
+            default:
             console.error(`Unknown command ${interaction.commandName}`);
         }
 }

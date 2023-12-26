@@ -12,17 +12,17 @@ let globalFormattedDate = '';
 
 // a map of currency symbols to ISO currency codes
 const globalSymToCode = {
-    '$': { iso: 'AUD', isAmbiguous: true }, // USD
-    '฿': 'THB',
-    '€': 'EUR',
-    '£': 'GBP',
-    '₾': 'GEL',
-    '₭': 'LAK',
-    '₩': 'KRW',
-    '¥': { iso: 'JPY', isAmbiguous: true }, // CNY
-    '៛': 'KHR',
-    '₫': 'VND',
-    '₿': 'BTC',
+    '$': { iso: 'AUD', isAmbiguous: true, defVal: 1, name: 'Aussie dollar' }, // symbol also used by: USD
+    '฿': { iso: 'THB', isAmbiguous: false, defVal: 100, name: 'Thai baht' },
+    '€': { iso: 'EUR', isAmbiguous: false, defVal: 1, name: 'Euro' },
+    '£': { iso: 'GBP', isAmbiguous: false, defVal: 1, name: 'UK Pound' },
+    '₾': { iso: 'GEL', isAmbiguous: false, defVal: 1, name: 'Georgian lari' },
+    '₭': { iso: 'LAK', isAmbiguous: false, defVal: 100_000, name: 'Lao kip' },
+    '₩': { iso: 'KRW', isAmbiguous: false, defVal: 1000, name: 'South Korean won' },
+    '¥': { iso: 'JPY', isAmbiguous: true, defVal: 100, name: 'Japanese yen' }, // symbol also used by : CNY
+    '៛': { iso: 'KHR', isAmbiguous: false, defVal: 100, name: 'Cambodian riel' },
+    '₫': { iso: 'VND', isAmbiguous: false, defVal: 1000, name: 'Vietnamese dong' },
+    '₿': { iso: 'BTC', isAmbiguous: false, defVal: 1, name: 'Bitcoin' },
 }
 
 class Token {
@@ -108,40 +108,31 @@ async function getApilayerData() {
     return globalCachedApilayerData;
 }
 
-export const data = new SlashCommandBuilder()
-    .setName('audthb')
-    .setDescription('Aussie dollar / Thai baht')
-    .addStringOption(option => option.setName('freeform').setDescription('free form').setRequired(false));
+function createCurrencyConverterSlashCommand(code1, name1, code2, name2) {
+    return new SlashCommandBuilder()
+        .setName(`${code1}${code2}`)
+        .setDescription(`${name1} / ${name2}`)
+        .addStringOption(option => option.setName('freeform').setDescription('free form').setRequired(false));
+}
 
-export const execute = audToThb;
+export const data = createCurrencyConverterSlashCommand('aud', 'Aussie dollar', 'thb', 'Thai baht');
+export const execute = async interaction => fooToBar(interaction, "AUD", "THB", 1, 100);
 
-export const data2 = new SlashCommandBuilder()
-    .setName('thbaud')
-    .setDescription('Thai baht / Aussie dollar')
-    .addStringOption(option => option.setName('freeform').setDescription('free form').setRequired(false));
+export const data2 = createCurrencyConverterSlashCommand('thb', 'Thai baht', 'aud', 'Aussie dollar');
+export const execute2 = async interaction => fooToBar(interaction, "THB", "AUD", 100, 1);
 
-export const execute2 = thbToAud;
+export const data3 = createCurrencyConverterSlashCommand('aud', 'Aussie dollar', 'lak', 'Lao kip');
+export const execute3 = async interaction => fooToBar(interaction, "AUD", "LAK", 1, 100_000);
 
-export const data3 = new SlashCommandBuilder()
+export const data4 = createCurrencyConverterSlashCommand('lak', 'Lao kip', 'aud', 'Aussie dollar');
+export const execute4 = async interaction => fooToBar(interaction, "LAK", "AUD", 100_000, 1);
+
+export const data5 = new SlashCommandBuilder()
     .setName('curr')
     .setDescription('Currency conversion')
     .addStringOption(option => option.setName('freeform').setDescription('free form').setRequired(false));
 
-export const execute3 = curr;
-
-export const data4 = new SlashCommandBuilder()
-    .setName('audlak')
-    .setDescription('Aussie dollar / Lao kip')
-    .addStringOption(option => option.setName('freeform').setDescription('free form').setRequired(false));
-
-export const execute4 = audToLak;
-
-export const data5 = new SlashCommandBuilder()
-    .setName('lakaud')
-    .setDescription('Lao kip / Aussie dollar')
-    .addStringOption(option => option.setName('freeform').setDescription('free form').setRequired(false));
-
-export const execute5 = lakToAud;
+export const execute5 = curr;
 
 function calculateCur1ToCur2Result(apilayerData, cur1, cur2, amount) {
     const cur1Amount = amount * (apilayerData.rates[cur2] / apilayerData.rates[cur1]);
@@ -265,7 +256,7 @@ async function fooToBar(interaction, foo, bar, fooDefaultAmount, barDefaultAmoun
     await interaction.deferReply();
     try {
         const freeform = interaction.options.getString('freeform');
-        console.log(`f2bF: ${foo}${bar} freeform: '${freeform}'`);
+        console.log(`f2b: ${foo}${bar} freeform: '${freeform}'`);
 
         const apilayerData = await getApilayerData();
 
@@ -302,24 +293,4 @@ async function fooToBar(interaction, foo, bar, fooDefaultAmount, barDefaultAmoun
         console.error(error);
         await interaction.editReply('An error occurred while fetching data.');
     }
-}
-
-async function audToLak(interaction) {
-    console.log("audToLak...");
-    return fooToBar(interaction, "AUD", "LAK", 1, 100_000);
-}
-
-async function audToThb(interaction) {
-    console.log("audToThb...");
-    return fooToBar(interaction, "AUD", "THB", 1, 100);
-}
-
-async function lakToAud(interaction) {
-    console.log("lakToAud...");
-    return fooToBar(interaction, "LAK", "AUD", 100_000, 1);
-}
-
-async function thbToAud(interaction) {
-    console.log("thbToAud...");
-    return fooToBar(interaction, "THB", "AUD", 100, 1);
 }
