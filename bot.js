@@ -45,7 +45,7 @@ async function handleInteraction(interaction) {
         case 'curr':
             await curr.execute5(interaction);
             break;
-            default:
+        default:
             console.error(`Unknown command ${interaction.commandName}`);
         }
 }
