@@ -356,12 +356,12 @@ function currencyPairWithFreeFormParam(interaction, apilayerData, needDeferEdit,
             // Use Token.isMaybeCode
             const p = new Token(pre);
             const s = new Token(suf);
-            console.log(`[HIPP] currencyPair: pre: ${p.value} ${p.isCurrSym()}, suf: ${s.value} ${s.isCurrSym()}`);
+            console.log(`[HIPP] currencyPairWithFreeFormParam: pre: ${p.value} ${p.isCurrSym()}, suf: ${s.value} ${s.isCurrSym()}`);
             return 'hmm prefix and/or suffix present?';
         }
     } else {
         // this should only happen if the regex is broken
-        console.log('[HIPP] currencyPair: Regex did not match.');
+        console.log('[HIPP] currencyPairWithFreeFormParam: Regex did not match.');
         return 'wut??';
     }
 }
