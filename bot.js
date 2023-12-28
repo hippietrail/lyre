@@ -21,12 +21,14 @@ async function handleInteraction(interaction) {
         case 'boddem':
             await boddem.execute(interaction);
             break;
+
         case 'wikt':
             await wikt.execute(interaction);
             break;
         case 'isaword':
             await wikt.execute2(interaction);
             break;
+
         case 'audthb':
             await curr.execute(interaction);
             break;
@@ -42,6 +44,7 @@ async function handleInteraction(interaction) {
         case 'curr':
             await curr.execute5(interaction);
             break;
+            
         default:
             console.error(`Unknown command ${interaction.commandName}`);
         }

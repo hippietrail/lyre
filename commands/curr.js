@@ -13,24 +13,27 @@ let globalFormattedDate = '';
 // a map of ISO currency codes to various information
 // TODO what about narrow vs wide won and yuan/yen symbols?
 const globalCodeToInfo = {
-    'AUD': { sym: '$', defVal: 1, name: 'Aussie dollar' },
-    'BTC': { sym: '₿', defVal: 1, name: 'Bitcoin' },
-    'CNY': { sym: '¥', defVal: 100, name: 'Chinese yuan' },
-    'EUR': { sym: '€', defVal: 1, name: 'Euro' },
-    'GBP': { sym: '£', defVal: 1, name: 'UK Pound' },
-    'GEL': { sym: '₾', defVal: 1, name: 'Georgian lari' },
-    'JPY': { sym: '¥', defVal: 100, name: 'Japanese yen' },
-    'KHR': { sym: '៛', defVal: 10_000, name: 'Cambodian riel' },
-    'KRW': { sym: '₩', defVal: 1000, name: 'South Korean won' },
-    'LAK': { sym: '₭', defVal: 100_000, name: 'Lao kip' },
-    'MYR': { sym: 'RM', defVal: 100, name: 'Malaysian ringgit' },
-    'THB': { sym: '฿', defVal: 100, name: 'Thai baht' },
-    'USD': { sym: '$', defVal: 1, name: 'US Dollar' },
-    'VND': { sym: '₫', defVal: 10_000, name: 'Vietnamese dong' },
+    'AUD': { sym: '$', defAmt: 1, name: 'Aussie dollar' },          // TODO narrow/wide symbol and variants? 💲$﹩＄
+    'BTC': { sym: '₿', defAmt: 1, name: 'Bitcoin' },
+    'CNY': { sym: '¥', defAmt: 100, name: 'Chinese yuan' },         // TODO narrow/wide symbol and variants? ¥￥元
+    'EUR': { sym: '€', defAmt: 1, name: 'Euro' },
+    'GBP': { sym: '£', defAmt: 1, name: 'UK Pound' },
+    'GEL': { sym: '₾', defAmt: 1, name: 'Georgian lari' },
+    'JPY': { sym: '¥', defAmt: 100, name: 'Japanese yen' },         // TODO narrow/wide symbol variants? ¥￥円
+    'KHR': { sym: '៛', defAmt: 10_000, name: 'Cambodian riel' },
+    'KRW': { sym: '₩', defAmt: 1000, name: 'South Korean won' },    // TODO narrow/wide symbol and variants? ₩￦
+    'LAK': { sym: '₭', defAmt: 100_000, name: 'Lao kip' },
+    'MYR': { sym: 'RM', defAmt: 100, name: 'Malaysian ringgit' },
+    'SGD': { sym: '$', defAmt: 1, name: 'Singapore dollar' },       // TODO narrow/wide symbol and variants? 💲$﹩＄
+    'THB': { sym: '฿', defAmt: 100, name: 'Thai baht' },
+    'TWD': { sym: '$', defAmt: 1, name: 'Taiwan dollar' },          // TODO narrow/wide symbol and variants? 💲$﹩＄
+    'USD': { sym: '$', defAmt: 1, name: 'US Dollar' },              // TODO narrow/wide symbol and variants? 💲$﹩＄
+    'VND': { sym: '₫', defAmt: 10_000, name: 'Vietnamese dong' },
 }
 
 // a map of currency symbols to ISO currency codes
 const globalSymToCode = {
+    // non-alphabetic
     '$': { iso: 'AUD', isAmbiguous: true }, // symbol also used by: USD
     '฿': { iso: 'THB', isAmbiguous: false },
     '€': { iso: 'EUR', isAmbiguous: false},
@@ -42,6 +45,10 @@ const globalSymToCode = {
     '៛': { iso: 'KHR', isAmbiguous: false },
     '₫': { iso: 'VND', isAmbiguous: false },
     '₿': { iso: 'BTC', isAmbiguous: false},
+    // alphabetic
+    'RM': { iso: 'MYR', isAmbiguous: false },
+    'RMB': { iso: 'CNY', isAmbiguous: false },
+    'UKP': { iso: 'GBP', isAmbiguous: false },
 }
 
 class Token {
@@ -141,16 +148,16 @@ function createCurrencyConverterSlashCommand(code1, name1, code2, name2) {
 }
 
 export const data = createCurrencyConverterSlashCommand('aud', 'Aussie dollar', 'thb', 'Thai baht');
-export const execute = async interaction => cur1ToCur2(interaction, "AUD", "THB", 1, 100);
+export const execute = async interaction => currencyPair(interaction, "AUD", "THB");
 
 export const data2 = createCurrencyConverterSlashCommand('thb', 'Thai baht', 'aud', 'Aussie dollar');
-export const execute2 = async interaction => cur1ToCur2(interaction, "THB", "AUD", 100, 1);
+export const execute2 = async interaction => currencyPair(interaction, "THB", "AUD");
 
 export const data3 = createCurrencyConverterSlashCommand('aud', 'Aussie dollar', 'lak', 'Lao kip');
-export const execute3 = async interaction => cur1ToCur2(interaction, "AUD", "LAK", 1, 100_000);
+export const execute3 = async interaction => currencyPair(interaction, "AUD", "LAK");
 
 export const data4 = createCurrencyConverterSlashCommand('lak', 'Lao kip', 'aud', 'Aussie dollar');
-export const execute4 = async interaction => cur1ToCur2(interaction, "LAK", "AUD", 100_000, 1);
+export const execute4 = async interaction => currencyPair(interaction, "LAK", "AUD");
 
 export const data5 = new SlashCommandBuilder()
     .setName('curr')
@@ -159,6 +166,7 @@ export const data5 = new SlashCommandBuilder()
 
 export const execute5 = curr;
 
+// Converts `amount` from `cur1` to `cur2`
 function calculateCur1ToCur2Result(apilayerData, cur1, cur2, amount) {
     const cur1Amount = amount * (apilayerData.rates[cur2] / apilayerData.rates[cur1]);
     return `${
@@ -168,7 +176,10 @@ function calculateCur1ToCur2Result(apilayerData, cur1, cur2, amount) {
     } ${cur2}.`;
 }
 
+// Converts `amount1` from `cur1` to `cur2` and `amount2` from `cur2` to `cur1`
+// Useful for getting two-way exchange rates
 function calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2, amount1, amount2) {
+    //console.log(`[HIPP] calculateDefaultCur1ToCur2Results: ${cur1}, ${cur2}, ${amount1}, ${amount2}`);
     return `${
         calculateCur1ToCur2Result(apilayerData, cur1, cur2, amount1)
     } ${
@@ -177,10 +188,13 @@ function calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2, amount1, am
 }
 
 async function replyOrEdit(interaction, isEdit, reply) {
+    //console.log(`[HIPP] replyOrEdit: ${isEdit ? 'edit' : 'reply'}: ${reply}`);
     await (isEdit ? interaction.editReply(reply) : interaction.reply(reply));
 }
 
 // Currency converter
+// This will be the main/only command
+// Will do different things depending on its parameters
 async function curr(interaction) {
     const needDeferEdit = needToRefreshApiLayerData();
     if (needDeferEdit) interaction.deferReply();
@@ -298,45 +312,56 @@ async function currSymOnly(interaction, needDeferEdit, apilayerData, amount, sym
     await replyOrEdit(interaction, needDeferEdit, reply);
 }
 
-async function cur1ToCur2(interaction, cur1, cur2, cur1DefaultAmount, cur2DefaultAmount) {
+// Called from the 'currency pair' slash commands: /audthb, /audlak, etc
+// Without the optional freeform parameter, convert the default amount from each currency to the other
+// With the optional parameter, it should be an amount to convert from the first currency to the second
+// 
+async function currencyPair(interaction, cur1, cur2) {
     const needDeferEdit = needToRefreshApiLayerData();
     if (needDeferEdit) await interaction.deferReply();
     try {
         const freeform = interaction.options.getString('freeform');
-        console.log(`f2b: ${cur1}${cur2} freeform: '${freeform}'`);
 
         const apilayerData = await getApilayerData(needDeferEdit);
 
-        if (freeform !== null) {
-            const regex = /^(.*?)((?:[0-9]+)(?:\.[0-9][0-9])?)(.*?)$/;
-            const matches = freeform.match(regex);
-
-            if (matches && matches.length === 4) {
-                const pre = matches[1]; // Text before the number
-                const num = matches[2]; // The actual number
-                const suf = matches[3]; // Text after the number
-
-                if (pre === "" && suf === "") {
-                    const result = calculateCur1ToCur2Result(apilayerData, cur1, cur2, parseFloat(num));
-                    const reply = `${result} (as of ${globalFormattedDate})`;
-                    await replyOrEdit(interaction, needDeferEdit, reply);
-                } else {
-                    // TODO handle cases where pre and/or suf are not empty
-                    // TODO for instance, if pre is "฿" or "₭" or "$", or suf is "AUD" or "THB" or "LAK"
-                    await replyOrEdit(interaction, needDeferEdit, 'working on it 1...');
-                }
-            } else {
-                // this should only happen if the regex is broken
-                console.log('No match found.');
-                await replyOrEdit(interaction, needDeferEdit, 'wut??');
-            }
-        } else {
-            console.log('No param.');
-            const results = calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2, cur1DefaultAmount, cur2DefaultAmount);
+        if (freeform === null) {
+            const results = calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2,
+                globalCodeToInfo[cur1].defAmt, globalCodeToInfo[cur2].defAmt);
             await replyOrEdit(interaction, needDeferEdit, `${results} (as of ${globalFormattedDate})`);
+        } else {
+            const result = currencyPairWithFreeFormParam(interaction, apilayerData, needDeferEdit, cur1, cur2, freeform);
+            await replyOrEdit(interaction, needDeferEdit, result);
         }
     } catch (error) {
         console.error(error);
         await replyOrEdit(interaction, needDeferEdit, 'An error occurred while fetching data.');
+    }
+}
+
+function currencyPairWithFreeFormParam(interaction, apilayerData, needDeferEdit, cur1, cur2, freeform) {
+    const regex = /^(.*?)((?:[0-9]+)(?:\.[0-9][0-9])?)(.*?)$/;
+    const matches = freeform.match(regex);
+
+    if (matches && matches.length === 4) {
+        const pre = matches[1]; // Text before the number
+        const num = matches[2]; // The actual number
+        const suf = matches[3]; // Text after the number
+
+        if (pre === "" && suf === "") {
+            const result = calculateCur1ToCur2Result(apilayerData, cur1, cur2, parseFloat(num));
+            return `${result} (as of ${globalFormattedDate})`;
+        } else {
+            // TODO handle cases where pre and/or suf are not empty?
+            // TODO for instance, if pre is "฿" or "₭" or "$"
+            // Use Token.isMaybeCode
+            const p = new Token(pre);
+            const s = new Token(suf);
+            console.log(`[HIPP] currencyPair: pre: ${p.value} ${p.isCurrSym()}, suf: ${s.value} ${s.isCurrSym()}`);
+            return 'hmm prefix and/or suffix present?';
+        }
+    } else {
+        // this should only happen if the regex is broken
+        console.log('[HIPP] currencyPair: Regex did not match.');
+        return 'wut??';
     }
 }
