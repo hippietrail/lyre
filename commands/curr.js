@@ -32,7 +32,7 @@ const globalCodeToInfo = {
 }
 
 // a map of currency symbols to ISO currency codes
-const globalSymToCode = {
+const globalSymToInfo = {
     // non-alphabetic
     '$': { iso: 'AUD', isAmbiguous: true }, // symbol also used by: USD
     '฿': { iso: 'THB', isAmbiguous: false },
@@ -65,20 +65,20 @@ class Token {
     isSupportedCode = () => globalCachedApilayerData.rates[this.value.toUpperCase()] !== undefined;
     
     // checks if this token is one of our hard-coded currency symbols
-    isCurrSym = () => globalSymToCode[this.value] !== undefined;
+    isCurrSym = () => globalSymToInfo[this.value] !== undefined;
     
     // checks if this token is a number
     isNumber = () => this.isNum;
     
     // checks if this token is an ambiguous currency symbol
     isAmbigSym() {
-        const e = globalSymToCode[this.value];
+        const e = globalSymToInfo[this.value];
         return e && typeof e === 'object' ? e.isAmbiguous : false;
     }
 }
 
 function getCodeInfoForSym(sym) {
-    const entry = globalSymToCode[sym];
+    const entry = globalSymToInfo[sym];
     if (entry) {
         if (typeof entry === 'object') {
             return entry;
@@ -90,7 +90,7 @@ function getCodeInfoForSym(sym) {
 }
 
 function getDefaultCodeForSym(sym) {
-    const entry = globalSymToCode[sym];
+    const entry = globalSymToInfo[sym];
     if (entry) {
         if (typeof entry === 'object') {
             return entry.iso;
@@ -224,30 +224,29 @@ async function curr(interaction) {
                 // Example usage of the Token and NumberToken class methods with tokenArray
                 if (toks.length === 1) {
                     await replyOrEdit(interaction, needDeferEdit, "error: hmm amount without either symbol or code?.");
-                }
-                else if (toks.length === 2) {
+                } else if (toks.length === 2) {
                     const amount = toks[0].isNumber() ? toks[0].value : toks[1].value;
                     const symOrCode = toks[0].isNumber() ? toks[1] : toks[0];
                     if (symOrCode.isCurrSym()) {
-                        await currSymOnly(interaction, needDeferEdit, apilayerData, amount, symOrCode);
+                        await replyOrEdit(interaction, needDeferEdit, currSymOnly(apilayerData, amount, symOrCode));
                     } else {
-                        await currCodeOnly(interaction, needDeferEdit, apilayerData, amount, symOrCode);
+                        await replyOrEdit(interaction, needDeferEdit, currCodeOnly(apilayerData, amount, symOrCode));
                     }
-                }
-                else if (toks.length === 3) {
+                } else if (toks.length === 3) {
                     if (toks[0].isCurrSym() && toks[2].isCurrSym()) {
                         await replyOrEdit(interaction, needDeferEdit, "error: symbols on both sides.");
                     } else if (toks[0].isMaybeCode() && toks[2].isMaybeCode()) {
                         await replyOrEdit(interaction, needDeferEdit, "error. codes on both sides.");
                     } else if ((toks[0].isCurrSym() && toks[2].isMaybeCode()) || (toks[0].isMaybeCode() && toks[2].isCurrSym())) {
-                        await currSymAndCode(interaction, needDeferEdit, apilayerData, toks);
+                        await replyOrEdit(interaction, needDeferEdit, currSymAndCode(apilayerData, toks));
                     } else {
+                        console.log('[HIPP] curr: hit the \'else\'');
                         const regex = /^(.+?)\s+(.+?)$/;
                         const matches = toks[2].value.match(regex);
                         if (matches && matches.length === 3) {
-                            const fakeMoreToks = [...toks, matches[1], matches[2]];
-                            await replyOrEdit(interaction, needDeferEdit, 'looks like four tokens actually. coming soon...');
-                            console.log(`matches: ${JSON.stringify(fakeMoreToks)}`);
+                            const newToks = [...toks.slice(0, 2), new Token(matches[1]), new Token(matches[2])];
+                            console.log(`matches: ${JSON.stringify(newToks, null, 2)}`);
+                            await replyOrEdit(interaction, needDeferEdit, 'looks like more than 3 tokens actually. coming soon...');
                         } else {
                             await replyOrEdit(interaction, needDeferEdit, `Syntax error. Prefix:{${toks[0].isCurrSym()}} number:{${toks[1].value}} suffix:{${toks[2].isCurrSym()}}`);
                         }
@@ -269,53 +268,53 @@ async function curr(interaction) {
     }
 }
 
-// TODO are we really passing apilayerData around, or should we just get it from the global variable?
-async function currSymAndCode(interaction, needDeferEdit, apilayerData, toks) {
-    //console.log("* symbol on one side, code on the other...");
+function currSymAndCode(apilayerData, toks) {
     const sym = toks[0].isCurrSym() ? toks[0].value : toks[2].value;
     const code = (toks[0].isCurrSym() ? toks[2].value : toks[0].value).toUpperCase();
-    const code2ForSym = getCodeInfoForSym(sym).iso;
-    if (code === code2ForSym) {
+    const symForCode = globalCodeToInfo[code].sym;
+    if (sym === symForCode) {
         const code2 = code === 'AUD' ? 'THB' : 'AUD';
-        //console.log(`* code: ${code}, code2: ${code2}, amount: ${toks[1].value}`);
         const result = calculateCur1ToCur2Result(apilayerData, code, code2, toks[1].value);
-        const reply = `${result} (as of ${globalFormattedDate})`;
-        await replyOrEdit(interaction, needDeferEdit, reply);
+        return `${result} (as of ${globalFormattedDate})`;
     } else {
-        const reply = `error: symbol ${sym} => ${code2ForSym}, not ${code}.`;
-        await replyOrEdit(interaction, needDeferEdit, reply);
+        var reply = `Umm ${code} is ${symForCode}, not ${sym}, which is ${getDefaultCodeForSym(sym)}`;
+        if (globalSymToInfo[sym].isAmbiguous) {
+            reply += ', etc';
+        }
+        reply += '.';
+        return reply;
     }
 }
 
 // like currSymAndCode but only has three-letter code so doesn't have to check if it matches the currency symbol
 // but does have to consider whether it's a code supported by apilayer
-// TODO should we pass apilayerData here instead of globalCachedApilayerData?
-async function currCodeOnly(interaction, needDeferEdit, apilayerData, amount, codeTok) {
-    //console.log(`* code on one side. code: ${codeTok.value}, amount: ${amount}`);
+function currCodeOnly(apilayerData, amount, codeTok) {
     const code = codeTok.value.toUpperCase();
+    if (!(code in apilayerData)) {
+        return `${code} isn't a known currency code.`;
+    }
     const code2 = code === 'AUD' ? 'THB' : 'AUD';
-    //console.log(`* code: ${code}, code2: ${code2}, amount: ${amount}`);
     const result = calculateCur1ToCur2Result(apilayerData, code, code2, amount);
-    const reply = `${result} (as of ${globalFormattedDate})`;
-    await replyOrEdit(interaction, needDeferEdit, reply);
+    return `${result} (as of ${globalFormattedDate})`;
 }
 
 // like currSymAndCode but only has currency symbol so doesn't have to check if it matches the ISO currency code
 // but does have to consider whether the symbol is ambiguous
-async function currSymOnly(interaction, needDeferEdit, apilayerData, amount, symTok) {
-    //console.log(`* symbol on one side. symbol: ${symTok.value}, amount: ${amount}`);
+function currSymOnly(apilayerData, amount, symTok) {
     const code = getCodeInfoForSym(symTok.value).iso;
     const code2 = code === 'AUD' ? 'THB' : 'AUD';
-    //console.log(`* code: ${code}, code2: ${code2}, amount: ${amount}`);
     const result = calculateCur1ToCur2Result(apilayerData, code, code2, amount);
-    const reply = `${result} (as of ${globalFormattedDate})`;
-    await replyOrEdit(interaction, needDeferEdit, reply);
+    const reply = [result];
+    if (globalSymToInfo[symTok.value].isAmbiguous) {
+        reply.push(`(assuming ${symTok.value} means ${getDefaultCodeForSym(symTok.value)})`);
+    }
+    reply.push(`(as of ${globalFormattedDate})`);
+    return reply.join(' ');
 }
 
 // Called from the 'currency pair' slash commands: /audthb, /audlak, etc
 // Without the optional freeform parameter, convert the default amount from each currency to the other
 // With the optional parameter, it should be an amount to convert from the first currency to the second
-// 
 async function currencyPair(interaction, cur1, cur2) {
     const needDeferEdit = needToRefreshApiLayerData();
     if (needDeferEdit) await interaction.deferReply();
@@ -329,7 +328,7 @@ async function currencyPair(interaction, cur1, cur2) {
                 globalCodeToInfo[cur1].defAmt, globalCodeToInfo[cur2].defAmt);
             await replyOrEdit(interaction, needDeferEdit, `${results} (as of ${globalFormattedDate})`);
         } else {
-            const result = currencyPairWithFreeFormParam(interaction, apilayerData, needDeferEdit, cur1, cur2, freeform);
+            const result = currencyPairWithFreeFormParam(apilayerData, cur1, cur2, freeform);
             await replyOrEdit(interaction, needDeferEdit, result);
         }
     } catch (error) {
@@ -338,7 +337,7 @@ async function currencyPair(interaction, cur1, cur2) {
     }
 }
 
-function currencyPairWithFreeFormParam(interaction, apilayerData, needDeferEdit, cur1, cur2, freeform) {
+function currencyPairWithFreeFormParam(apilayerData, cur1, cur2, freeform) {
     const regex = /^(.*?)((?:[0-9]+)(?:\.[0-9][0-9])?)(.*?)$/;
     const matches = freeform.match(regex);
 
