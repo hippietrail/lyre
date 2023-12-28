@@ -29,13 +29,6 @@ export const data2 = new SlashCommandBuilder()
 
 export const execute2 = isaword;
 
-export const data3 = new SlashCommandBuilder()
-    .setName('isaword2')
-    .setDescription('Highly secret!')
-    .addStringOption(option => option.setName('word').setDescription('word to check').setRequired(true));
-
-export const execute3 = isaword2;
-
 export async function random(interaction) {
     console.log("random")
     await interaction.deferReply();
@@ -47,50 +40,20 @@ export async function random(interaction) {
             const response = await fetch(wiktRandomUrl);
             const data = await response.json();
             const mappo = data.query.random.map(x => x.title);
-            //await interaction.reply(`${mappo.join(', ')}`);
             await interaction.editReply(`${mappo.join(', ')}`);
         } else {
-            //await interaction.reply('technically, that would not be very random');
             await interaction.editReply('technically, that would not be very random');
         }
     } catch (error) {
         console.error(error);
-        //await interaction.reply('An error occurred while fetching data.');
         await interaction.editReply('An error occurred while fetching data.');
     }
 }
-
-const negativeResponses = ['doesn\'t seem to be', 'don\'t think so',
-    'doubt it', 'not likely', 'probably not',
-    'unlikely'
-];
-
-const getRandomNegativeRespose = () => negativeResponses[Math.floor(Math.random() * negativeResponses.length)];
 
 export async function isaword(interaction) {
     try {
         const word = interaction.options.getString('word');
         console.log(`isaword: '${word}'`);
-
-        spIsW.set('titles', word);
-        const response = await fetch(wiktIsAWordUrl);
-        const data = await response.json();
-
-        const isnt = "-1" in data.query.pages;
-
-        await interaction.reply(isnt
-            ? getRandomNegativeRespose()
-            : "well it's in the English Wiktionary, but there's plenty of entries that are not legit English words there");
-    } catch (error) {
-        console.error(error);
-        await interaction.reply('An error occurred while fetching data.');
-    }
-}
-
-export async function isaword2(interaction) {
-    try {
-        const word = interaction.options.getString('word');
-        console.log(`isaword2: '${word}'`);
         
         const lower = word.toLowerCase();
 

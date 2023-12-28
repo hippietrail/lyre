@@ -27,9 +27,6 @@ async function handleInteraction(interaction) {
         case 'isaword':
             await wikt.execute2(interaction);
             break;
-        case 'isaword2':
-            await wikt.execute3(interaction);
-            break;
         case 'audthb':
             await curr.execute(interaction);
             break;
@@ -56,11 +53,11 @@ client.login(process.env.TOKEN);
 
 client.on(Events.InteractionCreate, handleInteraction);
 
-client.on('debug', console.log);
+client.on('debug', d => console.log(`[DEBUG] ${d}`));
 
 // I don't think this actually does anything - maybe should be 'shardResume'??
 client.on('resume', () => {
     console.log(`🔄 Resumed!`);
 })
 
-client.on('error', console.log)
+client.on('error', e => console.log(`[ERROR] ${e}`));
