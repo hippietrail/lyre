@@ -63,4 +63,4 @@ client.on('resume', () => {
     console.log(`🔄 Resumed!`);
 })
 
-client.on('error', e => console.log(`[ERROR] ${e}`));
+client.on('error', e => console.log(`[ERROR] ${JSON.stringify(e, null, 2)}`));
