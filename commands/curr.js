@@ -65,7 +65,7 @@ class Token {
     isSupportedCode = () => globalCachedApilayerData.rates[this.value.toUpperCase()] !== undefined;
     
     // checks if this token is one of our hard-coded currency symbols
-    isCurrSym = () => globalSymToInfo[this.value] !== undefined;
+    isCurrSym = () => globalSymToInfo[this.value.toUpperCase()] !== undefined;
     
     // checks if this token is a number
     isNumber = () => this.isNum;
@@ -114,6 +114,7 @@ async function getApilayerData(isDataStale) {
             console.log('Fetching apilayer data...');
             globalCachedApilayerData = await (await fetch(currUrl)).json();
             console.log('Got apilayer data.');
+            //console.log(`Got apilayer data:\n  ${Object.keys(globalCachedApilayerData)}\n  ${Object.keys(globalCachedApilayerData.rates)}`);
             globalFormattedDate = (new Date(globalCachedApilayerData.timestamp * 1000)).toLocaleString();
         } catch (error) {
             console.error('An error occurred while fetching currency data:', error);
@@ -188,7 +189,7 @@ function calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2, amount1, am
 }
 
 async function replyOrEdit(interaction, isEdit, reply) {
-    //console.log(`[HIPP] replyOrEdit: ${isEdit ? 'edit' : 'reply'}: ${reply}`);
+    console.log(`[HIPP] replyOrEdit: ${isEdit ? 'edit' : 'reply'}: ${reply}`);
     await (isEdit ? interaction.editReply(reply) : interaction.reply(reply));
 }
 
@@ -197,6 +198,7 @@ async function replyOrEdit(interaction, isEdit, reply) {
 // Will do different things depending on its parameters
 async function curr(interaction) {
     const needDeferEdit = needToRefreshApiLayerData();
+    console.log(`[HIPP] curr: ${needDeferEdit ? 'edit' : 'reply'}`);
     if (needDeferEdit) interaction.deferReply();
     try {
         const freeform = interaction.options.getString('freeform');
@@ -290,7 +292,7 @@ function currSymAndCode(apilayerData, toks) {
 // but does have to consider whether it's a code supported by apilayer
 function currCodeOnly(apilayerData, amount, codeTok) {
     const code = codeTok.value.toUpperCase();
-    if (!(code in apilayerData)) {
+    if (!(code in apilayerData.rates)) {
         return `${code} isn't a known currency code.`;
     }
     const code2 = code === 'AUD' ? 'THB' : 'AUD';
@@ -301,12 +303,13 @@ function currCodeOnly(apilayerData, amount, codeTok) {
 // like currSymAndCode but only has currency symbol so doesn't have to check if it matches the ISO currency code
 // but does have to consider whether the symbol is ambiguous
 function currSymOnly(apilayerData, amount, symTok) {
-    const code = getCodeInfoForSym(symTok.value).iso;
+    const sym = symTok.value.toUpperCase();
+    const code = getCodeInfoForSym(sym).iso;
     const code2 = code === 'AUD' ? 'THB' : 'AUD';
     const result = calculateCur1ToCur2Result(apilayerData, code, code2, amount);
     const reply = [result];
-    if (globalSymToInfo[symTok.value].isAmbiguous) {
-        reply.push(`(assuming ${symTok.value} means ${getDefaultCodeForSym(symTok.value)})`);
+    if (globalSymToInfo[sym].isAmbiguous) {
+        reply.push(`(assuming ${sym} means ${getDefaultCodeForSym(sym)})`);
     }
     reply.push(`(as of ${globalFormattedDate})`);
     return reply.join(' ');
