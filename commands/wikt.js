@@ -51,6 +51,7 @@ export async function random(interaction) {
 }
 
 export async function isaword(interaction) {
+    await interaction.deferReply();
     try {
         const word = interaction.options.getString('word');
         console.log(`isaword: '${word}'`);
@@ -120,7 +121,7 @@ export async function isaword(interaction) {
         const gotExact = present.includes(word);
 
         console.log("Present:", present, gotExact ? `including '${word}'` : "");
-        console.log("Absent:", absent, gotExact ? `including '${word}'` : "");
+        console.log("Absent:", absent, gotExact ? "" : `including '${word}'`);
 
         let reply;
         if (present.length === 0) {
@@ -141,9 +142,9 @@ export async function isaword(interaction) {
             reply = `An unexpected combination of exact word, present variants, and absent variants was found. gotExact: ${gotExact}, present: ${present.join(', ')}, absent: ${absent.join(', ')}`;
         }
 
-        await interaction.reply(reply);
+        await interaction.editReply(reply);
     } catch (error) {
         console.error(error);
-        await interaction.reply('An error occurred while fetching data.');
+        await interaction.editReply('An error occurred while fetching data.');
     }
 }
