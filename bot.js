@@ -3,6 +3,7 @@ import { config } from 'dotenv';
 import * as wikt from './commands/wikt.js';
 import * as curr from './commands/curr.js';
 import * as github from './commands/github.js';
+import * as yt from './commands/yt.js';
 
 config();
 
@@ -43,6 +44,10 @@ async function handleInteraction(interaction) {
 
         case 'github':
             await github.execute(interaction);
+            break;
+
+        case 'yt':
+            await yt.execute(interaction);
             break;
             
         default:

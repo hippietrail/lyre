@@ -19,8 +19,9 @@ export const execute = async interaction => {
     await interaction.deferReply();
     try {
         const username = interaction.options.getString('username');
-        const usernames = username ? [username] : process.env.GITHUB_USERS ? process.env.GITHUB_USERS.split('|') : [];
-        //console.log(`github: USERNAMES: ${usernames}, USERNAME: ${username}, length: ${usernames.length}, usernames type: ${JSON.stringify(usernames)}`);
+        const usernames = username
+            ? [username] : process.env.GITHUB_USERS
+                ? process.env.GITHUB_USERS.split('|') : [];
 
         if (usernames.length === 0) {
             await interaction.editReply('No GitHub usernames specified or in the .env file');
@@ -45,10 +46,14 @@ export const execute = async interaction => {
         const events = replies.flat();
         const sortedEvents = events.sort((a, b) => a.elapsed_time - b.elapsed_time);
 
-        const reply = sortedEvents.map(e => `${e.user}: ${e.type}${e.payloadAction ? `.${e.payloadAction}` : ''} ${e.repo} ${
+        const reply = sortedEvents.map(e => `${e.user}: ${e.type}${
+            e.payloadAction ? `.${e.payloadAction}` : ''
+        } ${e.repo} ${
             e.elapsed_time > 1000 * 60 * 60 * 24
                 ? `${Math.floor(e.elapsed_time / 1000 / 60 / 60 / 24)} days ago`
-                : `${Math.floor(e.elapsed_time / 1000 / 60 / 60)} hours ago`
+                : e.elapsed_time > 1000 * 60 * 60
+                    ? `${Math.floor(e.elapsed_time / 1000 / 60 / 60)} hours ago`
+                    : `${Math.floor(e.elapsed_time / 1000 / 60)} minutes ago`
         }`).join('\n');
 
         await interaction.editReply(reply !== "" ? reply : 'No events found');
