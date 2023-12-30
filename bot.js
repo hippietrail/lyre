@@ -2,6 +2,7 @@ import { Client, Events, GatewayIntentBits } from 'discord.js';
 import { config } from 'dotenv';
 import * as wikt from './commands/wikt.js';
 import * as curr from './commands/curr.js';
+import * as github from './commands/github.js';
 
 config();
 
@@ -38,6 +39,10 @@ async function handleInteraction(interaction) {
             break;
         case 'curr':
             await curr.execute5(interaction);
+            break;
+
+        case 'github':
+            await github.execute(interaction);
             break;
             
         default:
