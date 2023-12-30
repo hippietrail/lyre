@@ -1,6 +1,11 @@
 import { SlashCommandBuilder } from 'discord.js';
+import { config } from 'dotenv';
+
+config();
 
 const githubUrl = new URL('https://api.github.com');
+const sp = githubUrl.searchParams;
+sp.set('per_page', '3');
 
 export const data = new SlashCommandBuilder()
     .setName('github')
@@ -14,20 +19,38 @@ export const execute = async interaction => {
     await interaction.deferReply();
     try {
         const username = interaction.options.getString('username');
-        const usernames = username ? [username] : ['hippietrail', 'justinmcp', 'hitman-codehq'];
+        const usernames = username ? [username] : process.env.GITHUB_USERS ? process.env.GITHUB_USERS.split('|') : [];
+        //console.log(`github: USERNAMES: ${usernames}, USERNAME: ${username}, length: ${usernames.length}, usernames type: ${JSON.stringify(usernames)}`);
 
-        const promises = usernames.map(async (user) => {
+        if (usernames.length === 0) {
+            await interaction.editReply('No GitHub usernames specified or in the .env file');
+            return;
+        }
+        const now = new Date();
+
+        const promises = usernames.map(async user => {
             githubUrl.pathname = `/users/${user}/events/public`;
-            const response = await fetch(githubUrl);
-            const data = await response.json();
-            return data.slice(0, 2).map(e => {
-                const action = e.type.split(/(?=[A-Z])/).slice(0, -1).join(' ').toLowerCase();
-                return `${e.actor.login} ${action} ${e.repo.name}`;
-            }).join('; ');
+            const events = (await (await fetch(githubUrl)).json()).slice(0, 3);
+            return events.map(e => ({
+                user: e.actor.login,
+                type: e.type.split(/(?=[A-Z])/).slice(0, -1).join(' ').toLowerCase(),
+                payloadAction: e.payload.action,
+                repo: e.repo.name,
+                created_at: e.created_at,
+                elapsed_time: now - new Date(e.created_at),
+            }));
         });
 
         const replies = await Promise.all(promises);
-        const reply = replies.join('\n');
+        const events = replies.flat();
+        const sortedEvents = events.sort((a, b) => a.elapsed_time - b.elapsed_time);
+
+        const reply = sortedEvents.map(e => `${e.user}: ${e.type}${e.payloadAction ? `.${e.payloadAction}` : ''} ${e.repo} ${
+            e.elapsed_time > 1000 * 60 * 60 * 24
+                ? `${Math.floor(e.elapsed_time / 1000 / 60 / 60 / 24)} days ago`
+                : `${Math.floor(e.elapsed_time / 1000 / 60 / 60)} hours ago`
+        }`).join('\n');
+
         await interaction.editReply(reply !== "" ? reply : 'No events found');
     } catch (error) {
         console.error(error);
