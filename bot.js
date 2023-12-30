@@ -1,6 +1,5 @@
 import { Client, Events, GatewayIntentBits } from 'discord.js';
 import { config } from 'dotenv';
-import * as boddem from './commands/boddem.js';
 import * as wikt from './commands/wikt.js';
 import * as curr from './commands/curr.js';
 
@@ -18,10 +17,6 @@ async function handleInteraction(interaction) {
     if (!interaction.isCommand()) return;
 
     switch (interaction.commandName) {
-        case 'boddem':
-            await boddem.execute(interaction);
-            break;
-
         case 'wikt':
             await wikt.execute(interaction);
             break;
