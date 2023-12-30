@@ -59,8 +59,8 @@ client.on(Events.InteractionCreate, handleInteraction);
 client.on('debug', d => console.log(`[DEBUG] ${d}`));
 
 // I don't think this actually does anything - maybe should be 'shardResume'??
-client.on('resume', () => {
-    console.log(`🔄 Resumed!`);
-})
+client.on('resume', () => console.log(`🔄 Resumed!`));
+
+client.on('shardResume', () => console.log(`💎🔄 Shard resumed!`));
 
 client.on('error', e => console.log(`[ERROR] ${JSON.stringify(e, null, 2)}`));

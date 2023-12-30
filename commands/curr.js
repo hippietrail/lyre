@@ -199,7 +199,7 @@ async function replyOrEdit(interaction, isEdit, reply) {
 async function curr(interaction) {
     const needDeferEdit = needToRefreshApiLayerData();
     console.log(`[HIPP] curr: ${needDeferEdit ? 'edit' : 'reply'}`);
-    if (needDeferEdit) interaction.deferReply();
+    if (needDeferEdit) await interaction.deferReply();
     try {
         const freeform = interaction.options.getString('freeform');
         console.log(`curr freeform: '${freeform}'`);
