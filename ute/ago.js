@@ -5,15 +5,15 @@ export function ago(t) {
     const w = d * 7;
     const mo = d * 365 / 12;
     const [n, u] = t > mo
-        ? [Math.floor(t / mo), 'month']
+        ? [Math.floor(t / mo * 2) / 2, 'month']
         : t > w
-            ? [Math.floor(t / w), 'week']
+            ? [Math.floor(t / w * 2) / 2, 'week']
             : t > d
-                ? [Math.floor(t / d), 'day']
+                ? [Math.floor(t / d * 2) / 2, 'day']
                 : t > h
-                    ? [Math.floor(t / h), 'hour']
+                    ? [Math.floor(t / h * 2) / 2, 'hour']
                     : t > m
-                        ? [Math.floor(t / m), 'minute']
-                        : [Math.floor(t), 'second'];
+                        ? [Math.floor(t / m * 2) / 2, 'minute']
+                        : [Math.floor(t * 2) / 2, 'second'];
     return `${n} ${u}${n !== 1 ? 's' : ''} ago`
 }
