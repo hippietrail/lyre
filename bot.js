@@ -46,10 +46,10 @@ async function handleInteraction(interaction) {
             await github.execute(interaction);
             break;
 
-        case 'yt':
+        case 'youtube':
             await yt.execute(interaction);
             break;
-            
+
         default:
             console.error(`Unknown command ${interaction.commandName}`);
         }

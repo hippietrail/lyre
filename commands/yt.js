@@ -3,40 +3,63 @@ import { config } from 'dotenv';
 
 config();
 
-// get the latest videos for the Tsoding channel
-// https://youtube.googleapis.com/youtube/v3/search?part=snippet&channelId=UChcSRqitXAm2BXtxTzP1azQ&maxResults=25&key=SUPER_SECRET_KEY
-
 const ytUrl = new URL('https://www.googleapis.com');
-ytUrl.pathname = '/youtube/v3/search';
+ytUrl.pathname = '/youtube/v3/playlistItems';
 const sp = ytUrl.searchParams;
 sp.set('part', 'snippet');
-sp.set('channelId', 'UCrqM0Ym_NbK1fqeQG2VIohg');
 sp.set('maxResults', '5');
 sp.set('order', 'date');
 sp.set('key', process.env.YT_API_KEY);
 
 export const data = new SlashCommandBuilder()
-    .setName('yt')
-    .setDescription('Get the latest videos for the Tsoding channel');
+    .setName('youtube')
+    .setDescription('The latest Tsoding Daily videos');
 
 export const execute = yt;
+
+// make a map of my favourite coding youtube channel names to their channel IDs
+const chans = {
+    'Tsoding Daily':    'UUrqM0Ym_NbK1fqeQG2VIohg',
+    'AngeTheGreat':     'UUV0t1y4h_6-2SqEpXBXgwFQ',
+    'javidx9':          'UU-yuWVUplUJZvieEligKBkA',
+    'Bisqwit':          'UUKTehwyGCKF-b2wo0RKwrcg',
+    'Code Bullet':      'UU0e3QhIYukixgh5VVpKHH9Q',
+    'Acerola':          'UUQG40havu4kNpB4pxUDQhYQ',
+    'The Coding Train': 'UUvjgXvBlbQiydffZU7m1_aw',
+    'Sebastian Lague':  'UUmtyQOKKmrMVaKuRXz02jbQ',
+    'suckerpinch':      'UU3azLjQuz9s5qk76KEXaTvA',
+};
 
 async function yt(interaction) {
     await interaction.deferReply();
     try {
-        const response = await fetch(ytUrl);
-        const data = await response.json();
+        const promises = [];
+        sp.set('maxResults', '3');
+        for (const chan in chans) {
+            //sp.set('channelId', chans[chan]);
+            sp.set('playlistId', chans[chan]);
+            //console.log(ytUrl.href);
+            promises.push(fetch(ytUrl));
+        }
+        const responses = await Promise.all(promises);
+        const videos = [];
         const now = new Date();
-        const mappo = data.items.map(x => {
+        for (const response of responses) {
+            const data = await response.json();
+            //console.log(JSON.stringify(data, null, 2));
+            videos.push(...data.items);
+        }
+        videos.sort((a, b) => new Date(b.snippet.publishedAt) - new Date(a.snippet.publishedAt));
+        const mappo = videos.slice(0, 10).map(x => {
             const elapsed_time = now - new Date(x.snippet.publishedAt);
-            return `${
-                elapsed_time > 1000 * 60 * 60 * 24
-                ? `${Math.floor(elapsed_time / 1000 / 60 / 60 / 24)} days ago`
-                : elapsed_time > 1000 * 60 * 60
-                    ? `${Math.floor(elapsed_time / 1000 / 60 / 60)} hours ago`
-                    : `${Math.floor(elapsed_time / 1000 / 60)} minutes ago`
-            }: ${
-                x.snippet.title
+            return `${x.snippet.channelTitle}: ${x.snippet.title} ${
+                elapsed_time > 1000 * 60 * 60 * 24 * 7
+                ? `${Math.floor(elapsed_time / 1000 / 60 / 60 / 24 / 7)} weeks ago`
+                : elapsed_time > 1000 * 60 * 60 * 24
+                    ? `${Math.floor(elapsed_time / 1000 / 60 / 60 / 24)} days ago`
+                    : elapsed_time > 1000 * 60 * 60
+                        ? `${Math.floor(elapsed_time / 1000 / 60 / 60)} hours ago`
+                        : `${Math.floor(elapsed_time / 1000 / 60)} minutes ago`
             }`
         });
         await interaction.editReply(`${mappo.join('\n')}`);
