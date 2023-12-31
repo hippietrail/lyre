@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { config } from 'dotenv';
+import { ago } from '../ute/ago.js';
 
 config();
 
@@ -48,13 +49,7 @@ export const execute = async interaction => {
 
         const reply = sortedEvents.map(e => `${e.user}: ${e.type}${
             e.payloadAction ? `.${e.payloadAction}` : ''
-        } ${e.repo} ${
-            e.elapsed_time > 1000 * 60 * 60 * 24
-                ? `${Math.floor(e.elapsed_time / 1000 / 60 / 60 / 24)} days ago`
-                : e.elapsed_time > 1000 * 60 * 60
-                    ? `${Math.floor(e.elapsed_time / 1000 / 60 / 60)} hours ago`
-                    : `${Math.floor(e.elapsed_time / 1000 / 60)} minutes ago`
-        }`).join('\n');
+        } ${e.repo} ${ago(e.elapsed_time)}`).join('\n');
 
         await interaction.editReply(reply !== "" ? reply : 'No events found');
     } catch (error) {

@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { config } from 'dotenv';
+import { ago } from '../ute/ago.js';
 
 config();
 
@@ -36,9 +37,7 @@ async function yt(interaction) {
         const promises = [];
         sp.set('maxResults', '3');
         for (const chan in chans) {
-            //sp.set('channelId', chans[chan]);
             sp.set('playlistId', chans[chan]);
-            //console.log(ytUrl.href);
             promises.push(fetch(ytUrl));
         }
         const responses = await Promise.all(promises);
@@ -46,20 +45,13 @@ async function yt(interaction) {
         const now = new Date();
         for (const response of responses) {
             const data = await response.json();
-            //console.log(JSON.stringify(data, null, 2));
             videos.push(...data.items);
         }
-        videos.sort((a, b) => new Date(b.snippet.publishedAt) - new Date(a.snippet.publishedAt));
+        videos.sort();
         const mappo = videos.slice(0, 10).map(x => {
             const elapsed_time = now - new Date(x.snippet.publishedAt);
             return `${x.snippet.channelTitle}: ${x.snippet.title} ${
-                elapsed_time > 1000 * 60 * 60 * 24 * 7
-                ? `${Math.floor(elapsed_time / 1000 / 60 / 60 / 24 / 7)} weeks ago`
-                : elapsed_time > 1000 * 60 * 60 * 24
-                    ? `${Math.floor(elapsed_time / 1000 / 60 / 60 / 24)} days ago`
-                    : elapsed_time > 1000 * 60 * 60
-                        ? `${Math.floor(elapsed_time / 1000 / 60 / 60)} hours ago`
-                        : `${Math.floor(elapsed_time / 1000 / 60)} minutes ago`
+                ago(elapsed_time)
             }`
         });
         await interaction.editReply(`${mappo.join('\n')}`);
