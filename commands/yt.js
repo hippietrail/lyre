@@ -14,7 +14,7 @@ sp.set('key', process.env.YT_API_KEY);
 
 export const data = new SlashCommandBuilder()
     .setName('youtube')
-    .setDescription('The latest Tsoding Daily videos');
+    .setDescription('Latest from my favourite coding youtube channels');
 
 export const execute = yt;
 
