@@ -49,7 +49,7 @@ export const execute = async interaction => {
 
         const reply = sortedEvents.map(e => `${e.user}: ${e.type}${
             e.payloadAction ? `.${e.payloadAction}` : ''
-        } ${e.repo} ${ago(e.elapsed_time)}`).join('\n');
+        } ${e.repo} - ${ago(e.elapsed_time)}`).join('\n');
 
         await interaction.editReply(reply !== "" ? reply : 'No events found');
     } catch (error) {

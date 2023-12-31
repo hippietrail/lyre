@@ -3,11 +3,17 @@ export function ago(t) {
     const h = m * 60;
     const d = h * 24;
     const w = d * 7;
-    return t > w
-        ? `${Math.floor(t / w)} weeks ago`
-        : t > d
-            ? `${Math.floor(t / d)} days ago`
-            : t > h
-                ? `${Math.floor(t / h)} hours ago`
-                : `${Math.floor(t / m)} minutes ago`;
+    const mo = d * 365 / 12;
+    const [n, u] = t > mo
+        ? [Math.floor(t / mo), 'month']
+        : t > w
+            ? [Math.floor(t / w), 'week']
+            : t > d
+                ? [Math.floor(t / d), 'day']
+                : t > h
+                    ? [Math.floor(t / h), 'hour']
+                    : t > m
+                        ? [Math.floor(t / m), 'minute']
+                        : [Math.floor(t), 'second'];
+    return `${n} ${u}${n !== 1 ? 's' : ''} ago`
 }

@@ -50,7 +50,7 @@ async function yt(interaction) {
         videos.sort();
         const mappo = videos.slice(0, 10).map(x => {
             const elapsed_time = now - new Date(x.snippet.publishedAt);
-            return `${x.snippet.channelTitle}: ${x.snippet.title} ${
+            return `${x.snippet.channelTitle}: ${x.snippet.title} - ${
                 ago(elapsed_time)
             }`
         });
