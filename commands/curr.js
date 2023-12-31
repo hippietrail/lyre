@@ -141,31 +141,12 @@ function needToRefreshApiLayerData() {
     return needsRefresh;
 }
 
-function createCurrencyConverterSlashCommand(code1, name1, code2, name2) {
-    return new SlashCommandBuilder()
-        .setName(`${code1}${code2}`)
-        .setDescription(`${name1} / ${name2}`)
-        .addStringOption(option => option.setName('freeform').setDescription('free form').setRequired(false));
-}
-
-export const data = createCurrencyConverterSlashCommand('aud', 'Aussie dollar', 'thb', 'Thai baht');
-export const execute = async interaction => currencyPair(interaction, "AUD", "THB");
-
-export const data2 = createCurrencyConverterSlashCommand('thb', 'Thai baht', 'aud', 'Aussie dollar');
-export const execute2 = async interaction => currencyPair(interaction, "THB", "AUD");
-
-export const data3 = createCurrencyConverterSlashCommand('aud', 'Aussie dollar', 'lak', 'Lao kip');
-export const execute3 = async interaction => currencyPair(interaction, "AUD", "LAK");
-
-export const data4 = createCurrencyConverterSlashCommand('lak', 'Lao kip', 'aud', 'Aussie dollar');
-export const execute4 = async interaction => currencyPair(interaction, "LAK", "AUD");
-
-export const data5 = new SlashCommandBuilder()
+export const data = new SlashCommandBuilder()
     .setName('curr')
     .setDescription('Currency conversion')
     .addStringOption(option => option.setName('freeform').setDescription('free form').setRequired(false));
 
-export const execute5 = curr;
+export const execute = curr;
 
 // Converts `amount` from `cur1` to `cur2`
 function calculateCur1ToCur2Result(apilayerData, cur1, cur2, amount) {
@@ -206,67 +187,96 @@ async function curr(interaction) {
 
         const apilayerData = await getApilayerData(needDeferEdit);
 
-        if (freeform !== null) {
-            const regex = /^(.*?)((?:[0-9]+)(?:\.[0-9][0-9])?)(.*?)$/;
-            const matches = freeform.match(regex);
-
-            // four groups: full match, optional currency symbol or code 1, amount, optional currency symbol or code 2
-            if (matches && matches.length === 4) {
-                const pre = matches[1].trim();  // Text before the number
-                const amt = matches[2].trim();  // The actual number
-                const suf = matches[3].trim();  // Text after the number
-
-                const toks = [];
-                if (pre) toks.push(new Token(pre));
-                if (amt) toks.push(new Token(amt, true));
-                if (suf) toks.push(new Token(suf));
-
-                console.log(`token array length ${toks.length}: ${toks.map(t => t.value)}`);
-
-                // Example usage of the Token and NumberToken class methods with tokenArray
-                if (toks.length === 1) {
-                    await replyOrEdit(interaction, needDeferEdit, "error: hmm amount without either symbol or code?.");
-                } else if (toks.length === 2) {
-                    const amount = toks[0].isNumber() ? toks[0].value : toks[1].value;
-                    const symOrCode = toks[0].isNumber() ? toks[1] : toks[0];
-                    if (symOrCode.isCurrSym()) {
-                        await replyOrEdit(interaction, needDeferEdit, currSymOnly(apilayerData, amount, symOrCode));
-                    } else {
-                        await replyOrEdit(interaction, needDeferEdit, currCodeOnly(apilayerData, amount, symOrCode));
-                    }
-                } else if (toks.length === 3) {
-                    if (toks[0].isCurrSym() && toks[2].isCurrSym()) {
-                        await replyOrEdit(interaction, needDeferEdit, "error: symbols on both sides.");
-                    } else if (toks[0].isMaybeCode() && toks[2].isMaybeCode()) {
-                        await replyOrEdit(interaction, needDeferEdit, "error. codes on both sides.");
-                    } else if ((toks[0].isCurrSym() && toks[2].isMaybeCode()) || (toks[0].isMaybeCode() && toks[2].isCurrSym())) {
-                        await replyOrEdit(interaction, needDeferEdit, currSymAndCode(apilayerData, toks));
-                    } else {
-                        console.log('[HIPP] curr: hit the \'else\'');
-                        const regex = /^(.+?)\s+(.+?)$/;
-                        const matches = toks[2].value.match(regex);
-                        if (matches && matches.length === 3) {
-                            const newToks = [...toks.slice(0, 2), new Token(matches[1]), new Token(matches[2])];
-                            console.log(`matches: ${JSON.stringify(newToks, null, 2)}`);
-                            await replyOrEdit(interaction, needDeferEdit, 'looks like more than 3 tokens actually. coming soon...');
-                        } else {
-                            await replyOrEdit(interaction, needDeferEdit, `Syntax error. Prefix:{${toks[0].isCurrSym()}} number:{${toks[1].value}} suffix:{${toks[2].isCurrSym()}}`);
-                        }
-                    }
-                } else {
-                    await replyOrEdit(interaction, needDeferEdit, `Invalid number of tokens: ${toks.length}. So far only 3 tokens are supported.`);
-                }
-            }
-            // any other number of groups we don't handle yet
-            else {
-                await replyOrEdit(interaction, needDeferEdit, 'Give me at least an amount and a currency. Amount can have two decimal places.');
-            }
-        } else {
+        if (freeform === null) {
             await replyOrEdit(interaction, needDeferEdit, 'Give me something to convert!');
+            return;
+        }
+
+        const parsley = [
+            [/^(.*?)((?:[0-9]+)(?:\.[0-9][0-9])?)(.*?)$/, 3, currAmountWithCodeAndOrSym],
+            [/^([A-Za-z]{3})\s?([A-Za-z]{3})$/, 2, currTwoCodes],
+            [/^([A-Za-z]{3})$/, 1, currOneCode]
+        ];
+    
+        let matched = false;
+        for (const [reg, num, fun] of parsley) {
+            const match = freeform.match(reg);
+            if (match && match.length === num + 1) {
+                await replyOrEdit(interaction, needDeferEdit, fun(apilayerData, match));
+                matched = true;
+                break;
+            }
+        }
+    
+        if (!matched) {
+            await replyOrEdit(interaction, needDeferEdit, 'Give me at least an amount and a currency. Amount can have two decimal places.');
         }
     } catch (error) {
         console.error(error);
         await replyOrEdit(interaction, needDeferEdit, 'You\'re probably holding it wrong. Try again.');
+    }
+}
+
+function currOneCode(apilayerData, matches) {
+    const cur1 = matches[1].toUpperCase();
+    const cur2 = cur1 === 'AUD' ? 'THB' : 'AUD';
+    const results = calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2,
+        globalCodeToInfo[cur1].defAmt, globalCodeToInfo[cur2].defAmt);
+    return results;
+}
+
+function currTwoCodes(apilayerData, matches) {
+    const cur1 = matches[1].toUpperCase();
+    const cur2 = matches[2].toUpperCase();
+    const results = calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2,
+        globalCodeToInfo[cur1].defAmt, globalCodeToInfo[cur2].defAmt);
+    return results;
+}
+
+function currAmountWithCodeAndOrSym(apilayerData, matches) {
+    console.log(`[HIPP] amountWithCodeAndOrSym: ${matches[1]}, ${matches[2]}, ${matches[3]}`);
+    const pre = matches[1].trim(); // Text before the number
+    const amt = matches[2].trim(); // The actual number
+    const suf = matches[3].trim(); // Text after the number
+
+    const toks = [];
+    if (pre) toks.push(new Token(pre));
+    if (amt) toks.push(new Token(amt, true));
+    if (suf) toks.push(new Token(suf));
+
+    console.log(`token array length ${toks.length}: ${toks.map(t => t.value)}`);
+
+    if (toks.length === 1) {
+        return "error: hmm amount without either symbol or code?.";
+    } else if (toks.length === 2) {
+        const amount = toks[0].isNumber() ? toks[0].value : toks[1].value;
+        const symOrCode = toks[0].isNumber() ? toks[1] : toks[0];
+        if (symOrCode.isCurrSym()) {
+            return currSymOnly(apilayerData, amount, symOrCode);
+        } else {
+            return currCodeOnly(apilayerData, amount, symOrCode);
+        }
+    } else if (toks.length === 3) {
+        if (toks[0].isCurrSym() && toks[2].isCurrSym()) {
+            return "error: symbols on both sides.";
+        } else if (toks[0].isMaybeCode() && toks[2].isMaybeCode()) {
+            return "error. codes on both sides.";
+        } else if ((toks[0].isCurrSym() && toks[2].isMaybeCode()) || (toks[0].isMaybeCode() && toks[2].isCurrSym())) {
+            return currSymAndCode(apilayerData, toks);
+        } else {
+            console.log('[HIPP] curr: hit the \'else\'');
+            const regex = /^(.+?)\s+(.+?)$/;
+            const matches = toks[2].value.match(regex);
+            if (matches && matches.length === 3) {
+                const newToks = [...toks.slice(0, 2), new Token(matches[1]), new Token(matches[2])];
+                console.log(`matches: ${JSON.stringify(newToks, null, 2)}`);
+                return 'looks like more than 3 tokens actually. coming soon...';
+            } else {
+                return `Syntax error. Prefix:{${toks[0].isCurrSym()}} number:{${toks[1].value}} suffix:{${toks[2].isCurrSym()}}`;
+            }
+        }
+    } else {
+        return `Invalid number of tokens: ${toks.length}. So far only 3 tokens are supported.`;
     }
 }
 
@@ -313,57 +323,4 @@ function currSymOnly(apilayerData, amount, symTok) {
     }
     reply.push(`(as of ${globalFormattedDate})`);
     return reply.join(' ');
-}
-
-// Called from the 'currency pair' slash commands: /audthb, /audlak, etc
-// Without the optional freeform parameter, convert the default amount from each currency to the other
-// With the optional parameter, it should be an amount to convert from the first currency to the second
-async function currencyPair(interaction, cur1, cur2) {
-    const needDeferEdit = needToRefreshApiLayerData();
-    if (needDeferEdit) await interaction.deferReply();
-    try {
-        const freeform = interaction.options.getString('freeform');
-
-        const apilayerData = await getApilayerData(needDeferEdit);
-
-        if (freeform === null) {
-            const results = calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2,
-                globalCodeToInfo[cur1].defAmt, globalCodeToInfo[cur2].defAmt);
-            await replyOrEdit(interaction, needDeferEdit, `${results} (as of ${globalFormattedDate})`);
-        } else {
-            const result = currencyPairWithFreeFormParam(apilayerData, cur1, cur2, freeform);
-            await replyOrEdit(interaction, needDeferEdit, result);
-        }
-    } catch (error) {
-        console.error(error);
-        await replyOrEdit(interaction, needDeferEdit, 'An error occurred while fetching data.');
-    }
-}
-
-function currencyPairWithFreeFormParam(apilayerData, cur1, cur2, freeform) {
-    const regex = /^(.*?)((?:[0-9]+)(?:\.[0-9][0-9])?)(.*?)$/;
-    const matches = freeform.match(regex);
-
-    if (matches && matches.length === 4) {
-        const pre = matches[1]; // Text before the number
-        const num = matches[2]; // The actual number
-        const suf = matches[3]; // Text after the number
-
-        if (pre === "" && suf === "") {
-            const result = calculateCur1ToCur2Result(apilayerData, cur1, cur2, parseFloat(num));
-            return `${result} (as of ${globalFormattedDate})`;
-        } else {
-            // TODO handle cases where pre and/or suf are not empty?
-            // TODO for instance, if pre is "฿" or "₭" or "$"
-            // Use Token.isMaybeCode
-            const p = new Token(pre);
-            const s = new Token(suf);
-            console.log(`[HIPP] currencyPairWithFreeFormParam: pre: ${p.value} ${p.isCurrSym()}, suf: ${s.value} ${s.isCurrSym()}`);
-            return 'hmm prefix and/or suffix present?';
-        }
-    } else {
-        // this should only happen if the regex is broken
-        console.log('[HIPP] currencyPairWithFreeFormParam: Regex did not match.');
-        return 'wut??';
-    }
 }
