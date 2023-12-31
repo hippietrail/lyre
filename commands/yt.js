@@ -4,13 +4,17 @@ import { ago } from '../ute/ago.js';
 
 config();
 
-const ytUrl = new URL('https://www.googleapis.com');
-ytUrl.pathname = '/youtube/v3/playlistItems';
-const sp = ytUrl.searchParams;
-sp.set('part', 'snippet');
-sp.set('maxResults', '5');
-sp.set('order', 'date');
-sp.set('key', process.env.YT_API_KEY);
+ function fetchYouTubeChannelVids(playlistId) {
+    const url = new URL('https://www.googleapis.com');
+    url.pathname = '/youtube/v3/playlistItems';
+    const sp = url.searchParams;
+    sp.set('part', 'snippet');
+    sp.set('maxResults', '3');
+    sp.set('order', 'date');
+    sp.set('key', process.env.YT_API_KEY);
+    sp.set('playlistId', playlistId);
+    return fetch(url.href);
+}
 
 export const data = new SlashCommandBuilder()
     .setName('youtube')
@@ -34,27 +38,22 @@ const chans = {
 async function yt(interaction) {
     await interaction.deferReply();
     try {
-        const promises = [];
-        sp.set('maxResults', '3');
-        for (const chan in chans) {
-            sp.set('playlistId', chans[chan]);
-            promises.push(fetch(ytUrl));
-        }
-        const responses = await Promise.all(promises);
-        const videos = [];
         const now = new Date();
-        for (const response of responses) {
-            const data = await response.json();
-            videos.push(...data.items);
-        }
-        videos.sort();
-        const mappo = videos.slice(0, 10).map(x => {
-            const elapsed_time = now - new Date(x.snippet.publishedAt);
-            return `${x.snippet.channelTitle}: ${x.snippet.title} - ${
-                ago(elapsed_time)
-            }`
-        });
-        await interaction.editReply(`${mappo.join('\n')}`);
+
+        const allVids = (await Promise.all(
+            Object.values(chans).map(
+                async plid => (await fetchYouTubeChannelVids(plid)).json()
+            )
+        )).map(chanVids => chanVids.items).flat();
+        
+        allVids.sort((a, b) => b.snippet.publishedAt.localeCompare(a.snippet.publishedAt));
+
+        const reply = `${
+            allVids.slice(0, 10).map(v => `${v.snippet.channelTitle}: ${v.snippet.title} - ${
+                ago(now - new Date(v.snippet.publishedAt))
+            }`).join('\n')
+        }`;
+        await interaction.editReply(reply);
     } catch (error) {
         console.error(error);
         await interaction.editReply('An error occurred while fetching data.');
