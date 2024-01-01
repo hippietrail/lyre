@@ -1,5 +1,6 @@
 export function ago(t) {
-    const m = 1000 * 60;
+    const s = 1000;
+    const m = s * 60;
     const h = m * 60;
     const d = h * 24;
     const w = d * 7;
@@ -14,6 +15,6 @@ export function ago(t) {
                     ? [Math.floor(t / h * 2) / 2, 'hour']
                     : t > m
                         ? [Math.floor(t / m * 2) / 2, 'minute']
-                        : [Math.floor(t * 2) / 2, 'second'];
+                        : [Math.floor(t / s * 2) / 2, 'second'];
     return `${n} ${u}${n !== 1 ? 's' : ''} ago`
 }
