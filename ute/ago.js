@@ -4,17 +4,44 @@ export function ago(t) {
     const h = m * 60;
     const d = h * 24;
     const w = d * 7;
-    const mo = d * 365 / 12;
-    const [n, u] = t > mo
-        ? [Math.floor(t / mo * 2) / 2, 'month']
-        : t > w
-            ? [Math.floor(t / w * 2) / 2, 'week']
-            : t > d
-                ? [Math.floor(t / d * 2) / 2, 'day']
-                : t > h
-                    ? [Math.floor(t / h * 2) / 2, 'hour']
-                    : t > m
-                        ? [Math.floor(t / m * 2) / 2, 'minute']
-                        : [Math.floor(t / s * 2) / 2, 'second'];
-    return `${n} ${u}${n !== 1 ? 's' : ''} ago`
+    const mo = d * 365.25 / 12;
+    const y = d * 365.25;
+    const de = y * 10;
+    const c = de * 20;
+    const x = [
+        [c, 'century'],
+        [de, 'decade'],
+        [y, 'year'],
+        [mo, 'month'],
+        [w, 'week'],
+        [d, 'day'],
+        [h, 'hour'],
+        [m, 'minute'],
+        [s, 'second'],
+    ];
+
+    let n;
+    var u;
+    let v;
+    let q;
+    for (let i = 0; i < x.length; i++) {
+        [v, u] = x[i];
+        if (t >= v) break;
+    }
+    [n, q] = div(t, v);
+    return `${
+        n !== 0 || q === 0 ? n : ''
+    }${
+        ['', '¼', '½', '¾'][q]
+    } ${u}${
+        n === 1 && q === 0 ? '' : 's'
+    } ago`;
+
+    function div(t, v) {
+        let d = t/v;
+        let i = Math.floor(d);
+        let r = d - i;
+        let q = Math.floor(r * 4);
+        return [i, q];
+    }
 }
