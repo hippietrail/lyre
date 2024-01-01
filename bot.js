@@ -37,6 +37,9 @@ async function handleInteraction(interaction) {
         case 'youtube':
             await yt.execute(interaction);
             break;
+        case 'retro':
+            await yt.execute2(interaction);
+            break;
 
         default:
             console.error(`Unknown command ${interaction.commandName}`);
