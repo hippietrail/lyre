@@ -17,7 +17,7 @@ export class Earl {
     setSearchParam(key, value) {
         this.url.searchParams.set(key, value);
     }
-    getUrlString() {
-        return this.url.toString();
+    async fetchJson() {
+        return (await fetch(this.url)).json();
     }
 }

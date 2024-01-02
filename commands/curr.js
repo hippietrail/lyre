@@ -114,7 +114,7 @@ async function getApilayerData(isDataStale) {
     if (isDataStale) {
         try {
             console.log('Fetching apilayer data...');
-            globalCachedApilayerData = await (await fetch(currEarl.getUrlString())).json();
+            globalCachedApilayerData = await currEarl.fetchJson();
             console.log('Got apilayer data.');
             //console.log(`Got apilayer data:\n  ${Object.keys(globalCachedApilayerData)}\n  ${Object.keys(globalCachedApilayerData.rates)}`);
             globalFormattedDate = (new Date(globalCachedApilayerData.timestamp * 1000)).toLocaleString();

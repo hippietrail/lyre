@@ -49,7 +49,7 @@ const wiktXEarl = new RestDefinitionsEarl();    // setTerm()
 
 export const data = new SlashCommandBuilder()
     .setName('wikt')
-    .setDescription('Random words from Wiktionary')
+    .setDescription('Random terms from Wiktionary')
     .addIntegerOption(option => option.setName('number').setDescription('number of random words').setRequired(false));
 
 export const execute = random;
@@ -63,7 +63,7 @@ export const execute2 = isaword;
 
 export const data3 = new SlashCommandBuilder()
     .setName('wiktx')
-    .setDescription('Something magic from Wiktionary');
+    .setDescription('Random term with with definition from Wiktionary');
 
 export const execute3 = wiktx;
 
@@ -75,10 +75,8 @@ async function random(interaction) {
         console.log(`wikt number: '${number}'`);
         if (number > 0) {
             wiktRandomlEarl.setLimit(number);
-
-            const rando = (await (await fetch(wiktRandomlEarl.getUrlString())).json()).query.random;
-            const mappo = rando.map(r => r.title);
-            await interaction.editReply(`${mappo.join(', ')}`);
+            const rando = (await wiktRandomlEarl.fetchJson()).query.random;
+            await interaction.editReply(`${rando.map(r => r.title).join(', ')}`);
         } else {
             await interaction.editReply('technically, that would not be very random');
         }
@@ -146,8 +144,7 @@ async function isaword(interaction) {
         }
 
         wiktIsAWordEarl.setTitles(uniqVariants);
-
-        const data = await (await fetch(wiktIsAWordEarl.getUrlString())).json();
+        const data = await wiktIsAWordEarl.fetchJson();
 
         const present = [];
         const absent = [];
@@ -191,14 +188,10 @@ async function wiktx(interaction) {
     await interaction.deferReply();
     try {
         wiktRandomlEarl.setLimit(1);
-
-        const rando = (await (await fetch(wiktRandomlEarl.getUrlString())).json()).query.random;
-        const title = rando[0].title;
+        const title = (await wiktRandomlEarl.fetchJson()).query.random[0].title;
 
         wiktXEarl.setTerm(title);
-
-        const daddo = await (await fetch(wiktXEarl.getUrlString())).json();
-        //console.log(daddo);
+        const daddo = await wiktXEarl.fetchJson();
 
         // if it has exactly these keys then it's an error: type, title, method, detail, uri
         if (daddo['type'] && daddo['title'] && daddo['method'] && daddo['detail'] && daddo['uri']) {

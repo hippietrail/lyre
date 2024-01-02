@@ -7,20 +7,24 @@ config();
 
 // fetch the "playlist" which is actually all the channel's videos
 class YoutubeVidsEarl extends Earl {
-    constructor(playlistId) {
+    constructor() {
         super('https://www.googleapis.com', '/youtube/v3/playlistItems', {
             part: 'snippet',
             maxResults: '3',
             order: 'date',
             key: process.env.YT_API_KEY,
-            playlistId: playlistId,
         });
+    }
+    setPlaylistId(playlistId) {
+        this.url.searchParams.set('playlistId', playlistId);
     }
 }
 
-function fetchYouTubeChannelVids(playlistId) {
-    const ytve = new YoutubeVidsEarl(playlistId);
-    return fetch(ytve.getUrlString());
+const ytEarl = new YoutubeVidsEarl();
+
+function fetchVideos(playlistId) {
+    ytEarl.setPlaylistId(playlistId);
+    return ytEarl.fetchJson();
 }
 
 export const data = new SlashCommandBuilder()
@@ -88,11 +92,9 @@ async function yt(interaction, chans) {
     try {
         const now = new Date();
 
-        const allVids = (await Promise.all(
-            Object.values(chans).map(
-                async plid => (await fetchYouTubeChannelVids(plid)).json()
-            )
-        )).map(chanVids => chanVids.items).flat();
+        const allVids = (await Promise.all(Object.values(chans).map(
+            async plid => await fetchVideos(plid)
+        ))).map(chanVids => chanVids.items).flat();
         
         allVids.sort((a, b) => b.snippet.publishedAt.localeCompare(a.snippet.publishedAt));
 

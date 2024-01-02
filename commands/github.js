@@ -40,7 +40,7 @@ export const execute = async interaction => {
 
         const promises = usernames.map(async user => {
             githubEarl.setUserName(user);
-            const events = (await (await fetch(githubEarl.getUrlString())).json()).slice(0, 3);
+            const events = (await githubEarl.fetchJson()).slice(0, 3);
 
             return events.map(e => ({
                 user: e.actor.login,
