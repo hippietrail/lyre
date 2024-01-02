@@ -1,11 +1,12 @@
 import { SlashCommandBuilder } from 'discord.js';
+import { Earl } from '../ute/earl.js';
 import { config } from 'dotenv';
 
 config();
 
-const currUrl = new URL('https://api.apilayer.com');
-currUrl.pathname = '/fixer/latest';
-currUrl.searchParams.set('apikey', process.env.APILAYER_TOKEN);
+const currEarl = new Earl('https://api.apilayer.com', '/fixer/latest', {
+    apikey: process.env.APILAYER_TOKEN,
+});
 
 let globalCachedApilayerData = null;
 let globalFormattedDate = '';
@@ -19,6 +20,7 @@ const globalCodeToInfo = {
     'EUR': { sym: '€', defAmt: 1, name: 'Euro' },
     'GBP': { sym: '£', defAmt: 1, name: 'UK Pound' },
     'GEL': { sym: '₾', defAmt: 1, name: 'Georgian lari' },
+    'IDR': { sym: 'Rp', defAmt: 10_000, name: 'Indonesian rupiah' },
     'JPY': { sym: '¥', defAmt: 100, name: 'Japanese yen' },         // TODO narrow/wide symbol variants? ¥￥円
     'KHR': { sym: '៛', defAmt: 10_000, name: 'Cambodian riel' },
     'KRW': { sym: '₩', defAmt: 1000, name: 'South Korean won' },    // TODO narrow/wide symbol and variants? ₩￦
@@ -112,7 +114,7 @@ async function getApilayerData(isDataStale) {
     if (isDataStale) {
         try {
             console.log('Fetching apilayer data...');
-            globalCachedApilayerData = await (await fetch(currUrl)).json();
+            globalCachedApilayerData = await (await fetch(currEarl.getUrlString())).json();
             console.log('Got apilayer data.');
             //console.log(`Got apilayer data:\n  ${Object.keys(globalCachedApilayerData)}\n  ${Object.keys(globalCachedApilayerData.rates)}`);
             globalFormattedDate = (new Date(globalCachedApilayerData.timestamp * 1000)).toLocaleString();
