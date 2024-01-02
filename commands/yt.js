@@ -1,20 +1,26 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { config } from 'dotenv';
+import { Earl } from '../ute/earl.js';
 import { ago } from '../ute/ago.js';
+import { config } from 'dotenv';
 
 config();
 
 // fetch the "playlist" which is actually all the channel's videos
+class YoutubeVidsEarl extends Earl {
+    constructor(playlistId) {
+        super('https://www.googleapis.com', '/youtube/v3/playlistItems', {
+            part: 'snippet',
+            maxResults: '3',
+            order: 'date',
+            key: process.env.YT_API_KEY,
+            playlistId: playlistId,
+        });
+    }
+}
+
 function fetchYouTubeChannelVids(playlistId) {
-    const url = new URL('https://www.googleapis.com');
-    url.pathname = '/youtube/v3/playlistItems';
-    const sp = url.searchParams;
-    sp.set('part', 'snippet');
-    sp.set('maxResults', '3');
-    sp.set('order', 'date');
-    sp.set('key', process.env.YT_API_KEY);
-    sp.set('playlistId', playlistId);
-    return fetch(url.href);
+    const ytve = new YoutubeVidsEarl(playlistId);
+    return fetch(ytve.getUrlString());
 }
 
 export const data = new SlashCommandBuilder()
