@@ -38,10 +38,8 @@ export function ago(t) {
     } ago`;
 
     function div(t, v) {
-        let d = t/v;
-        let i = Math.floor(d);
-        let r = d - i;
-        let q = Math.floor(r * 4);
-        return [i, q];
+        const d = t/v;
+        const i = Math.floor(d);
+        return [i, Math.floor((d - i) * 4)];
     }
 }
