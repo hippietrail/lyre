@@ -1,5 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { Earl } from '../ute/earl';
+import { Earl } from '../ute/earl.js';
 import { htmlToText } from 'html-to-text';
 
 class ActionQueryEarl extends Earl {
