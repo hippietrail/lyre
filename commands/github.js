@@ -1,12 +1,20 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { config } from 'dotenv';
+import { Earl } from '../ute/earl.js';
 import { ago } from '../ute/ago.js';
+import { config } from 'dotenv';
 
 config();
 
-const githubUrl = new URL('https://api.github.com');
-const sp = githubUrl.searchParams;
-sp.set('per_page', '3');
+class GithubEarl extends Earl {
+    constructor() {
+        super('https://api.github.com', '/users/USER/events/public');
+    }
+    setUserName(username) {
+        this.setPathname(`/users/${username}/events/public`)
+    }
+}
+
+const githubEarl = new GithubEarl();
 
 export const data = new SlashCommandBuilder()
     .setName('github')
@@ -31,8 +39,9 @@ export const execute = async interaction => {
         const now = new Date();
 
         const promises = usernames.map(async user => {
-            githubUrl.pathname = `/users/${user}/events/public`;
-            const events = (await (await fetch(githubUrl)).json()).slice(0, 3);
+            githubEarl.setUserName(user);
+            const events = (await (await fetch(githubEarl.getUrlString())).json()).slice(0, 3);
+
             return events.map(e => ({
                 user: e.actor.login,
                 type: e.type.split(/(?=[A-Z])/).slice(0, -1).join(' ').toLowerCase(),

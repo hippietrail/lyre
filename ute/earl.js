@@ -8,6 +8,9 @@ export class Earl {
             for (const [key, value] of Object.entries(optionalSearchParams))
                 this.url.searchParams.set(key, value);
     }
+    setPathname(pathname) {
+        this.url.pathname = pathname;
+    }
     setLastPathSegment(segment) {
         this.url.pathname = this.basicPathname + segment;
     }
