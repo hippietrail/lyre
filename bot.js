@@ -25,7 +25,7 @@ async function handleInteraction(interaction) {
         case 'isaword':
             await wikt.execute2(interaction);
             break;
-        case 'wiktx':
+        case 'define':
             await wikt.execute3(interaction);
             break;
 

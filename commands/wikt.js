@@ -43,9 +43,9 @@ class RestDefinitionsEarl extends Earl {
 }
 
 // we modify the global URLs each time rather than constructing new ones
-const wiktRandomlEarl = new ListRandomEarl();   // setLimit()
-const wiktIsAWordEarl = new IsAWordEarl();      // setTitles()
-const wiktXEarl = new RestDefinitionsEarl();    // setTerm()
+const wiktRandomlEarl = new ListRandomEarl();       // setLimit()
+const wiktIsAWordEarl = new IsAWordEarl();          // setTitles()
+const wiktDefineEarl = new RestDefinitionsEarl();   // setTerm()
 
 export const data = new SlashCommandBuilder()
     .setName('wikt')
@@ -62,13 +62,13 @@ export const data2 = new SlashCommandBuilder()
 export const execute2 = isaword;
 
 export const data3 = new SlashCommandBuilder()
-    .setName('wiktx')
-    .setDescription('Random term with with definition from Wiktionary');
+    .setName('define')
+    .setDescription('Get definition of a term from Wiktionary')
+    .addStringOption(option => option.setName('term').setDescription('term to look up').setRequired(false));
 
-export const execute3 = wiktx;
+export const execute3 = define;
 
 async function random(interaction) {
-    console.log("random")
     await interaction.deferReply();
     try {
         const number = interaction.options.getInteger('number') ?? 1;
@@ -184,21 +184,29 @@ async function isaword(interaction) {
 }
 
 // return the defintion of a word from Wiktionary using the new API I only just found out about
-async function wiktx(interaction) {
+async function define(interaction) {
     await interaction.deferReply();
     try {
+        // get term to look up either from interation option getstring or a random one via wiktRandomEarl if not provided...
         wiktRandomlEarl.setLimit(1);
-        const title = (await wiktRandomlEarl.fetchJson()).query.random[0].title;
+        const term = interaction.options.getString('term') || (await wiktRandomlEarl.fetchJson()).query.random[0].title;
 
-        wiktXEarl.setTerm(title);
-        const daddo = await wiktXEarl.fetchJson();
+        wiktDefineEarl.setTerm(term);
+        const daddo = await wiktDefineEarl.fetchJson();
 
         // if it has exactly these keys then it's an error: type, title, method, detail, uri
         if (daddo['type'] && daddo['title'] && daddo['method'] && daddo['detail'] && daddo['uri']) {
             console.log(`Error: ${JSON.stringify(daddo, null, 2)}`);
-            await interaction.editReply(`Error: ${daddo.title}: ${daddo.detail}`);
+            await interaction.editReply(`Error: ${daddo.title} ${daddo.detail}`);
         } else {
             const en = daddo['en'];
+            const icon = `${
+                interaction.options.getString('term')
+                    ? '' : en ? '🎯 '
+                    : `${['🎲', '🎰', '🌀',
+                          '🔀', '🤞', '🍀',
+                          '🌟', '🔮', '🃏'][Math.floor(Math.random() * 9)]} `
+            }`;
             if (en) {
                 console.log(`English definition: ${JSON.stringify(en, null, 2)}`);
                 const text = htmlToText(
@@ -207,11 +215,11 @@ async function wiktx(interaction) {
                         wordwrap: false,
                     }
                 );
-                const reply = `${title}:\n${text}`
+                const reply = `${icon}'${term}': ${text}`
                 console.log(reply);
                 await interaction.editReply(reply);
             } else {
-                const reply = `'${title}' has no English, just ${Object.keys(daddo).map(x => daddo[x][0].language).join(', ')}.`;
+                const reply = `${icon}'${term}' has no English, just ${Object.keys(daddo).map(x => daddo[x][0].language).join(', ')}.`;
                 console.log(reply);
                 await interaction.editReply(reply);
             }
