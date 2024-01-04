@@ -49,12 +49,19 @@ const rest = new REST().setToken(process.env.TOKEN);
   try {
     console.log(`Started refreshing ${commands.length} application (/) commands.`);
 
-    // The put method is used to fully refresh all commands in the guild with the current set
-    const data = await rest.put(Routes.applicationGuildCommands(process.env.CLIENTID, process.env.SERVERID), {
-      body: commands,
+    // The put method is used to fully refresh all commands with the current set
+
+    // In Discord terminology, "guild" and "server" are basically synonyms
+    // So "SERVERID" from the .env file is "guildId" in the API
+    const guildData = await rest.put(Routes.applicationGuildCommands(process.env.CLIENTID, process.env.SERVERID), {
+      // empty because we want to remove our old guild commands now that we've switched to global commands that work in DMs
     });
 
-    console.log(`Successfully reloaded ${data.length} application (/) commands.`);
+    const data = await rest.put(Routes.applicationCommands(process.env.CLIENTID), {
+        body: commands,
+    });
+
+    console.log(`Successfully reloaded ${guildData.length} guild application (/) commands, and ${data.length} global application (/) commands.`);
   } catch (error) {
     // And of course, make sure you catch and log any errors!
     console.error(error);
