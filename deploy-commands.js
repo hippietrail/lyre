@@ -21,22 +21,18 @@ for (const file of commandFiles) {
 
     if ('data2' in command && 'execute2' in command) {
       ++i; c.push(command.data2.name);
-      //console.log(`[NOTE] The command ${file} has the optional second "data2" and "execute2" properties.`);
       commands.push(command.data2.toJSON());
 
       if ('data3' in command && 'execute3' in command) {
         ++i; c.push(command.data3.name);
-        //console.log(`[NOTE] The command ${file} has the optional third "data3" and "execute3" properties.`);
         commands.push(command.data3.toJSON());
 
         if ('data4' in command && 'execute4' in command) {
           ++i; c.push(command.data4.name);
-          //console.log(`[NOTE] The command ${file} has the optional fourth "data4" and "execute4" properties.`);
           commands.push(command.data4.toJSON());
 
           if ('data5' in command && 'execute5' in command) {
             ++i; c.push(command.data5.name);
-            //console.log(`[NOTE] The command ${file} has the optional fifth "data5" and "execute5" properties.`);
             commands.push(command.data5.toJSON());
           }
         }
