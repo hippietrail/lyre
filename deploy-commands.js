@@ -9,7 +9,7 @@ import fs from 'node:fs';
 config(); // Using dotenv config function directly
 
 const commands = [];
-const commandFiles = fs.readdirSync('./commands').filter((file) => file.endsWith('.js'))//.filter((file) => file === 'tsoding.js');
+const commandFiles = fs.readdirSync('./commands').filter((file) => file.endsWith('.js'));
 
 // Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
 for (const file of commandFiles) {
