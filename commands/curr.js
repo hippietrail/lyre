@@ -16,18 +16,24 @@ let globalFormattedDate = '';
 const globalCodeToInfo = {
     'AUD': { sym: '$', defAmt: 1, name: 'Aussie dollar' },          // TODO narrow/wide symbol and variants? 💲$﹩＄
     'BTC': { sym: '₿', defAmt: 1, name: 'Bitcoin' },
+    'CAD': { sym: '$', defAmt: 1, name: 'Canadian dollar' },        // TODO narrow/wide symbol and variants? 💲$﹩＄
     'CNY': { sym: '¥', defAmt: 100, name: 'Chinese yuan' },         // TODO narrow/wide symbol and variants? ¥￥元
     'EUR': { sym: '€', defAmt: 1, name: 'Euro' },
     'GBP': { sym: '£', defAmt: 1, name: 'UK Pound' },
     'GEL': { sym: '₾', defAmt: 1, name: 'Georgian lari' },
+    'GTQ': { sym: 'Q', defAmt: 100, name: 'Guatemalan quetzal' },
     'IDR': { sym: 'Rp', defAmt: 10_000, name: 'Indonesian rupiah' },
+    'INR': { sym: '₹', defAmt: 10_000, name: 'Indian rupee' },
     'JPY': { sym: '¥', defAmt: 100, name: 'Japanese yen' },         // TODO narrow/wide symbol variants? ¥￥円
     'KHR': { sym: '៛', defAmt: 10_000, name: 'Cambodian riel' },
     'KRW': { sym: '₩', defAmt: 1000, name: 'South Korean won' },    // TODO narrow/wide symbol and variants? ₩￦
     'LAK': { sym: '₭', defAmt: 100_000, name: 'Lao kip' },
     'MYR': { sym: 'RM', defAmt: 100, name: 'Malaysian ringgit' },
+    'MXN': { sym: '$', defAmt: 1, name: 'Mexican peso' },           // TODO narrow/wide symbol and variants? 💲$﹩＄
+    'NZD': { sym: '$', defAmt: 1, name: 'New Zealand dollar' },     // TODO narrow/wide symbol and variants? 💲$﹩＄
     'SGD': { sym: '$', defAmt: 1, name: 'Singapore dollar' },       // TODO narrow/wide symbol and variants? 💲$﹩＄
     'THB': { sym: '฿', defAmt: 100, name: 'Thai baht' },
+    'TRY': { sym: '₺', defAmt: 100, name: 'Turkish lira' },
     'TWD': { sym: '$', defAmt: 1, name: 'Taiwan dollar' },          // TODO narrow/wide symbol and variants? 💲$﹩＄
     'USD': { sym: '$', defAmt: 1, name: 'US Dollar' },              // TODO narrow/wide symbol and variants? 💲$﹩＄
     'VND': { sym: '₫', defAmt: 10_000, name: 'Vietnamese dong' },
@@ -36,22 +42,29 @@ const globalCodeToInfo = {
 // a map of currency symbols to ISO currency codes
 const globalSymToInfo = {
     // non-alphabetic
-    '$': { iso: 'AUD', isAmbiguous: true }, // symbol also used by: USD
-    '฿': { iso: 'THB', isAmbiguous: false },
+    '$': { iso: 'AUD', isAmbiguous: true }, // symbol also used by: USD, CAD, MXN, NZD, SGD, TWD
+    '₿': { iso: 'BTC', isAmbiguous: false},
     '€': { iso: 'EUR', isAmbiguous: false},
     '£': { iso: 'GBP', isAmbiguous: false },
     '₾': { iso: 'GEL', isAmbiguous: false },
-    '₭': { iso: 'LAK', isAmbiguous: false },
-    '₩': { iso: 'KRW', isAmbiguous: false },
+    '₹': { iso: 'INR', isAmbiguous: false },
     '¥': { iso: 'JPY', isAmbiguous: true }, // symbol also used by : CNY
     '៛': { iso: 'KHR', isAmbiguous: false },
+    '₩': { iso: 'KRW', isAmbiguous: false },
+    '₭': { iso: 'LAK', isAmbiguous: false },
+    '฿': { iso: 'THB', isAmbiguous: false },
+    '₺': { iso: 'TRY', isAmbiguous: false },
     '₫': { iso: 'VND', isAmbiguous: false },
-    '₿': { iso: 'BTC', isAmbiguous: false},
     // alphabetic
+    'Q': { iso: 'GTQ', isAmbiguous: false },
     'RM': { iso: 'MYR', isAmbiguous: false },
     'RMB': { iso: 'CNY', isAmbiguous: false },
     'UKP': { iso: 'GBP', isAmbiguous: false },
 }
+
+// could be configurable via .env but per-user would be better...
+const get1stCurrency = () => 'AUD';
+const get2ndCurrency = cur1 => cur1 === 'AUD' ? 'THB' : 'AUD';
 
 class Token {
     constructor(value, isNumber = false) {
@@ -76,6 +89,27 @@ class Token {
     isAmbigSym() {
         const e = globalSymToInfo[this.value];
         return e && typeof e === 'object' ? e.isAmbiguous : false;
+    }
+
+    // checks if this token is a preposition used in conversion expressions
+    // ex: dollars as euro, dollars in yen, dollars into pounds, dollars to baht
+    isPreposition() {
+        return ['as', 'in', 'into', 'to'].includes(this.value.toLowerCase());
+    }
+
+    // cycle through isXYZ methods to get token type
+    getType() {
+        if (this.isMaybeCode()) {
+            return 'code';
+        } else if (this.isCurrSym()) {
+            return 'sym';
+        } else if (this.isNumber()) {
+            return 'num';
+        } else if (this.isPreposition()) {
+            return 'prep';
+        } else {
+            return '???';
+        }
     }
 }
 
@@ -106,15 +140,16 @@ function getDefaultCodeForSym(sym) {
 ////////////////////////////////////////////////////////////////////////////////
 
 /**
- * Retrieves data from the apilayer API if the cached data is outdated or does not exist.
+ * Retrieves the APILayer data.
  *
- * @return {Object} The data retrieved from the apilayer API.
+ * @param {boolean} isDataStale - Returned from a prior call to needToRefreshApiLayerData().
+ * @return {Object} The apilayer data.
  */
 async function getApilayerData(isDataStale) {
     if (isDataStale) {
         try {
             console.log('Fetching apilayer data...');
-            globalCachedApilayerData = await currEarl.fetchJson();
+            globalCachedApilayerData = await currEarl.fetchJsonWithError();
             console.log('Got apilayer data.');
             //console.log(`Got apilayer data:\n  ${Object.keys(globalCachedApilayerData)}\n  ${Object.keys(globalCachedApilayerData.rates)}`);
             globalFormattedDate = (new Date(globalCachedApilayerData.timestamp * 1000)).toLocaleString();
@@ -126,6 +161,11 @@ async function getApilayerData(isDataStale) {
     return globalCachedApilayerData;
 }
 
+/**
+ * Checks if the APILayer data needs to be refreshed.
+ *
+ * @return {boolean} True if the APILayer data needs to be refreshed, false otherwise.
+ */
 function needToRefreshApiLayerData() {
     let needsRefresh = false;
     if (globalCachedApilayerData === undefined || globalCachedApilayerData === null) {
@@ -171,14 +211,21 @@ function calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2, amount1, am
     }`;
 }
 
+/**
+ * Asynchronously replies to or edits an interaction based on the provided parameters.
+ *
+ * @param {Object} interaction - The interaction object representing the user's interaction.
+ * @param {boolean} isEdit - A boolean flag indicating whether the interaction should be edited or replied to.
+ * @param {string} reply - The reply message to be sent or edited.
+ * @return {Promise<void>} - A promise that resolves when the reply or edit operation is complete.
+ */
 async function replyOrEdit(interaction, isEdit, reply) {
     console.log(`[HIPP] replyOrEdit: ${isEdit ? 'edit' : 'reply'}: ${reply}`);
     await (isEdit ? interaction.editReply(reply) : interaction.reply(reply));
 }
 
 // Currency converter
-// This will be the main/only command
-// Will do different things depending on its parameters
+// This does different things depending on its parameters
 async function curr(interaction) {
     const needDeferEdit = needToRefreshApiLayerData();
     console.log(`[HIPP] curr: ${needDeferEdit ? 'edit' : 'reply'}`);
@@ -221,7 +268,7 @@ async function curr(interaction) {
 
 function currOneCode(apilayerData, matches) {
     const cur1 = matches[1].toUpperCase();
-    const cur2 = cur1 === 'AUD' ? 'THB' : 'AUD';
+    const cur2 = get2ndCurrency(cur1);
     const results = calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2,
         globalCodeToInfo[cur1].defAmt, globalCodeToInfo[cur2].defAmt);
     return results;
@@ -266,13 +313,13 @@ function currAmountWithCodeAndOrSym(apilayerData, matches) {
         } else if ((toks[0].isCurrSym() && toks[2].isMaybeCode()) || (toks[0].isMaybeCode() && toks[2].isCurrSym())) {
             return currSymAndCode(apilayerData, toks);
         } else {
-            console.log('[HIPP] curr: hit the \'else\'');
-            const regex = /^(.+?)\s+(.+?)$/;
-            const matches = toks[2].value.match(regex);
-            if (matches && matches.length === 3) {
-                const newToks = [...toks.slice(0, 2), new Token(matches[1]), new Token(matches[2])];
-                console.log(`matches: ${JSON.stringify(newToks, null, 2)}`);
-                return 'looks like more than 3 tokens actually. coming soon...';
+            console.log('[HIPP] splitting the suffix into multiple tokens...');
+            const matches = toks[2].value.split(/\s+/);
+            if (matches) {//} && matches.length >= 3) {
+                console.log(`[HIPP] ${matches.length} matches: ${matches.join(', ')}`);
+                const oldToks = [...toks.slice(0, 2)];
+                const newToks = matches.map(m => new Token(m));
+                return currThreeOrMoreTokens(apilayerData, oldToks.concat(newToks));
             } else {
                 return `Syntax error. Prefix:{${toks[0].isCurrSym()}} number:{${toks[1].value}} suffix:{${toks[2].isCurrSym()}}`;
             }
@@ -282,12 +329,49 @@ function currAmountWithCodeAndOrSym(apilayerData, matches) {
     }
 }
 
+function currThreeOrMoreTokens(apilayerData, toks) {
+    console.log(`[3TOKS] ${toks.map(t => `${t.value} [${t.getType()}]`).join(', ')}`);
+    const types = toks.map(t => t.getType());
+    // look for any combination of A followed by B where
+    // A is an amount (number) with either a currency symbol or code on either or both sides
+    // B is a preposition followed by a currency code
+    
+    const possibleStartSeqs = [
+        ['code', 'num'],
+        ['code', 'num', 'sym'],
+        ['num'],
+        ['num', 'code'],
+        ['num', 'sym'],
+        ['sym', 'num'],
+        ['sym', 'num', 'code'],
+    ];
+
+    const possibleEndSeqs = [
+        ['prep', 'code'],
+        ['prep', 'code', 'sym'],
+        ['prep', 'sym'],
+        ['prep', 'sym', 'code'],
+    ];
+
+    // check if the token array starts with one of the possible start sequences
+    // and ends with one of the possible end sequences
+    // with nothing in between
+    const startsWith = possibleStartSeqs.find(seq => types.slice(0, seq.length).every((t, i) => t === seq[i]));
+    const endsWith = possibleEndSeqs.find(seq => types.slice(-seq.length).every((t, i) => t === seq[i]));
+    if (!startsWith || !endsWith) {
+        return `Syntax error. Prefix:{${toks[0].isCurrSym()}} number:{${toks[1].value}} suffix:{${toks[2].isCurrSym()}}`;
+    }
+    console.log(`startsWith: ${startsWith}, endsWith: ${endsWith}`);
+
+    return 'looks like more than 3 tokens actually. coming soon...';
+}
+
 function currSymAndCode(apilayerData, toks) {
     const sym = toks[0].isCurrSym() ? toks[0].value : toks[2].value;
     const code = (toks[0].isCurrSym() ? toks[2].value : toks[0].value).toUpperCase();
     const symForCode = globalCodeToInfo[code].sym;
     if (sym === symForCode) {
-        const code2 = code === 'AUD' ? 'THB' : 'AUD';
+        const code2 = get2ndCurrency(code);
         const result = calculateCur1ToCur2Result(apilayerData, code, code2, toks[1].value);
         return `${result} (as of ${globalFormattedDate})`;
     } else {
@@ -307,7 +391,7 @@ function currCodeOnly(apilayerData, amount, codeTok) {
     if (!(code in apilayerData.rates)) {
         return `${code} isn't a known currency code.`;
     }
-    const code2 = code === 'AUD' ? 'THB' : 'AUD';
+    const code2 = get2ndCurrency(code);
     const result = calculateCur1ToCur2Result(apilayerData, code, code2, amount);
     return `${result} (as of ${globalFormattedDate})`;
 }
@@ -317,7 +401,7 @@ function currCodeOnly(apilayerData, amount, codeTok) {
 function currSymOnly(apilayerData, amount, symTok) {
     const sym = symTok.value.toUpperCase();
     const code = getCodeInfoForSym(sym).iso;
-    const code2 = code === 'AUD' ? 'THB' : 'AUD';
+    const code2 = get2ndCurrency(code);
     const result = calculateCur1ToCur2Result(apilayerData, code, code2, amount);
     const reply = [result];
     if (globalSymToInfo[sym].isAmbiguous) {
