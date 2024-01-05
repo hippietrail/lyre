@@ -9,33 +9,41 @@ import fs from 'node:fs';
 config(); // Using dotenv config function directly
 
 const commands = [];
-const commandFiles = fs.readdirSync('./commands').filter((file) => file.endsWith('.js'));
+const commandFiles = fs.readdirSync('./commands').filter((file) => file.endsWith('.js'))//.filter((file) => file === 'tsoding.js');
 
 // Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
 for (const file of commandFiles) {
+  let i = 0; const c = [];
   const command = await import(`./commands/${file}`); // Using dynamic import
   if ('data' in command && 'execute' in command) {
+    ++i; c.push(command.data.name);
     commands.push(command.data.toJSON());
 
     if ('data2' in command && 'execute2' in command) {
-      console.log(`[NOTE] The command ${file} has the optional second "data2" and "execute2" properties.`);
+      ++i; c.push(command.data2.name);
+      //console.log(`[NOTE] The command ${file} has the optional second "data2" and "execute2" properties.`);
       commands.push(command.data2.toJSON());
 
       if ('data3' in command && 'execute3' in command) {
-        console.log(`[NOTE] The command ${file} has the optional third "data3" and "execute3" properties.`);
+        ++i; c.push(command.data3.name);
+        //console.log(`[NOTE] The command ${file} has the optional third "data3" and "execute3" properties.`);
         commands.push(command.data3.toJSON());
 
         if ('data4' in command && 'execute4' in command) {
-          console.log(`[NOTE] The command ${file} has the optional fourth "data4" and "execute4" properties.`);
+          ++i; c.push(command.data4.name);
+          //console.log(`[NOTE] The command ${file} has the optional fourth "data4" and "execute4" properties.`);
           commands.push(command.data4.toJSON());
 
           if ('data5' in command && 'execute5' in command) {
-            console.log(`[NOTE] The command ${file} has the optional fifth "data5" and "execute5" properties.`);
+            ++i; c.push(command.data5.name);
+            //console.log(`[NOTE] The command ${file} has the optional fifth "data5" and "execute5" properties.`);
             commands.push(command.data5.toJSON());
           }
         }
       }
     }
+    // note how many commands in this file
+    console.log(`[INFO] Loaded ${i} commands from ${file}: ${c.join(', ')}`);
   } else {
     console.log(`[WARNING] The command ${file} is missing a required "data" or "execute" property.`);
   }
