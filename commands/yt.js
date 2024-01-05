@@ -57,6 +57,7 @@ const codingChans = {
     'suckerpinch':                  'UU3azLjQuz9s5qk76KEXaTvA',
     'The Art of Code':              'UUcAlTqd9zID6aNX3TzwxJXg',
     'The Coding Train':             'UUvjgXvBlbQiydffZU7m1_aw',
+    'Tom Marks Talks Code':         'UUknRd0bSUDYJ-_oA2r2S6IA',
     'Tsoding Daily':                'UUrqM0Ym_NbK1fqeQG2VIohg',
 };
 
