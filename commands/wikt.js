@@ -159,7 +159,20 @@ async function isaword(interaction) {
 
         let reply;
         if (present.length === 0) {
-            reply = `No sign of '${word}' in there mate!`;
+            const wleEarl = new Earl('https://en.wiktionary.org', '/w/api.php', {
+                action: 'query',
+                format: 'json',
+                list: 'backlinks',
+                bltitle: word,
+            });
+            const wleData = await wleEarl.fetchJson();
+            console.log(`wleData: ${JSON.stringify(wleData)}`);
+            if (wleData.query.backlinks.length === 1)
+                reply = `'${word}' isn't in Wiktionary but it is linked to from '${wleData.query.backlinks[0].title}'.`;
+            else if (wleData.query.backlinks.length > 1)
+                reply = `'${word}' isn't in Wiktionary but it is linked to from ${wleData.query.backlinks.length} other pages.`;
+            else
+                reply = `No sign of '${word}' in there mate!`;
         } else if (!gotExact && present.length === 1) {
             reply = `'${word}' isn't in Wiktionary but '${present[0]}' is.`;
         } else if (!gotExact && present.length > 1) {
@@ -197,7 +210,7 @@ async function define(interaction) {
         // if it has exactly these keys then it's an error: type, title, method, detail, uri
         if (daddo['type'] && daddo['title'] && daddo['method'] && daddo['detail'] && daddo['uri']) {
             console.log(`Error: ${JSON.stringify(daddo, null, 2)}`);
-            await interaction.editReply(`Error: ${daddo.title} ${daddo.detail}`);
+            await interaction.editReply(`${daddo.title} ${daddo.detail}`);
         } else {
             const en = daddo['en'];
             const icon = `${
@@ -209,13 +222,29 @@ async function define(interaction) {
             }`;
             if (en) {
                 console.log(`English definition: ${JSON.stringify(en, null, 2)}`);
+                
+                const pos = {
+                    "Adjective": "adj",
+                    "Adverb": "adv",
+                    "Conjunction": "conj",
+                    "Interjection": "int",
+                    "Noun": "n",
+                    "Preposition": "prep",
+                    "Pronoun": "pron",
+                    "Verb": "v",
+                }[en[0].partOfSpeech];
+                if (!pos) {
+                    console.log(`[WIKT]: partOfSpeech: ${en[0].partOfSpeech}`);
+                }
                 const text = htmlToText(
                     en[0].definitions[0].definition, {
                         selectors: [ { selector: 'a', options: { ignoreHref: true } } ],
                         wordwrap: false,
                     }
                 );
-                const reply = `${icon}'${term}': ${text}`
+                const reply = `${icon}'${term}': ${
+                    pos ? `*${pos}.* ` : ''
+                }${text}`
                 console.log(reply);
                 await interaction.editReply(reply);
             } else {
