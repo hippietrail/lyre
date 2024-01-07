@@ -57,12 +57,15 @@ function exploreEtymonlineDom(stuffs, startDepth, maxDepth) {
 }
   
 function lookForClass(stuffs, className, depth) {
-    const notFound = [404, ['h2', 'p', 'p']];
-    const found = ['FOUND', ['div', 'div', 'div', 'div', 'div', 'div', 'p', 'div']];
-    const found2 = ['FOUND2', ['div', 'div', 'div', 'div', 'div', 'div', 'div', 'div', 'p', 'div']];
+    const patterns = [
+        [404, ['h2', 'p', 'p']],
+        ['FOUND', ['div', 'div', 'div', 'div', 'div', 'div', 'div', 'div', 'p', 'div']],
+        ['FOUND2', ['div', 'div', 'div', 'div', 'div', 'div', 'div', 'div', 'div', 'div', 'p', 'div']],
+    ];
 
-    function cmp(node, childrenNames, matchKids) {
-        return node.children.length === matchKids.length && childrenNames.every(n => matchKids.includes(n));
+    function cmp(nodesKidsNames, matchNames) {
+        return nodesKidsNames.length === matchNames.length
+            && nodesKidsNames.every((name, i) => matchNames[i] === name);
     }
 
     for (const node of stuffs) {
@@ -72,17 +75,16 @@ function lookForClass(stuffs, className, depth) {
                 console.log(node.children.map(c => c.name));
                 const kidNodeNames = node.children.map(c => c.name);
 
-                let matchIndex = -1;
-                [notFound, found, found2].some((tup, index) => {
-                    if (cmp(node, kidNodeNames, tup[1])) {
-                        matchIndex = index;
+                let matched = null;
+                patterns.some((tup, index) => {
+                    if (cmp(kidNodeNames, tup[1])) {
+                        matched = patterns[index];
                         return true;
                     }
                     return false;
                 });
 
-                if (matchIndex !== -1)
-                    return [notFound, found, found2][matchIndex][0];
+                if (matched !== null) return matched[0];
 
                 console.log('Did not find any known pattern of child nodes here');
                 exploreEtymonlineDom(node.children, depth + 1);
