@@ -100,7 +100,11 @@ async function yt(interaction, chans) {
         allVids.sort((a, b) => b.snippet.publishedAt.localeCompare(a.snippet.publishedAt));
 
         const reply = `${
-            allVids.slice(0, 10).map(v => `${v.snippet.channelTitle}: ${v.snippet.title} - ${
+            allVids.slice(0, 10).map(v => `${v.snippet.channelTitle}: [${
+                v.snippet.title
+            }](<https://www.youtube.com/watch?v=${
+                v.snippet.resourceId.videoId
+            }>) - ${
                 ago(now - new Date(v.snippet.publishedAt))
             }`).join('\n')
         }`;

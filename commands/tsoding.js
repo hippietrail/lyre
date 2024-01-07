@@ -33,7 +33,9 @@ async function tsoding(interaction) {
         const ytObArr = jsonYT.items.map(v => ({
             type: 'YouTube',
             ts: new Date(v.snippet.publishedAt),
-            info: v.snippet.title,
+            info: `[${v.snippet.title}](<https://www.youtube.com/watch?v=${
+                v.snippet.resourceId.videoId
+            }>)`,
         }))
 
         const ghObArr = jsonGH.map(e => ({
