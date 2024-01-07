@@ -13,17 +13,13 @@ export const execute = etym;
 async function etym(interaction) {
     await interaction.deferReply();
     try {
-        const word = interaction.options.getString('word');
         const earl = new Earl('https://etymonline.com', '/word/');
-        earl.setLastPathSegment(word);
-        const text = await earl.fetchText();
-        const stuffs = parse(text);
+        earl.setLastPathSegment(interaction.options.getString('word'));
+        const dommy = parse(await earl.fetchText());
 
-        const whatWeFound = lookForClass(stuffs, 'ant-col-lg-17', 0);
+        const whatWeFound = lookForClass(dommy, 'ant-col-lg-17', 0);
 
         console.log(`lookForClass: ${JSON.stringify(whatWeFound, null, 2)}`);
-
-        const earlString = earl.getUrlString();
 
         let reply = '???';
         switch (whatWeFound) {
@@ -37,7 +33,7 @@ async function etym(interaction) {
                 reply = "Found (2)";
                 break;
         }
-        await interaction.editReply(`${reply}: ${earlString}`);
+        await interaction.editReply(`${reply}: ${earl.getUrlString()}`);
     } catch (e) {
         console.error(e);
         await interaction.editReply('An error occurred while fetching data.');
@@ -45,9 +41,8 @@ async function etym(interaction) {
 }
 
 function exploreEtymonlineDom(stuffs, startDepth, maxDepth) {
-    if (maxDepth === undefined) {
-        maxDepth = 8;
-    }
+    if (maxDepth === undefined) maxDepth = 8;
+
     for (const [index, n] of stuffs.entries()) {
         printNode(n, startDepth, index);
         if (
@@ -77,11 +72,18 @@ function lookForClass(stuffs, className, depth) {
                 console.log(node.children.map(c => c.name));
                 const kidNodeNames = node.children.map(c => c.name);
 
-                [notFound, found, found2].forEach(tup => {
+                let matchIndex = -1;
+                [notFound, found, found2].some((tup, index) => {
                     if (cmp(node, kidNodeNames, tup[1])) {
-                        return tup[0];
+                        matchIndex = index;
+                        return true;
                     }
-                })
+                    return false;
+                });
+
+                if (matchIndex !== -1)
+                    return [notFound, found, found2][matchIndex][0];
+
                 console.log('Did not find any known pattern of child nodes here');
                 exploreEtymonlineDom(node.children, depth + 1);
 
@@ -94,12 +96,10 @@ function lookForClass(stuffs, className, depth) {
     }
     return null;
 }
-  
+
 function printNode(node, depth, index) {
-    if (node.type === 'text' && node.data.trim() === '')
-        return;
-    if (node.type === 'script')
-        return;
+    if (node.type === 'text' && node.data.trim() === '') return;
+    if (node.type === 'script') return;
 
     if (node.type !== 'tag') {
         console.log(`${
@@ -115,24 +115,17 @@ function printNode(node, depth, index) {
     }
 
     if ('attribs' in node && Object.keys(node.attribs).length > 0) {
-        // if there's an id print it with a #prefix
-        // then if there's a class, split it by whitespace and print each class with a .prefix
-        if (node.attribs.id) {
+        if (node.attribs.id)
             console.log(`${' '.repeat(depth+1+6)}#`, node.attribs.id);
-        }
-        if (node.attribs.class) {
-            console.log(`${' '.repeat(depth+1+5)}`, node.attribs.class.split(' ').map((c) => `.${c}`));//.join(' '));
-        }
+        if (node.attribs.class)
+            console.log(`${' '.repeat(depth+1+5)}`, node.attribs.class.split(' ').map((c) => `.${c}`));
 
         // if there are attribs/attributes other than 'id' and/or 'class', we can print them
         const others = Object.keys(node.attribs).filter((key) => !['id', 'class'].includes(key));
-        if (others.length > 0) {
-            //console.log(`${' '.repeat(depth+1+4)}@@`, Object.keys(node.attribs));
+        if (others.length > 0)
             console.log(`${' '.repeat(depth+1+6)}@@`, others.map((key) => `${key}: ${node.attribs[key]}`).join(', '));
-        }
     }
 
-    if (node.type === 'text') {
+    if (node.type === 'text')
         console.log(`${' '.repeat(depth+1)}'"""'${node.data.trim()}'"""'`);
-    }
 }
