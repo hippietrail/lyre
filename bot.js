@@ -7,6 +7,7 @@ import * as curr from './commands/curr.js';
 import * as github from './commands/github.js';
 import * as yt from './commands/yt.js';
 import * as tsoding from './commands/tsoding.js';
+import * as etym from './commands/etym.js';
 
 config();
 
@@ -52,6 +53,10 @@ async function handleInteraction(interaction) {
 
         case 'tsoding':
             await tsoding.execute(interaction);
+            break;
+
+        case 'etym':
+            await etym.execute(interaction);
             break;
 
         default:

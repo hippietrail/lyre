@@ -17,8 +17,16 @@ export class Earl {
     setSearchParam(key, value) {
         this.url.searchParams.set(key, value);
     }
+    // handy since the URL encodes spaces etc for us
+    getUrlString() {
+        return this.url.toString();
+    }
     async fetchJson() {
         return (await fetch(this.url)).json();
+    }
+    // sometimes we want the HTML (scraping, debugging when JSON is broken)
+    async fetchText() {
+        return (await fetch(this.url)).text();
     }
 
     // apilayer.com that we use for currency exchange rates is sometimes broken

@@ -302,8 +302,13 @@ function currAmountWithCodeAndOrSym(apilayerData, matches) {
         const symOrCode = toks[0].isNumber() ? toks[1] : toks[0];
         if (symOrCode.isCurrSym()) {
             return currSymOnly(apilayerData, amount, symOrCode);
-        } else {
+        } else if (symOrCode.isMaybeCode()) {
             return currCodeOnly(apilayerData, amount, symOrCode);
+        } else {
+            // TODO stuff like "100 JPY to LAK" ends up here expecting "JPY to LAK" to be either a code or a symbol...
+            console.log(`[HIPP] ${symOrCode.value} is neither a symbol nor a code.`);
+            //return currCodeOnly(apilayerData, amount, symOrCode);
+            return "not a symbol or a code.";
         }
     } else if (toks.length === 3) {
         if (toks[0].isCurrSym() && toks[2].isCurrSym()) {
@@ -357,7 +362,7 @@ function currThreeOrMoreTokens(apilayerData, toks) {
     // and ends with one of the possible end sequences
     // with nothing in between
     const startsWith = possibleStartSeqs.find(seq => types.slice(0, seq.length).every((t, i) => t === seq[i]));
-    const endsWith = possibleEndSeqs.find(seq => types.slice(-seq.length).every((t, i) => t === seq[i]));
+    const endsWith   =   possibleEndSeqs.find(seq => types.slice(  -seq.length).every((t, i) => t === seq[i]));
     if (!startsWith || !endsWith) {
         return `Syntax error. Prefix:{${toks[0].isCurrSym()}} number:{${toks[1].value}} suffix:{${toks[2].isCurrSym()}}`;
     }
