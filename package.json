@@ -13,6 +13,7 @@
   "dependencies": {
     "discord.js": "^14.14.1",
     "dotenv": "^16.3.1",
+    "html-dom-parser": "^5.0.6",
     "html-to-text": "^9.0.5"
   }
 }
