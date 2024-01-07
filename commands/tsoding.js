@@ -45,7 +45,7 @@ async function tsoding(interaction) {
                 e.type.split(/(?=[A-Z])/).slice(0, -1).join(' ').toLowerCase()
             }${
                 e.payload.action ? `.${e.payload.action}` : ''
-            } ${e.repo.name}`,
+            } [${e.repo.name}](<https://github.com/${e.repo.name}>)`,
         }))
 
         const sorted = [...ytObArr, ...ghObArr].sort((a, b) => b.ts - a.ts);

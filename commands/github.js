@@ -5,6 +5,7 @@ import { config } from 'dotenv';
 
 config();
 
+// https://docs.github.com/en/rest/activity/events?apiVersion=2022-11-28#list-public-events-for-a-user
 class GithubEarl extends Earl {
     constructor() {
         super('https://api.github.com', '/users/USER/events/public');
@@ -54,7 +55,7 @@ export const execute = async interaction => {
                 .flat()
                 .sort((a, b) => a.elapsed_time - b.elapsed_time)
                 .map(e => `${e.user}: ${e.type}${e.payloadAction ? `.${e.payloadAction}` : ''
-                    } ${e.repo} - ${ago(e.elapsed_time)}`)
+                    } [${e.repo}](<https://github.com/${e.repo}>) - ${ago(e.elapsed_time)}`)
                 .join('\n');
 
             await interaction.editReply(reply !== "" ? reply : 'No events found');
