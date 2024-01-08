@@ -194,7 +194,7 @@ export const execute = curr;
 function calculateCur1ToCur2Result(apilayerData, cur1, cur2, amount) {
     const cur1Amount = amount * (apilayerData.rates[cur2] / apilayerData.rates[cur1]);
     return `${
-        amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        (+amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     } ${cur1} is ${
         cur1Amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     } ${cur2}.`;

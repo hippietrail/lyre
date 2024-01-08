@@ -47,6 +47,7 @@ export const execute = async interaction => {
             })))
                 .flat()
                 .sort((a, b) => a.elapsed_time - b.elapsed_time)
+                .slice(0, NUM_TO_FETCH)
                 .map(e => `${e.user}: ${e.type}${e.payloadAction ? `.${e.payloadAction}` : ''
                     } [${e.repo}](<https://github.com/${e.repo}>) - ${ago(e.elapsed_time)}`)
                 .join('\n');
