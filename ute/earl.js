@@ -1,3 +1,5 @@
+import { config } from 'dotenv';
+
 export class Earl {
     constructor(origin, basicPathname, optionalSearchParams) {
         this.basicPathname = basicPathname;
@@ -42,5 +44,37 @@ export class Earl {
             return null;
         }
         return await r.json();
+    }
+}
+
+// https://docs.github.com/en/rest/activity/events?apiVersion=2022-11-28#list-public-events-for-a-user
+export class GithubEarl extends Earl {
+    constructor() {
+        super('https://api.github.com', '/users/USER/events/public');
+    }
+    setUserName(username) {
+        this.setPathname(`/users/${username}/events/public`)
+    }
+    setPerPage(perPage) {
+        this.setSearchParam('per_page', perPage);
+    }
+}
+
+// fetch the "playlist" which is actually all the channel's videos
+export class YoutubeVidsEarl extends Earl {
+    constructor() {
+        config();
+
+        super('https://www.googleapis.com', '/youtube/v3/playlistItems', {
+            part: 'snippet',
+            order: 'date',
+            key: process.env.YT_API_KEY,
+        });
+    }
+    setMaxResults(maxResults) {
+        this.url.searchParams.set('maxResults', maxResults);
+    }
+    setPlaylistId(playlistId) {
+        this.url.searchParams.set('playlistId', playlistId);
     }
 }

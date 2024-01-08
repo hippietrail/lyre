@@ -1,26 +1,9 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { Earl } from '../ute/earl.js';
+import { YoutubeVidsEarl } from '../ute/earl.js';
 import { ago } from '../ute/ago.js';
-import { config } from 'dotenv';
-
-config();
-
-// fetch the "playlist" which is actually all the channel's videos
-class YoutubeVidsEarl extends Earl {
-    constructor() {
-        super('https://www.googleapis.com', '/youtube/v3/playlistItems', {
-            part: 'snippet',
-            maxResults: '3',
-            order: 'date',
-            key: process.env.YT_API_KEY,
-        });
-    }
-    setPlaylistId(playlistId) {
-        this.url.searchParams.set('playlistId', playlistId);
-    }
-}
 
 const ytEarl = new YoutubeVidsEarl();
+ytEarl.setMaxResults(10);
 
 function fetchVideos(playlistId) {
     ytEarl.setPlaylistId(playlistId);

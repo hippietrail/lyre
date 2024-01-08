@@ -1,21 +1,14 @@
 import { SlashCommandBuilder } from 'discord.js';
-import { Earl } from '../ute/earl.js';
+import { GithubEarl } from '../ute/earl.js';
 import { ago } from '../ute/ago.js';
 import { config } from 'dotenv';
 
 config();
 
-// https://docs.github.com/en/rest/activity/events?apiVersion=2022-11-28#list-public-events-for-a-user
-class GithubEarl extends Earl {
-    constructor() {
-        super('https://api.github.com', '/users/USER/events/public');
-    }
-    setUserName(username) {
-        this.setPathname(`/users/${username}/events/public`)
-    }
-}
+const NUM_TO_FETCH = 10;
 
 const githubEarl = new GithubEarl();
+githubEarl.setPerPage(NUM_TO_FETCH);
 
 export const data = new SlashCommandBuilder()
     .setName('github')
@@ -42,7 +35,7 @@ export const execute = async interaction => {
                 githubEarl.setUserName(user);
 
                 return (await githubEarl.fetchJson())
-                    .slice(0, 3)
+                    .slice(0, NUM_TO_FETCH)
                     .map(e => ({
                         user: e.actor.login,
                         type: e.type.split(/(?=[A-Z])/).slice(0, -1).join(' ').toLowerCase(),

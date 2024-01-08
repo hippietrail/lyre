@@ -1,7 +1,7 @@
 // a new slash command that gets the latest Tsoding Daily YouTube videos
 // *and* the latest GitHub activity by rexim
 import { SlashCommandBuilder } from 'discord.js';
-import { Earl } from '../ute/earl.js';
+import { GithubEarl, YoutubeVidsEarl } from '../ute/earl.js';
 import { ago } from '../ute/ago.js';
 import { config } from 'dotenv';
 
@@ -17,16 +17,13 @@ async function tsoding(interaction) {
     const NUM_TO_FETCH = 10;
     await interaction.deferReply();
     try {
-        const earlYT = new Earl('https://www.googleapis.com', '/youtube/v3/playlistItems', {
-            part: 'snippet',
-            maxResults: '10',
-            order: 'date',
-            key: process.env.YT_API_KEY,
-            playlistId: 'UUrqM0Ym_NbK1fqeQG2VIohg',
-        });
-        const earlGH = new Earl('https://api.github.com', 'users/rexim/events/public', {
-            per_page: 10,
-        });
+        const earlYT = new YoutubeVidsEarl();
+        earlYT.setMaxResults(NUM_TO_FETCH);
+        earlYT.setPlaylistId('UUrqM0Ym_NbK1fqeQG2VIohg');
+
+        const earlGH = new GithubEarl();
+        earlGH.setUserName('rexim');
+        earlGH.setPerPage(NUM_TO_FETCH);
 
         const [jsonYT, jsonGH] = await Promise.all([earlYT.fetchJson(), earlGH.fetchJson()]);
 
