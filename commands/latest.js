@@ -33,7 +33,7 @@ async function latest(interaction) {
     await interaction.editReply(reply);
 }
 
-function nameLinkAndTimestampToString(nlt) {
+function nvltsToString(nlt) {
     if (nlt.link)
         return `${nlt.name}: [${nlt.ver}](<${nlt.link}>) - ${ago(new Date() - nlt.timestamp)} (${nlt.src})`;
     else
@@ -44,8 +44,11 @@ async function callGithub() {
     return (await Promise.all(repos.map(async (repo) => {
         githubEarl.setPathname(`/repos/${repo[0]}/${repo[1]}/releases/latest`);
         const ob = await githubEarl.fetchJson();
-        console.log(ob.name)
-        return nameLinkAndTimestampToString(githubJsonObToNameLinkAndTimestamp(repo, ob));
+        console.log(`callGithub:ob.name: ${ob.name}`);
+
+        const nvlts = githubJsonToNameVerLinkTimestampSrc(repo, ob);
+        const nvltsString = nvlts ? nvltsToString(nvlts) : 'GitHub API rate limit!';
+        return nvltsString;
     }))).join('\n');
 }
 
@@ -83,11 +86,17 @@ function convertObNameAndTagToNameAndVersion(repo, ob) {
     return [name, ver];
 }
 
-function githubJsonObToNameLinkAndTimestamp(repo, ob) {
-    //console.log(`${repo[1]}, json name: ${ob.name}, json tag: ${ob.tag_name}`);
-    // console.log(JSON.stringify(repo, null, 2));
-    // console.log(JSON.stringify(ob, null, 2));
+function githubJsonToNameVerLinkTimestampSrc(repo, ob) {
+    console.log(`${repo[1]}, json name: ${ob.name}, json tag: ${ob.tag_name}`);
+    console.log("repo", JSON.stringify(repo, null, 2));
+    console.log("ob", JSON.stringify(ob, null, 2));
+
+    // if ob has just the two keys "message" and "documentation_url"
+    // i've hit the api limit
+    if (ob.message && ob.documentation_url) return null
+
     const [name, version] = convertObNameAndTagToNameAndVersion(repo, ob);
+
     return {
         name,
         ver: version,
@@ -98,25 +107,21 @@ function githubJsonObToNameLinkAndTimestamp(repo, ob) {
 }
 
 async function callNodejs() {
-    const arr = await nodejsEarl.fetchJson();
-    const currentRel = arr.find(obj => obj.lts === false);
-    const ltsRel = arr.find(obj => typeof obj.lts === 'string');
+    const rels = await nodejsEarl.fetchJson();
+    const curRel = rels.find(rel => rel.lts === false);
+    const ltsRel = rels.find(rel => typeof rel.lts === 'string');
 
-    const versionsTimestampsAndNames = [currentRel, ltsRel].map(obj => ({
-        version: obj.version,
-        date: new Date(obj.date),
-        currentOrLts: obj.lts === false ? 'Current' : `LTS ${obj.lts}`,
-    }));
+    const nvlts = [curRel, ltsRel].map(obj => {
+        return {
+            name: `Node (${obj.lts === false ? 'Current' : `LTS ${obj.lts}`})`,
+            ver: obj.version,
+            link: undefined,
+            timestamp: new Date(obj.date),
+            src: 'nodejs.org',
+        };
+    });
 
-    const namesLinksTimestamps = versionsTimestampsAndNames.map(arr => ({
-        name: `Node (${arr.currentOrLts})`,
-        ver: arr.version,
-        link: undefined,
-        timestamp: arr.date,
-        src: 'nodejs.org'
-    }));
-    
-    const reply = namesLinksTimestamps.map(arr => nameLinkAndTimestampToString(arr)).join('\n');
+    const reply = nvlts.map(arr => nvltsToString(arr)).join('\n');
 
     return reply;
 }
