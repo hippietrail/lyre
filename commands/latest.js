@@ -12,11 +12,13 @@ export const data = new SlashCommandBuilder()
 export const execute = latest;
 
 const repos = [
+    ['audacity', 'audacity'],
+    ['microsoft', 'TypeScript'],
     ['NationalSecurityAgency', 'ghidra'],
     ['nodejs', 'node'],
     ['oven-sh', 'bun'],
-    ['ziglang', 'zig'],
     ['rust-lang', 'rust'],
+    ['ziglang', 'zig'],
 ];
 
 async function latest(interaction) {
@@ -32,10 +34,10 @@ async function latest(interaction) {
 }
 
 function nameLinkAndTimestampToString(nlt) {
-    if (nlt[2])
-        return `${nlt[0]}: [${nlt[1]}](<${nlt[2]}>) - ${ago(new Date() - nlt[3])}`;
+    if (nlt.link)
+        return `${nlt.name}: [${nlt.ver}](<${nlt.link}>) - ${ago(new Date() - nlt.timestamp)} (${nlt.src})`;
     else
-        return `${nlt[0]}: ${nlt[1]} - ${ago(new Date() - nlt[3])}`;
+        return `${nlt.name}: ${nlt.ver} - ${ago(new Date() - nlt.timestamp)} (${nlt.src})`;
 }
 
 async function callGithub() {
@@ -43,12 +45,56 @@ async function callGithub() {
         githubEarl.setPathname(`/repos/${repo[0]}/${repo[1]}/releases/latest`);
         const ob = await githubEarl.fetchJson();
         console.log(ob.name)
-        return nameLinkAndTimestampToString(githubJsonObToNameLinkAndTimestamp(repo[1], ob));
+        return nameLinkAndTimestampToString(githubJsonObToNameLinkAndTimestamp(repo, ob));
     }))).join('\n');
 }
 
-function githubJsonObToNameLinkAndTimestamp(repoName, ob) {
-    return [repoName, ob.name, ob.html_url, new Date(ob.published_at)];
+function convertObNameAndTagToNameAndVersion(repo, ob) {
+    const repoName = repo[1];
+    const [obName, obTag] = [ob.name, ob.tag_name];
+
+    let [name, ver] = ['?name?', '?ver?'];
+    switch (repoName) {
+        case 'audacity':
+            [name, ver] = obName.split(' ');
+            break;
+        case 'bun':
+            [name, ver] = obName.split(' ');
+            break;
+        case 'ghidra':
+            [name, ver] = obName.split(' ');
+            break;
+        case 'node':
+            [name, ver] = ['Node (Current)', obTag]
+            break;
+        case 'rust':
+            [name, ver] = ['Rust', obTag];
+            break;
+        case 'TypeScript':
+            [name, ver] = ['TypeScript', obTag];
+            break;
+        case 'zig':
+            [name, ver] = ['Zig', obTag];
+            break;
+        default:
+            // name and ver already set to '?name?' and '?ver?'
+            console.log(`Unrecognized repo: ${repoName}, name: ${obName}, tag: ${obTag}`);
+    }
+    return [name, ver];
+}
+
+function githubJsonObToNameLinkAndTimestamp(repo, ob) {
+    //console.log(`${repo[1]}, json name: ${ob.name}, json tag: ${ob.tag_name}`);
+    // console.log(JSON.stringify(repo, null, 2));
+    // console.log(JSON.stringify(ob, null, 2));
+    const [name, version] = convertObNameAndTagToNameAndVersion(repo, ob);
+    return {
+        name,
+        ver: version,
+        link: ob.html_url,
+        timestamp: new Date(ob.published_at),
+        src: 'github',
+    };
 }
 
 async function callNodejs() {
@@ -56,19 +102,20 @@ async function callNodejs() {
     const currentRel = arr.find(obj => obj.lts === false);
     const ltsRel = arr.find(obj => typeof obj.lts === 'string');
 
-    const versionsTimestampsAndNames = [currentRel, ltsRel].map(obj => [
-        obj.version,
-        new Date(obj.date),
-        obj.lts === false ? 'Current' : obj.lts
-    ]);
+    const versionsTimestampsAndNames = [currentRel, ltsRel].map(obj => ({
+        version: obj.version,
+        date: new Date(obj.date),
+        currentOrLts: obj.lts === false ? 'Current' : `LTS ${obj.lts}`,
+    }));
 
-    const namesLinksTimestamps = versionsTimestampsAndNames.map(arr => [
-        'Node.js',
-        `${arr[2]} ${arr[0]}`,
-        undefined,
-        arr[1]
-    ]);
-
+    const namesLinksTimestamps = versionsTimestampsAndNames.map(arr => ({
+        name: `Node (${arr.currentOrLts})`,
+        ver: arr.version,
+        link: undefined,
+        timestamp: arr.date,
+        src: 'nodejs.org'
+    }));
+    
     const reply = namesLinksTimestamps.map(arr => nameLinkAndTimestampToString(arr)).join('\n');
 
     return reply;
