@@ -8,14 +8,41 @@ import * as github from './commands/github.js';
 import * as yt from './commands/yt.js';
 import * as tsoding from './commands/tsoding.js';
 import * as etym from './commands/etym.js';
+import * as latest from './commands/latest.js';
 
 config();
 
 const client = new Client({
+    // Uncomment if you don't want to use DMs
     intents: [GatewayIntentBits.Guilds]
+
     // Uncomment if you want to use DMs
     // intents: [GatewayIntentBits.Guilds, GatewayIntentBits.DirectMessages],
     // partials: [Partials.Channel, Partials.Message],
+
+    // TODO to handle replies back from users
+    //
+    // alright, so starting with the intents you need, you need
+    // Guilds, GuildMembers, GuildMessages for guild related events
+    // and DirectMessages to receive messages in dms
+    // then, for the "user triggers command - bot replies"
+    // you dont need anything extra, just send the first reply,
+    // after you send it you need to wait for a follow up message
+    // from the user in your code,
+    // use this https://old.discordjs.dev/#/docs/discord.js/main/class/TextChannel?scrollTo=awaitMessages
+    //
+    // dont forget the MessageContent intent
+    //
+    // true that one too, and you have to enable that one and
+    // the GuildMembers one on the developer portal
+    // and this should be inside your MessageCreate listener
+    // for both, guilds and dm messages
+    //
+    // also just to add to this, you dont need to use the reply
+    // functionality for this to work, just make sure you filter
+    // messages in awaitMessages using the original user's id or
+    // something so your bot doesn't accept replies from anyone
+    // else in between
 });
 
 function readyDiscord() {
@@ -59,6 +86,10 @@ async function handleInteraction(interaction) {
             await etym.execute(interaction);
             break;
 
+        case 'latest':
+            await latest.execute(interaction);
+            break;
+
         default:
             console.error(`Unknown command ${interaction.commandName}`);
         }
@@ -80,8 +111,20 @@ client.on(Events.Error, e => console.log(`[ERROR] ${JSON.stringify(e, null, 2)}`
 
 // when we receive a DM, including a private slash command
 client.on(Events.MessageCreate, m => {
-    // m.type 0 = Default, m.type 20 = ChatInputCommand
-    console.log(`[MSG] mt ${m.type}. mct ${m.channel.type}, dm? ${m.channel.type === ChannelType.DM}. mat ${m.author.tag}. mc ${m.content}`)
+    const messageTypeMap = { 0: 'Default', 19: 'Reply', 20: 'ChatInputCommand' };
+
+    console.log(`[MSG] mt ${messageTypeMap[m.type] || `MessageType:${m.type}`}. mct ${m.channel.type}, dm? ${m.channel.type === ChannelType.DM}. mat ${m.author.tag}. mc ${m.content}`);
+
+    // HIPP experiment looking for replies
+    // won't do anything without the extra intents etc in comment up above
+    /*const foopy = m.channel.awaitMessages({
+        filter: true,//m => m.author.id === '616866247002423327',
+        max: 1,
+        time: 10000,
+        errors: ['time']
+    });
+    console.log(`[FOOPY] ${JSON.stringify(foopy, null, 2)}`);
+    */
 });
 
 // experiment with sending a message from the bot to the channel. let's do it on the shardresume...
