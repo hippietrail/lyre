@@ -51,9 +51,21 @@ async function latest(interaction) {
     await interaction.deferReply();
 
     try {
-        let fromGithub = [];
-        let fromOthers = [];
+        let responses = [];
 
+        async function reply(these, thisName, thatName) {
+            console.log(`${thisName} have been fetched. ${responses.length === 0 ? 'First.' : 'Last.'}`);
+
+            responses.push(these);
+
+            let reply = responses.flat().toSorted().join('\n');
+            
+            if (responses.length === 1)
+                reply = `${reply}\n\n(Just waiting for ${thatName} now)`;
+            
+            await interaction.editReply(reply);
+        }
+    
         const otherPromises = Promise.all([
             callNodejs(),
             callGimp(),
@@ -61,31 +73,9 @@ async function latest(interaction) {
             callPython(),
             callGo(),
             callMame(),
-        ]).then(async oArr => {
-            console.log(`Others (not GitHub) have been fetched. ${fromGithub.length === 0 ? 'First.' : 'Last.'}`);
-            fromOthers = oArr.flat();
+        ]).then(async arr => await reply(arr.flat(), 'Non-GitHub', 'GitHub'));
 
-            if (fromGithub.length === 0) {
-                const preliminaryReply = `${fromOthers.sort().join('\n')}\n\n(Just waiting for GitHub now)`;
-                await interaction.editReply(preliminaryReply);
-            } else {
-                const finalReply = [...fromGithub, ...fromOthers].sort().join('\n');
-                await interaction.editReply(finalReply);
-            }
-        });
-
-        const githubPromises = callGithub().then(async gArr => {
-            console.log(`GitHub has been fetched. ${fromOthers.length === 0 ? 'First.' : 'Last.'}`);
-            fromGithub = gArr.flat();
-
-            if (fromOthers.length !== 0) {
-                const finalReply = [...fromOthers, ...fromGithub].sort().join('\n');
-                await interaction.editReply(finalReply);
-            } else {
-                const preliminaryReply = `${fromGithub.sort().join('\n')}\n\n(Just waiting for others now)`;
-                await interaction.editReply(preliminaryReply);
-            }
-        });
+        const githubPromises = callGithub().then(async arr => await reply(arr.flat(), 'GitHub', 'non-GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
     } catch (error) {
