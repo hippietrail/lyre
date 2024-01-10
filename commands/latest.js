@@ -113,7 +113,7 @@ async function callGithub() {
     return result;
 }
   
-function transformRepoNameTagVer(repo, jsonOb) {
+function xformRepoNameTagVer(repo, jsonOb) {
     const [, repoName, xform] = repo;
     const [jsonName, jsonTag] = [jsonOb.name, jsonOb.tag_name];
 
@@ -130,12 +130,8 @@ function githubJsonToNVLTS(repo, ob) {
     // we've hit the API limit or some other error
     if (ob.message && ob.documentation_url) {
         console.log(`GitHub releases API error: ${ob.message} ${ob.documentation_url}`);
-        return null;
-    }
-
-    try {
-        const nameVersion = transformRepoNameTagVer(repo, ob);
-        const [name, version] = nameVersion;
+    } else try {
+        const [name, version] = xformRepoNameTagVer(repo, ob);
 
         return {
             name,
@@ -148,117 +144,140 @@ function githubJsonToNVLTS(repo, ob) {
         // console.error("<<<", error);
         // console.log(JSON.stringify(ob, null, 2));
         // console.log(">>>");
-        return null;
     }
+    return null;
 }
 
 async function callNodejs() {
-    const rels = await nodejsEarl.fetchJson();
-    const curRel = rels.find(rel => rel.lts === false);
-    const ltsRel = rels.find(rel => typeof rel.lts === 'string');
+    try {
+        const rels = await nodejsEarl.fetchJson();
 
-    const nvlts = [curRel, ltsRel].map(obj => {
-        return {
+        return [
+            rels.find(rel => rel.lts === false),
+            rels.find(rel => typeof rel.lts === 'string')
+        ].map(obj => ({
             name: `Node (${obj.lts === false ? 'Current' : `LTS ${obj.lts}`})`,
             ver: obj.version,
             link: undefined,
             timestamp: new Date(obj.date),
             src: 'nodejs.org',
-        };
-    });
-
-    return nvlts.map(nvlts => nvltsToString(nvlts));
+        })).map(nvlts => nvltsToString(nvlts));
+    } catch (error) {
+        console.error(`[Node.js]`, error);
+    }
+    return [];
 }
   
 async function callGimp() {
-    const gj = await gimpEarl.fetchJson();
-    if ('STABLE' in gj) {
-        if (gj.STABLE.length > 0) {
-            if ('version' in gj.STABLE[0]) {
-                return [
-                    nvltsToString({
-                        name: 'Gimp',
-                        ver: gj.STABLE[0].version,
-                        link: undefined,
-                        timestamp: new Date(gj.STABLE[0].date),
-                        src: 'gitlab',
-                    }),
-                ];
-            }
+    try {
+        const gj = await gimpEarl.fetchJson();
+
+        if ('STABLE' in gj && gj.STABLE.length > 0 && 'version' in gj.STABLE[0]) {
+            return [
+                nvltsToString({
+                    name: 'Gimp',
+                    ver: gj.STABLE[0].version,
+                    link: undefined,
+                    timestamp: new Date(gj.STABLE[0].date),
+                    src: 'gitlab',
+                }),
+            ];
         }
+    } catch (error) {
+        console.error(`[Gimp]`, error);
     }
     return [];
 }
   
 async function callXcode() {
-    const xcj = await xcodeEarl.fetchJson();
-    const rel = xcj.find(obj => obj.name === 'Xcode' && obj.version.release.release === true);
-    if (rel) {
-        const timestamp = new Date(rel.date.year, rel.date.month - 1, rel.date.day);
-        return [
-            nvltsToString({
+    try {
+        const xcj = await xcodeEarl.fetchJson();
+
+        const rel = xcj.find(obj => obj.name === 'Xcode' && obj.version.release.release === true);
+        
+        if (rel) {
+            const timestamp = new Date(rel.date.year, rel.date.month - 1, rel.date.day);
+            return [{
                 name: 'Xcode',
                 ver: rel.version.number,
                 link: rel.links.notes.url,
                 timestamp,
                 src: 'xcodereleases.com',
-            }),
-            nvltsToString({
+            }, {
                 name: 'Swift',
                 ver: rel.compilers.swift[0].number,
-                link: rel.links.notes.url,
+                link: undefined,
                 timestamp,
                 src: 'xcodereleases.com',
-            }),
-        ];
+            }].map(nvlts => nvltsToString(nvlts));
+        }
+    } catch (error) {
+        console.error(`[Xcode]`, error);
     }
     return [];
 }
   
 async function callPython() {
     pythonEarl.setPathname('/repos/python/cpython/tags');
-    const pya = await pythonEarl.fetchJson();
-    if (pya.message && pya.documentation_url) {
-        console.log(`GitHub tags API error: 'python'${pya.message} ${pya.documentation_url}`);
-        return [];
-    }
-    const rel = pya.find(obj => obj.name.match(/^v(\d+)\.(\d+)\.(\d+)$/));
-    if (rel) {
-        return [
-            nvltsToString({
-                name: 'Python',
-                ver: rel.name,
-                link: undefined,
-                timestamp: undefined,
-                src: 'github',
-            }),
-        ];
+
+    try {
+        const pya = await pythonEarl.fetchJson();
+        
+        if (pya.message && pya.documentation_url) {
+            console.log(`[Python] GitHub tags API error: 'python'${pya.message} ${pya.documentation_url}`);
+        } else {
+            const rel = pya.find(obj => obj.name.match(/^v(\d+)\.(\d+)\.(\d+)$/));
+
+            if (rel) return [
+                nvltsToString({
+                    name: 'Python',
+                    ver: rel.name,
+                    link: undefined,
+                    timestamp: undefined,
+                    src: 'github',
+                }),
+            ];
+        }
+    } catch (error) {
+        console.error(`[Python]`, error);
     }
     return [];
 }
   
 async function callGo() {
-    const goj = await goEarl.fetchJson();
-    return [
-        nvltsToString({
-            name: 'Go',
-            ver: goj[0].version.replace(/^go/, ''),
-            link: undefined,
-            timestamp: undefined,
-            src: 'go.dev',
-        }),
-    ];
+    try {
+        const goj = await goEarl.fetchJson();
+
+        return [
+            nvltsToString({
+                name: 'Go',
+                ver: goj[0].version.replace(/^go/, ''),
+                link: undefined,
+                timestamp: undefined,
+                src: 'go.dev',
+            }),
+        ];
+    } catch (error) {
+        console.error(`[Go]`, error);
+    }
+    return [];
 }
 
 async function callMame() {
-    const mamej = await mameEarl.fetchJson();
-    return [
-        nvltsToString({
-            name: 'MAME',
-            ver: mamej.version,
-            link: undefined,
-            timestamp: undefined,
-            src: 'githubusercontent.com',
-        }),
-    ];
+    try {
+        const mamej = await mameEarl.fetchJson();
+
+        return [
+            nvltsToString({
+                name: 'MAME',
+                ver: mamej.version,
+                link: undefined,
+                timestamp: undefined,
+                src: 'githubusercontent.com',
+            }),
+        ];
+    } catch (error) {
+        console.error(`[MAME]`, error);
+    }
+    return [];
 }
