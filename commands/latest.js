@@ -49,9 +49,11 @@ const githubRepos = [
 
 async function latest(interaction) {
     await interaction.deferReply();
+
     try {
         let fromGithub = [];
         let fromOthers = [];
+
         const otherPromises = Promise.all([
             callNodejs(),
             callGimp(),
@@ -60,15 +62,29 @@ async function latest(interaction) {
             callGo(),
             callMame(),
         ]).then(async oArr => {
-            console.log("Others (not GitHub) have been fetched.");
+            console.log(`Others (not GitHub) have been fetched. ${fromGithub.length === 0 ? 'First.' : 'Last.'}`);
             fromOthers = oArr.flat();
-            const initialReply = `${fromOthers.sort().join('\n')}\n\n(Just waiting for GitHub now)`;
-            await interaction.editReply(initialReply);
+
+            if (fromGithub.length === 0) {
+                const preliminaryReply = `${fromOthers.sort().join('\n')}\n\n(Just waiting for GitHub now)`;
+                await interaction.editReply(preliminaryReply);
+            } else {
+                const finalReply = [...fromGithub, ...fromOthers].sort().join('\n');
+                await interaction.editReply(finalReply);
+            }
         });
+
         const githubPromises = callGithub().then(async gArr => {
-            console.log("GitHub has been fetched.");
+            console.log(`GitHub has been fetched. ${fromOthers.length === 0 ? 'First.' : 'Last.'}`);
             fromGithub = gArr.flat();
-            await interaction.editReply([...fromOthers, ...fromGithub].sort().join('\n'));
+
+            if (fromOthers.length !== 0) {
+                const finalReply = [...fromOthers, ...fromGithub].sort().join('\n');
+                await interaction.editReply(finalReply);
+            } else {
+                const preliminaryReply = `${fromGithub.sort().join('\n')}\n\n(Just waiting for others now)`;
+                await interaction.editReply(preliminaryReply);
+            }
         });
 
         await Promise.all([githubPromises, otherPromises]);
