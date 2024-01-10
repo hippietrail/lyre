@@ -30,12 +30,14 @@ const xformCapitalizeRepo = (r, n, t) => [r.charAt(0).toUpperCase() + r.slice(1)
 
 function xformSwift(r, n, t) {
     const [name, ver, which] = n.split(' ');
-    return [`${name} (${which})`, ver];
+    //return [`${name} (${which})`, ver];
+    return [name, ver];
 }
 
 const githubRepos = [
     ['apple', 'swift', xformSwift],
     ['audacity', 'audacity', xformNameSplit],
+    ['discordjs', 'discord.js', xformCapitalizeRepo],
     ['microsoft', 'TypeScript', (r, n, t) => [r, t]],
     ['NationalSecurityAgency', 'ghidra', xformNameSplit],
     ['nodejs', 'node', (r, n, t) => ['Node (Current)', t]],
@@ -46,22 +48,31 @@ const githubRepos = [
 
 async function latest(interaction) {
     await interaction.deferReply();
-    let reply = 'An error occurred while fetching data.';
     try {
-        await interaction.editReply('Being gentle on the Github API...');
-        const replies = await Promise.all([
-            callGithub(),
+        let fromGithub = [];
+        let fromOthers = [];
+        const otherPromises = Promise.all([
             callNodejs(),
             callGimp(),
             callXcode(),
             callPython(),
             callGo(),
-        ]);
-        reply = replies.flat().sort().join('\n');
+        ]).then(async oArr => {
+            console.log("Others (not GitHub) have been fetched.");
+            fromOthers = oArr.flat();
+            const initialReply = `${fromOthers.sort().join('\n')}\n\n(Just waiting for GitHub now)`;
+            await interaction.editReply(initialReply);
+        });
+        const githubPromises = callGithub().then(async gArr => {
+            console.log("GitHub has been fetched.");
+            fromGithub = gArr.flat();
+            await interaction.editReply([...fromOthers, ...fromGithub].sort().join('\n'));
+        });
+
+        await Promise.all([githubPromises, otherPromises]);
     } catch (error) {
-        console.error(error);
+        console.error('[Latest]', error);
     }
-    await interaction.editReply(reply);
 }
 
 /**
