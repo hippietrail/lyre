@@ -11,6 +11,7 @@ const gimpEarl = new Earl('https://gitlab.gnome.org',
 const xcodeEarl = new Earl('https://xcodereleases.com', '/data.json');
 const pythonEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/tags');
 const goEarl = new Earl('https://go.dev', '/dl/', { 'mode': 'json' });
+const mameEarl = new Earl('https://raw.githubusercontent.com', '/Calinou/scoop-games/master/bucket/mame.json');
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -24,26 +25,26 @@ export const execute = latest;
 // Intellij IDEA
 // Kotlin
 
-const xformNameSplit = (r, n, t) => n.split(' ');
+// GitHub JSON name field is name and version separated by space
+const xformNameSplit = (_, jn, __) => jn.split(' ');
 
-const xformCapitalizeRepo = (r, n, t) => [r.charAt(0).toUpperCase() + r.slice(1), t];
+// Repo name is name, version is GitHub JSON tag
+const xformRepoTag = (rn, _, jt) => [rn, jt]; // (r, n, t) => [r, t]
 
-function xformSwift(r, n, t) {
-    const [name, ver, which] = n.split(' ');
-    //return [`${name} (${which})`, ver];
-    return [name, ver];
-}
+// Repo name capitalized is name, version is GitHub JSON tag
+const xformRepoCapTag = (rn, _, jt) => [rn.charAt(0).toUpperCase() + rn.slice(1), jt];
 
 const githubRepos = [
-    ['apple', 'swift', xformSwift],
+    ['apple', 'swift', xformNameSplit],
     ['audacity', 'audacity', xformNameSplit],
-    ['discordjs', 'discord.js', xformCapitalizeRepo],
-    ['microsoft', 'TypeScript', (r, n, t) => [r, t]],
+    ['discordjs', 'discord.js', xformRepoCapTag],
+    ['mamedev', 'mame', xformNameSplit],
+    ['microsoft', 'TypeScript', xformRepoTag],
     ['NationalSecurityAgency', 'ghidra', xformNameSplit],
-    ['nodejs', 'node', (r, n, t) => ['Node (Current)', t]],
+    ['nodejs', 'node', (_, __, jt) => ['Node (Current)', jt]],
     ['oven-sh', 'bun', xformNameSplit],
-    ['rust-lang', 'rust', xformCapitalizeRepo],
-    ['ziglang', 'zig', xformCapitalizeRepo],
+    ['rust-lang', 'rust', xformRepoCapTag],
+    ['ziglang', 'zig', xformRepoCapTag],
 ];
 
 async function latest(interaction) {
@@ -57,6 +58,7 @@ async function latest(interaction) {
             callXcode(),
             callPython(),
             callGo(),
+            callMame(),
         ]).then(async oArr => {
             console.log("Others (not GitHub) have been fetched.");
             fromOthers = oArr.flat();
@@ -111,14 +113,14 @@ async function callGithub() {
     return result;
 }
   
-function transformRepoNameTagVer(repo, ob) {
+function transformRepoNameTagVer(repo, jsonOb) {
     const [, repoName, xform] = repo;
-    const [obName, obTag] = [ob.name, ob.tag_name];
+    const [jsonName, jsonTag] = [jsonOb.name, jsonOb.tag_name];
 
     if (xform) {
-        return xform(repoName, obName, obTag);
+        return xform(repoName, jsonName, jsonTag);
     } else {
-        console.log(`Unrecognized repo: ${repoName}, name: ${obName}, tag: ${obTag}`);
+        console.log(`Unrecognized repo: ${repoName}, name: ${jsonName}, tag: ${jsonTag}`);
         return ['?name?', '?ver?'];
     }
 }
@@ -244,6 +246,19 @@ async function callGo() {
             link: undefined,
             timestamp: undefined,
             src: 'go.dev',
+        }),
+    ];
+}
+
+async function callMame() {
+    const mamej = await mameEarl.fetchJson();
+    return [
+        nvltsToString({
+            name: 'MAME',
+            ver: mamej.version,
+            link: undefined,
+            timestamp: undefined,
+            src: 'githubusercontent.com',
         }),
     ];
 }
