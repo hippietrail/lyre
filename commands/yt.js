@@ -37,6 +37,7 @@ const codingChans = {
     'Inigo Quilez':                 'UUdmAhiG8HQDlz8uyekw4ENw',
     'javidx9':                      'UU-yuWVUplUJZvieEligKBkA',
     'Sebastian Lague':              'UUmtyQOKKmrMVaKuRXz02jbQ',
+    'sphaerophoria':                'UUXzL31BCxf8En1KT34gSK6g',
     'StatQuest with Josh Starmer':  'UUtYLUTtgS3k1Fg4y5tAhLbw',
     'suckerpinch':                  'UU3azLjQuz9s5qk76KEXaTvA',
     'The Art of Code':              'UUcAlTqd9zID6aNX3TzwxJXg',
