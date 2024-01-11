@@ -12,6 +12,7 @@ const xcodeEarl = new Earl('https://xcodereleases.com', '/data.json');
 const pythonEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/tags');
 const goEarl = new Earl('https://go.dev', '/dl/', { 'mode': 'json' });
 const mameEarl = new Earl('https://raw.githubusercontent.com', '/Calinou/scoop-games/master/bucket/mame.json');
+const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/channels/stable/release/latest/VERSION');
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -21,7 +22,6 @@ export const execute = latest;
 
 // TODO missing, but not on GitHub
 // Android Studio
-// Dart
 // Intellij IDEA
 
 // GitHub JSON name field is 'name version'
@@ -32,6 +32,7 @@ const xformRepoTag = (ron, _, jt) => [ron.split('/')[1], jt];
 
 // Repo name capitalized is name, version is GitHub JSON tag
 function xformRepoCapTag(ron, _, jt) {
+    // console.log(`[xformRepoCapTag]`, ron, jt);
     const rn = ron.split('/')[1];
     return [rn.charAt(0).toUpperCase() + rn.slice(1), jt];
 }
@@ -41,13 +42,13 @@ const ownerRepos = [
     ['audacity/audacity', xformNameSplit],
     ['discordjs/discord.js', xformRepoCapTag],
     ['JetBrains/kotlin', xformNameSplit],
-    // ['mamedev/mame', xformNameSplit],
+    ['mamedev/mame', xformNameSplit],
     ['microsoft/TypeScript', xformRepoTag],
-    // ['NationalSecurityAgency/ghidra', xformNameSplit],
-    // ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
-    // ['oven-sh/bun', xformNameSplit],
-    // ['rust-lang/rust', xformRepoCapTag],
-    // ['ziglang/zig', xformRepoCapTag],
+    ['NationalSecurityAgency/ghidra', xformNameSplit],
+    ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
+    ['oven-sh/bun', xformNameSplit],
+    ['rust-lang/rust', xformRepoCapTag],
+    ['ziglang/zig', xformRepoCapTag],
 ];
 
 async function latest(interaction) {
@@ -57,7 +58,7 @@ async function latest(interaction) {
         let responses = [];
 
         async function reply(these, thisName, thatName) {
-            console.log(`${thisName} have been fetched. ${responses.length === 0 ? 'First.' : 'Last.'}`);
+            console.log(`All ${thisName} have been fetched. ${responses.length === 0 ? 'First.' : 'Last.'}`);
 
             responses.push(these.flat());
 
@@ -79,6 +80,7 @@ async function latest(interaction) {
             callPython(),
             callGo(),
             callMame(),
+            callDart(),
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
@@ -112,12 +114,13 @@ function nvltsToString(nlt) {
 async function callGithub() {
     let result = [];
 
-    for (const [i, repo] of ownerRepos.entries()) {
-        githubReleasesEarl.setPathname(`/repos/${repo[0]}/releases/latest`);
-        const ob = await githubReleasesEarl.fetchJson()
-            .then(() => console.log(`GitHub [${i + 1}/${ownerRepos.length}] ${repo[0]}`));
-        const nvlts = githubJsonToNVLTS(repo, ob);
-        const nvltsString = nvlts ? nvltsToString(nvlts) : `${repo[1]}: GitHub Error! (API rate limit?)`;
+    for (const [i, repoEntry] of ownerRepos.entries()) {
+        // console.log(`[callGithub] i: ${i}, owner/repo: ${repoEntry[0]}`);
+        githubReleasesEarl.setPathname(`/repos/${repoEntry[0]}/releases/latest`);
+        const ob = await githubReleasesEarl.fetchJson();
+        console.log(`GitHub [${i + 1}/${ownerRepos.length}] ${repoEntry[0]}`);
+        const nvlts = githubJsonToNVLTS(repoEntry, ob);
+        const nvltsString = nvlts ? nvltsToString(nvlts) : `${repoEntry[0]}: GitHub Error! (API rate limit?)`;
         result.push(nvltsString);
 
         if (i < ownerRepos.length - 1)
@@ -138,19 +141,19 @@ function xformRepoNameTagVer(repo, jsonOb) {
     }
 }
 
-function githubJsonToNVLTS(repo, ob) {
+function githubJsonToNVLTS(repoEntry, jsonObj) {
     // if ob has just the two keys "message" and "documentation_url"
     // we've hit the API limit or some other error
-    if (ob.message && ob.documentation_url) {
-        console.log(`GitHub releases API error: ${ob.message} ${ob.documentation_url}`);
+    if ('message' in jsonObj && 'documentation_url' in jsonObj) {
+        console.log(`GitHub releases API error: ${jsonObj.message} ${jsonObj.documentation_url}`);
     } else try {
-        const [name, version] = xformRepoNameTagVer(repo, ob);
+        const [name, version] = xformRepoNameTagVer(repoEntry, jsonObj);
 
         return {
             name,
             ver: version,
-            link: ob.html_url,
-            timestamp: new Date(ob.published_at),
+            link: jsonObj.html_url,
+            timestamp: new Date(jsonObj.published_at),
             src: 'github',
         };
     } catch (error) {
@@ -186,12 +189,22 @@ async function callGimp() {
         const gj = await gimpEarl.fetchJson();
 
         if ('STABLE' in gj && gj.STABLE.length > 0 && 'version' in gj.STABLE[0]) {
+            const ver = gj.STABLE[0].version;
+            const date = new Date(gj.STABLE[0].date);
             return [
                 nvltsToString({
                     name: 'Gimp',
-                    ver: gj.STABLE[0].version,
-                    link: undefined,
-                    timestamp: new Date(gj.STABLE[0].date),
+                    ver: ver,
+                    link: `https://gitlab.gnome.org/GNOME/gimp/-/releases/GIMP_${gj.STABLE[0].version.replace(/\./g, '_')}`,
+                    // the day is not accurate for the news link. 2.10.36 is off by 2 days
+                    /*link: `https://www.gimp.org/news/${
+                        date.getFullYear()
+                    }/${
+                        date.getMonth() + 1
+                    }/${
+                        date.getDate().toString().padStart(2, '0')
+                    }/gimp-${ver.replace(/\./g, '-')}-released`,*/
+                    timestamp: date,
                     src: 'gitlab',
                 }),
             ];
@@ -265,7 +278,7 @@ async function callGo() {
             nvltsToString({
                 name: 'Go',
                 ver: goj[0].version.replace(/^go/, ''),
-                link: undefined,
+                link: `https://go.dev/doc/devel/release#${goj[0].version}`,
                 timestamp: undefined,
                 src: 'go.dev',
             }),
@@ -291,6 +304,25 @@ async function callMame() {
         ];
     } catch (error) {
         console.error(`[MAME]`, error);
+    }
+    return [];
+}
+
+async function callDart() {
+    try {
+        const dartj = await dartEarl.fetchJson();
+
+        return [
+            nvltsToString({
+                name: 'Dart',
+                ver: dartj.version,
+                link: `https://github.com/dart-lang/sdk/releases/tag/${dartj.version}`,
+                timestamp: new Date(dartj.date),
+                src: 'googleapis.com',
+            })
+        ];
+    } catch (error) {
+        console.error(`[Dart]`, error);
     }
     return [];
 }
