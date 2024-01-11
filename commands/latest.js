@@ -63,13 +63,13 @@ async function latest(interaction) {
             responses.push(these.flat());
 
             let reply = responses.flat().toSorted().join('\n');
-            
+
             if (responses.length === 1)
                 reply = `${reply}\n\n(Just waiting for ${thatName} now)`;
-            
+
             await interaction.editReply(reply);
         }
-    
+
         const githubPromises = callGithub()
             .then(async arr => await reply(arr, 'GitHub', 'non-GitHub'));
 
@@ -128,7 +128,7 @@ async function callGithub() {
     }
     return result;
 }
-  
+
 function xformRepoNameTagVer(repo, jsonOb) {
     const [githubOwnerRepo, xform] = repo;
     const [jsonName, jsonTag] = [jsonOb.name, jsonOb.tag_name];
@@ -183,7 +183,7 @@ async function callNodejs() {
     }
     return [];
 }
-  
+
 async function callGimp() {
     try {
         const gj = await gimpEarl.fetchJson();
@@ -214,13 +214,13 @@ async function callGimp() {
     }
     return [];
 }
-  
+
 async function callXcode() {
     try {
         const xcj = await xcodeEarl.fetchJson();
 
         const rel = xcj.find(obj => obj.name === 'Xcode' && obj.version.release.release === true);
-        
+
         if (rel) {
             const timestamp = new Date(rel.date.year, rel.date.month - 1, rel.date.day);
             return [{
@@ -242,13 +242,13 @@ async function callXcode() {
     }
     return [];
 }
-  
+
 async function callPython() {
     pythonEarl.setPathname('/repos/python/cpython/tags');
 
     try {
         const pya = await pythonEarl.fetchJson();
-        
+
         if (pya.message && pya.documentation_url) {
             console.log(`[Python] GitHub tags API error: 'python'${pya.message} ${pya.documentation_url}`);
         } else {
@@ -269,7 +269,7 @@ async function callPython() {
     }
     return [];
 }
-  
+
 async function callGo() {
     try {
         const goj = await goEarl.fetchJson();
