@@ -23,28 +23,31 @@ export const execute = latest;
 // Android Studio
 // Dart
 // Intellij IDEA
-// Kotlin
 
-// GitHub JSON name field is name and version separated by space
+// GitHub JSON name field is 'name version'
 const xformNameSplit = (_, jn, __) => jn.split(' ');
 
 // Repo name is name, version is GitHub JSON tag
-const xformRepoTag = (rn, _, jt) => [rn, jt]; // (r, n, t) => [r, t]
+const xformRepoTag = (ron, _, jt) => [ron.split('/')[1], jt];
 
 // Repo name capitalized is name, version is GitHub JSON tag
-const xformRepoCapTag = (rn, _, jt) => [rn.charAt(0).toUpperCase() + rn.slice(1), jt];
+function xformRepoCapTag(ron, _, jt) {
+    const rn = ron.split('/')[1];
+    return [rn.charAt(0).toUpperCase() + rn.slice(1), jt];
+}
 
-const githubRepos = [
-    ['apple', 'swift', xformNameSplit],
-    ['audacity', 'audacity', xformNameSplit],
-    ['discordjs', 'discord.js', xformRepoCapTag],
-    ['mamedev', 'mame', xformNameSplit],
-    ['microsoft', 'TypeScript', xformRepoTag],
-    ['NationalSecurityAgency', 'ghidra', xformNameSplit],
-    ['nodejs', 'node', (_, __, jt) => ['Node (Current)', jt]],
-    ['oven-sh', 'bun', xformNameSplit],
-    ['rust-lang', 'rust', xformRepoCapTag],
-    ['ziglang', 'zig', xformRepoCapTag],
+const ownerRepos = [
+    ['apple/swift', xformNameSplit],
+    ['audacity/audacity', xformNameSplit],
+    ['discordjs/discord.js', xformRepoCapTag],
+    ['JetBrains/kotlin', xformNameSplit],
+    // ['mamedev/mame', xformNameSplit],
+    ['microsoft/TypeScript', xformRepoTag],
+    // ['NationalSecurityAgency/ghidra', xformNameSplit],
+    // ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
+    // ['oven-sh/bun', xformNameSplit],
+    // ['rust-lang/rust', xformRepoCapTag],
+    // ['ziglang/zig', xformRepoCapTag],
 ];
 
 async function latest(interaction) {
@@ -56,7 +59,7 @@ async function latest(interaction) {
         async function reply(these, thisName, thatName) {
             console.log(`${thisName} have been fetched. ${responses.length === 0 ? 'First.' : 'Last.'}`);
 
-            responses.push(these);
+            responses.push(these.flat());
 
             let reply = responses.flat().toSorted().join('\n');
             
@@ -66,6 +69,9 @@ async function latest(interaction) {
             await interaction.editReply(reply);
         }
     
+        const githubPromises = callGithub()
+            .then(async arr => await reply(arr, 'GitHub', 'non-GitHub'));
+
         const otherPromises = Promise.all([
             callNodejs(),
             callGimp(),
@@ -73,9 +79,7 @@ async function latest(interaction) {
             callPython(),
             callGo(),
             callMame(),
-        ]).then(async arr => await reply(arr.flat(), 'Non-GitHub', 'GitHub'));
-
-        const githubPromises = callGithub().then(async arr => await reply(arr.flat(), 'GitHub', 'non-GitHub'));
+        ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
     } catch (error) {
@@ -107,26 +111,29 @@ function nvltsToString(nlt) {
 
 async function callGithub() {
     let result = [];
-    for (const repo of githubRepos) {
-        githubReleasesEarl.setPathname(`/repos/${repo[0]}/${repo[1]}/releases/latest`);
-        const ob = await githubReleasesEarl.fetchJson();
+
+    for (const [i, repo] of ownerRepos.entries()) {
+        githubReleasesEarl.setPathname(`/repos/${repo[0]}/releases/latest`);
+        const ob = await githubReleasesEarl.fetchJson()
+            .then(() => console.log(`GitHub [${i + 1}/${ownerRepos.length}] ${repo[0]}`));
         const nvlts = githubJsonToNVLTS(repo, ob);
         const nvltsString = nvlts ? nvltsToString(nvlts) : `${repo[1]}: GitHub Error! (API rate limit?)`;
         result.push(nvltsString);
-        if (githubRepos.indexOf(repo) < githubRepos.length - 1)
+
+        if (i < ownerRepos.length - 1)
             await new Promise(resolve => setTimeout(resolve, 4500)); // delay for GitHub API rate limit
     }
     return result;
 }
   
 function xformRepoNameTagVer(repo, jsonOb) {
-    const [, repoName, xform] = repo;
+    const [githubOwnerRepo, xform] = repo;
     const [jsonName, jsonTag] = [jsonOb.name, jsonOb.tag_name];
 
     if (xform) {
-        return xform(repoName, jsonName, jsonTag);
+        return xform(githubOwnerRepo, jsonName, jsonTag);
     } else {
-        console.log(`Unrecognized repo: ${repoName}, name: ${jsonName}, tag: ${jsonTag}`);
+        console.log(`Unrecognized repo: ${githubOwnerRepo}, name: ${jsonName}, tag: ${jsonTag}`);
         return ['?name?', '?ver?'];
     }
 }
