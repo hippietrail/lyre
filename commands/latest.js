@@ -16,7 +16,11 @@ const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/chann
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
-    .setDescription('Latest releases of various projects');
+    .setDescription('Latest releases of various projects')
+        .addBooleanOption(option => option
+            .setName('sortbyage')
+            .setDescription('Sort by most recent first')
+            .setRequired(true));
 
 export const execute = latest;
 
@@ -57,12 +61,26 @@ async function latest(interaction) {
     try {
         let responses = [];
 
+        let sortByAge = interaction.options.getBoolean('sortbyage');
+        console.log(`[latest] sortByAge: ${sortByAge}`);
+
         async function reply(these, thisName, thatName) {
             console.log(`All ${thisName} have been fetched. ${responses.length === 0 ? 'First.' : 'Last.'}`);
 
             responses.push(these.flat());
 
-            let reply = responses.flat().toSorted().join('\n');
+            let reply = responses.flat()
+                .toSorted((a, b) => {
+                    const ageDiff = a.timestamp === undefined
+                        ? b.timestamp === undefined ? 0 : 2
+                        : b.timestamp === undefined ? -2 : b.timestamp - a.timestamp;
+
+                    return sortByAge && ageDiff
+                        ? ageDiff
+                        : a.name.localeCompare(b.name);
+                })
+                .map(nvlt => nvltsToString(nvlt))
+                .join('\n');
 
             if (responses.length === 1)
                 reply = `${reply}\n\n(Just waiting for ${thatName} now)`;
@@ -92,22 +110,22 @@ async function latest(interaction) {
 /**
  * Generates a string representation of a name, version, link, timestamp, and source.
  *
- * @param {object} nlt - An object containing the name, version, link, timestamp, and source.
- * @param {string} nlt.name - The name.
- * @param {string} nlt.ver - The version.
- * @param {string} [nlt.link] - The optional link.
- * @param {number} [nlt.timestamp] - The optional timestamp.
- * @param {string} nlt.src - The source.
+ * @param {object} nvlts - An object containing the name, version, link, timestamp, and source.
+ * @param {string} nvlts.name - The name.
+ * @param {string} nvlts.ver - The version.
+ * @param {string} [nvlts.link] - The optional link.
+ * @param {number} [nvlts.timestamp] - The optional timestamp.
+ * @param {string} nvlts.src - The source.
  * @return {string} A string representation of the name, version, link, timestamp, and source.
  */
-function nvltsToString(nlt) {
+function nvltsToString(nvlts) {
     const parts = [
-        `${nlt.name}:`,
-        nlt.link ? `[${nlt.ver}](<${nlt.link}>)` : nlt.ver
+        `${nvlts.name}:`,
+        nvlts.link ? `[${nvlts.ver}](<${nvlts.link}>)` : nvlts.ver
     ];
 
-    if (nlt.timestamp) parts.push(`- ${ago(new Date() - nlt.timestamp)}`);
-    parts.push(`(${nlt.src})`);
+    if (nvlts.timestamp) parts.push(`- ${ago(new Date() - nvlts.timestamp)}`);
+    parts.push(`(${nvlts.src})`);
     return parts.join(' ');
 }
 
@@ -120,8 +138,7 @@ async function callGithub() {
         const ob = await githubReleasesEarl.fetchJson();
         console.log(`GitHub [${i + 1}/${ownerRepos.length}] ${repoEntry[0]}`);
         const nvlts = githubJsonToNVLTS(repoEntry, ob);
-        const nvltsString = nvlts ? nvltsToString(nvlts) : `${repoEntry[0]}: GitHub Error! (API rate limit?)`;
-        result.push(nvltsString);
+        result.push(nvlts);
 
         if (i < ownerRepos.length - 1)
             await new Promise(resolve => setTimeout(resolve, 4500)); // delay for GitHub API rate limit
@@ -177,7 +194,7 @@ async function callNodejs() {
             link: undefined,
             timestamp: new Date(obj.date),
             src: 'nodejs.org',
-        })).map(nvlts => nvltsToString(nvlts));
+        }));
     } catch (error) {
         console.error(`[Node.js]`, error);
     }
@@ -191,23 +208,21 @@ async function callGimp() {
         if ('STABLE' in gj && gj.STABLE.length > 0 && 'version' in gj.STABLE[0]) {
             const ver = gj.STABLE[0].version;
             const date = new Date(gj.STABLE[0].date);
-            return [
-                nvltsToString({
-                    name: 'Gimp',
-                    ver: ver,
-                    link: `https://gitlab.gnome.org/GNOME/gimp/-/releases/GIMP_${gj.STABLE[0].version.replace(/\./g, '_')}`,
-                    // the day is not accurate for the news link. 2.10.36 is off by 2 days
-                    /*link: `https://www.gimp.org/news/${
-                        date.getFullYear()
-                    }/${
-                        date.getMonth() + 1
-                    }/${
-                        date.getDate().toString().padStart(2, '0')
-                    }/gimp-${ver.replace(/\./g, '-')}-released`,*/
-                    timestamp: date,
-                    src: 'gitlab',
-                }),
-            ];
+            return [{
+                name: 'Gimp',
+                ver: ver,
+                link: `https://gitlab.gnome.org/GNOME/gimp/-/releases/GIMP_${gj.STABLE[0].version.replace(/\./g, '_')}`,
+                // the day is not accurate for the news link. 2.10.36 is off by 2 days
+                /*link: `https://www.gimp.org/news/${
+                    date.getFullYear()
+                }/${
+                    date.getMonth() + 1
+                }/${
+                    date.getDate().toString().padStart(2, '0')
+                }/gimp-${ver.replace(/\./g, '-')}-released`,*/
+                timestamp: date,
+                src: 'gitlab',
+            }];
         }
     } catch (error) {
         console.error(`[Gimp]`, error);
@@ -235,7 +250,7 @@ async function callXcode() {
                 link: undefined,
                 timestamp,
                 src: 'xcodereleases.com',
-            }].map(nvlts => nvltsToString(nvlts));
+            }];
         }
     } catch (error) {
         console.error(`[Xcode]`, error);
@@ -254,15 +269,13 @@ async function callPython() {
         } else {
             const rel = pya.find(obj => obj.name.match(/^v(\d+)\.(\d+)\.(\d+)$/));
 
-            if (rel) return [
-                nvltsToString({
-                    name: 'Python',
-                    ver: rel.name,
-                    link: undefined,
-                    timestamp: undefined,
-                    src: 'github',
-                }),
-            ];
+            if (rel) return [{
+                name: 'Python',
+                ver: rel.name,
+                link: undefined,
+                timestamp: undefined,
+                src: 'github',
+            }];
         }
     } catch (error) {
         console.error(`[Python]`, error);
@@ -274,15 +287,13 @@ async function callGo() {
     try {
         const goj = await goEarl.fetchJson();
 
-        return [
-            nvltsToString({
-                name: 'Go',
-                ver: goj[0].version.replace(/^go/, ''),
-                link: `https://go.dev/doc/devel/release#${goj[0].version}`,
-                timestamp: undefined,
-                src: 'go.dev',
-            }),
-        ];
+        return [{
+            name: 'Go',
+            ver: goj[0].version.replace(/^go/, ''),
+            link: `https://go.dev/doc/devel/release#${goj[0].version}`,
+            timestamp: undefined,
+            src: 'go.dev',
+        }];
     } catch (error) {
         console.error(`[Go]`, error);
     }
@@ -293,15 +304,13 @@ async function callMame() {
     try {
         const mamej = await mameEarl.fetchJson();
 
-        return [
-            nvltsToString({
-                name: 'MAME',
-                ver: mamej.version,
-                link: undefined,
-                timestamp: undefined,
-                src: 'githubusercontent.com',
-            }),
-        ];
+        return [{
+            name: 'MAME',
+            ver: mamej.version,
+            link: undefined,
+            timestamp: undefined,
+            src: 'githubusercontent.com',
+        }];
     } catch (error) {
         console.error(`[MAME]`, error);
     }
@@ -312,15 +321,13 @@ async function callDart() {
     try {
         const dartj = await dartEarl.fetchJson();
 
-        return [
-            nvltsToString({
-                name: 'Dart',
-                ver: dartj.version,
-                link: `https://github.com/dart-lang/sdk/releases/tag/${dartj.version}`,
-                timestamp: new Date(dartj.date),
-                src: 'googleapis.com',
-            })
-        ];
+        return [{
+            name: 'Dart',
+            ver: dartj.version,
+            link: `https://github.com/dart-lang/sdk/releases/tag/${dartj.version}`,
+            timestamp: new Date(dartj.date),
+            src: 'googleapis.com',
+        }];
     } catch (error) {
         console.error(`[Dart]`, error);
     }
