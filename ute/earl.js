@@ -1,11 +1,11 @@
 import { config } from 'dotenv';
 
 export class Earl {
-    constructor(origin, basicPathname, optionalSearchParams) {
-        this.basicPathname = basicPathname;
+    constructor(origin, optionalBasicPathname, optionalSearchParams) {
+        this.basicPathname = optionalBasicPathname || '/';
 
         this.url = new URL(origin);
-        this.url.pathname = basicPathname;
+        this.url.pathname = this.basicPathname;
         if (optionalSearchParams)
             for (const [key, value] of Object.entries(optionalSearchParams))
                 this.url.searchParams.set(key, value);

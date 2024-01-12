@@ -1,5 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
+import { ASRiða, IIRiða } from '../ute/riða.js';
 import { ago } from '../ute/ago.js';
 
 const githubReleasesEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/releases/latest');
@@ -32,12 +33,12 @@ export const execute = latest;
 const xformNameSplit = (_, jn, __) => jn.split(' ');
 
 // Repo name is name, version is GitHub JSON tag
-const xformRepoTag = (ron, _, jt) => [ron.split('/')[1], jt];
+const xformRepoTag = (ro, _, jt) => [ro.split('/')[1], jt];
 
 // Repo name capitalized is name, version is GitHub JSON tag
-function xformRepoCapTag(ron, _, jt) {
+function xformRepoCapTag(ro, _, jt) {
     // console.log(`[xformRepoCapTag]`, ron, jt);
-    const rn = ron.split('/')[1];
+    const rn = ro.split('/')[1];
     return [rn.charAt(0).toUpperCase() + rn.slice(1), jt];
 }
 
@@ -50,6 +51,7 @@ const ownerRepos = [
     ['microsoft/TypeScript', xformRepoTag],
     ['NationalSecurityAgency/ghidra', xformNameSplit],
     ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
+    ['odin-lang/Odin', (_, __, jt) => ['Odin', jt]],
     ['oven-sh/bun', xformNameSplit],
     ['rust-lang/rust', xformRepoCapTag],
     ['ziglang/zig', xformRepoCapTag],
@@ -189,7 +191,7 @@ async function callNodejs() {
             rels.find(rel => rel.lts === false),
             rels.find(rel => typeof rel.lts === 'string')
         ].map(obj => ({
-            name: `Node (${obj.lts === false ? 'Current' : `LTS ${obj.lts}`})`,
+            name: `Node ${obj.lts === false ? '(Current)' : `'${obj.lts}' (LTS)`}`,
             ver: obj.version,
             link: undefined,
             timestamp: new Date(obj.date),
@@ -269,13 +271,44 @@ async function callPython() {
         } else {
             const rel = pya.find(obj => obj.name.match(/^v(\d+)\.(\d+)\.(\d+)$/));
 
-            if (rel) return [{
-                name: 'Python',
-                ver: rel.name,
-                link: undefined,
-                timestamp: undefined,
-                src: 'github',
-            }];
+            // TODO if the 2nd fetch fails, use this link to the tag release:
+            // TODO `https://github.com/python/cpython/releases/tag/${rel.name}`,
+            // TODO but there is more human-friendly documentation at:
+            // TODO https://docs.python.org/3.12/
+            //
+            // Note that though it mentions the full version number it only goes
+            // on to cover the major/minor version: 3.12.1 vs 3.12
+            //
+            // > Python 3.12.1 documentation
+            // > Welcome! This is the official documentation for Python 3.12.1.
+            // >
+            // > Parts of the documentation:
+            // >
+            // > What's new in Python 3.12?
+            // > or all "What's new" documents since 2.0
+
+            if (rel) {
+                const url = rel.commit.url;
+                const response = await fetch(url);
+                const json = await response.json();
+
+                // there is commit.author.date and commit.committer.date...
+                const [authorDate, committerDate] = ["author", "committer"].map(k => new Date(json.commit[k].date));
+                // print which is newer, and by how many seconds/minutes
+                // in the one I checked, the committer is newer by about 15 minutes
+                const [newer, older, diff, date] = committerDate > authorDate
+                    ? ['committer', 'author', committerDate - authorDate, committerDate]
+                    : ['author', 'committer', authorDate - committerDate, authorDate];
+                console.log(`[Python] ${newer} is newer than ${older} by ${ago(diff).replace(' ago', '')}`);
+                
+                return [{
+                    name: 'Python',
+                    ver: rel.name,
+                    link: json.html_url,
+                    timestamp: date,
+                    src: 'github',
+                }];
+            }
         }
     } catch (error) {
         console.error(`[Python]`, error);
