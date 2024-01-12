@@ -1,7 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
-import { ASRiða, IIRiða } from '../ute/riða.js';
 import { ago } from '../ute/ago.js';
+import parse from 'html-dom-parser';
 
 const githubReleasesEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/releases/latest');
 const nodejsEarl = new Earl('https://nodejs.org', '/dist/index.json');
@@ -11,7 +11,7 @@ const gimpEarl = new Earl('https://gitlab.gnome.org',
 });
 const xcodeEarl = new Earl('https://xcodereleases.com', '/data.json');
 const pythonEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/tags');
-const goEarl = new Earl('https://go.dev', '/dl/', { 'mode': 'json' });
+const goEarl = new Earl('https://go.dev', '/doc/devel/release');
 const mameEarl = new Earl('https://raw.githubusercontent.com', '/Calinou/scoop-games/master/bucket/mame.json');
 const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/channels/stable/release/latest/VERSION');
 
@@ -317,16 +317,49 @@ async function callPython() {
 }
 
 async function callGo() {
-    try {
-        const goj = await goEarl.fetchJson();
+    const verCmp = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 
-        return [{
-            name: 'Go',
-            ver: goj[0].version.replace(/^go/, ''),
-            link: `https://go.dev/doc/devel/release#${goj[0].version}`,
-            timestamp: undefined,
-            src: 'go.dev',
-        }];
+    try {
+        const dom = parse(await goEarl.fetchText());
+
+        const html = dom[2];
+        if (!html || html.type !== 'tag' || html.name !== 'html')
+            throw new Error('html not found');
+        const body = html.children[3];
+        if (!body || body.type !== 'tag' || body.name !== 'body')
+            throw new Error('body not found');
+        const main = body.children[9];
+        if (!main || main.type !== 'tag' || main.name !== 'main')
+            throw new Error('main not found');
+        const article = main.children[1];
+        if (!article || article.type !== 'tag' || article.name !== 'article')
+            throw new Error('article not found');
+
+        const paras = article.children.filter(e => e.type === 'tag' && e.name === 'p');
+
+        let biggestVer = null;
+        let dateOfBiggestVer = null;
+
+        for (const [i, para] of paras.entries()) {
+            const data = para.children[0].data.trim();
+            const mat = data.match(/^go(\d+(?:\.\d+)*)\s+\(released (\d+-\d+-\d+)\)/m);
+            const ver = mat ? mat[1] : undefined;
+
+            if (mat && (biggestVer === null || verCmp(ver, biggestVer) > 0)) {
+                biggestVer = ver;
+                dateOfBiggestVer = mat[2];
+            }        
+        }
+
+        if (biggestVer) {
+            return [{
+                name: 'Go',
+                ver: biggestVer,
+                link: `https://go.dev/doc/devel/release#go${biggestVer}`,
+                timestamp: new Date(dateOfBiggestVer),
+                src: 'go.dev',
+            }];
+        }
     } catch (error) {
         console.error(`[Go]`, error);
     }
