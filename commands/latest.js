@@ -14,6 +14,7 @@ const pythonEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/tags');
 const goEarl = new Earl('https://go.dev', '/doc/devel/release');
 const mameEarl = new Earl('https://raw.githubusercontent.com', '/Calinou/scoop-games/master/bucket/mame.json');
 const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/channels/stable/release/latest/VERSION');
+const rvmEarl = new Earl('https://www.retrovirtualmachine.org', '/changelog/');
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -94,13 +95,14 @@ async function latest(interaction) {
             .then(async arr => await reply(arr, 'GitHub', 'non-GitHub'));
 
         const otherPromises = Promise.all([
-            callNodejs(),
+            //callNodejs(), // just use the GitHub one for now, which has link
             callGimp(),
             callXcode(),
             callPython(),
             callGo(),
-            callMame(),
+            //callMame(),   // just use the GitHub one for now, which has link and date
             callDart(),
+            callRvm(),
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
@@ -396,6 +398,45 @@ async function callDart() {
         }];
     } catch (error) {
         console.error(`[Dart]`, error);
+    }
+    return [];
+}
+
+async function callRvm() {
+    try {
+        const dom = parse(await rvmEarl.fetchText());
+
+        const html = dom[2];
+        if (!html || html.type !== 'tag' || html.name !== 'html')
+            throw new Error('html not found');
+        const body = html.children[1];
+        if (!body || body.type !== 'tag' || body.name !== 'body')
+            throw new Error('body not found');
+        const mainContent = body.children[2];
+        if (!mainContent || mainContent.type !== 'tag' || mainContent.name !== 'div' || !mainContent.attribs?.class?.includes('mainContent'))
+            throw new Error('mainContent not found');
+        const article = mainContent.children[3];
+        if (!article || article.type !== 'tag' || article.name !== 'article')
+            throw new Error('article not found');
+
+        const h2s = article.children.filter(e => e.type === 'tag' && e.name === 'h2');
+        
+        for (const [i, h2] of h2s.entries()) {
+            const mat = h2.children[0]?.data?.trim().match(/^RetroVM v(\d+(?:\.\d+)*)\s+\((\d+\/\d+\/\d+)\)/m);
+            if (mat) {
+                const date = mat[2]?.split('/')?.reverse()?.join('-');
+                
+                return [{
+                    name: 'Retro Virtual Machine',
+                    ver: mat[1],
+                    link: 'https://www.retrovirtualmachine.org/changelog/',
+                    timestamp: date ? new Date(date) : undefined,
+                    src: 'retrovirtualmachine.org',
+                }];
+            }
+        }
+    } catch (error) {
+        console.error(`[RVM]`, error);
     }
     return [];
 }
