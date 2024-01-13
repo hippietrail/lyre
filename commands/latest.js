@@ -85,8 +85,26 @@ async function latest(interaction) {
                 .map(nvlt => nvltsToString(nvlt))
                 .join('\n');
 
+            const note = responses.length === 1
+                ? `\n\n(Just waiting for ${thatName} now)`
+                : '';
+
+            // print debug/info about number of chars in reply since Discord limits to 2000 chars
+            console.log(`[latest] reply length before: ${reply.length + note.length} chars`);
+
+            // if the length is over 2000,
+            // then keep removing lines from the end until it's under 2000
+            while (reply.length + note.length > 2000) {
+                reply = reply
+                    .split('\n')
+                    .slice(0, -1)
+                    .join('\n')
+            }
+
             if (responses.length === 1)
-                reply = `${reply}\n\n(Just waiting for ${thatName} now)`;
+                reply = `${reply}${note}`;
+
+            console.log(`[latest] reply length after: ${reply.length} chars`);
 
             await interaction.editReply(reply);
         }
@@ -248,13 +266,13 @@ async function callXcode() {
                 link: rel.links.notes.url,
                 timestamp,
                 src: 'xcodereleases.com',
-            }, {
+            }/*, {
                 name: 'Swift',
                 ver: rel.compilers.swift[0].number,
                 link: undefined,
                 timestamp,
                 src: 'xcodereleases.com',
-            }];
+            }*/];
         }
     } catch (error) {
         console.error(`[Xcode]`, error);
@@ -302,7 +320,7 @@ async function callPython() {
                     ? ['committer', 'author', committerDate - authorDate, committerDate]
                     : ['author', 'committer', authorDate - committerDate, authorDate];
                 console.log(`[Python] ${newer} is newer than ${older} by ${ago(diff).replace(' ago', '')}`);
-                
+
                 return [{
                     name: 'Python',
                     ver: rel.name,
@@ -350,7 +368,7 @@ async function callGo() {
             if (mat && (biggestVer === null || verCmp(ver, biggestVer) > 0)) {
                 biggestVer = ver;
                 dateOfBiggestVer = mat[2];
-            }        
+            }
         }
 
         if (biggestVer) {
@@ -420,12 +438,12 @@ async function callRvm() {
             throw new Error('article not found');
 
         const h2s = article.children.filter(e => e.type === 'tag' && e.name === 'h2');
-        
+
         for (const [i, h2] of h2s.entries()) {
             const mat = h2.children[0]?.data?.trim().match(/^RetroVM v(\d+(?:\.\d+)*)\s+\((\d+\/\d+\/\d+)\)/m);
             if (mat) {
                 const date = mat[2]?.split('/')?.reverse()?.join('-');
-                
+
                 return [{
                     name: 'Retro Virtual Machine',
                     ver: mat[1],
