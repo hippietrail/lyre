@@ -47,6 +47,7 @@ const codingChans = {
 };
 
 const retroChans = {
+    'Action Retro':                     'UUoL8olX-259lS1N6QPyP4IQ',
     'Adrian\'s Digital Basement':       'UUE5dIscvDxrb7CD5uiJJOiw',
     'Adrian\'s Digital Basement ][':    'UUbtwi4wK1YXd9AyV_4UcE6g',
     'ChibiAkumas':                      'UU8t99gp5IN-FTf5rGVaRevw',
@@ -56,6 +57,9 @@ const retroChans = {
     'Modern Vintage Gamer':             'UUjFaPUcJU1vwk193mnW_w1w',
     'Noel\'s Retro Lab':                'UU2-SP1bYi3ueKlVU7I75wFw',
     'Nostalgia Nerd':                   'UU7qPftDWPw9XuExpSgfkmJQ',
+    'PCRetroTech':                      'UUWYne_mhlRE1AiN2ApjmZDA',
+    'Retro Hack Shack':                 'UUN_u47_wJuhh249H9E8sjtw',
+    'Retro Recipes':                    'UU6gARF3ICgaLfs3o2znuqXA',
     'RetroVirtualMachine':              'UUgNfOsqL76T13tUex62gonA',
     'RMC - The Cave':                   'UULEoyoOKZK0idGqSc6Pi23w',
     'Tech Tangents':                    'UUerEIdrEW-IqwvlH8lTQUJQ',
