@@ -92,14 +92,9 @@ async function latest(interaction) {
             // print debug/info about number of chars in reply since Discord limits to 2000 chars
             console.log(`[latest] reply length before: ${reply.length + note.length} chars`);
 
-            // if the length is over 2000,
-            // then keep removing lines from the end until it's under 2000
-            while (reply.length + note.length > 2000) {
-                reply = reply
-                    .split('\n')
-                    .slice(0, -1)
-                    .join('\n')
-            }
+            // if length > 2000, keep removing lines from the end until it's <= 2000
+            while (reply.length + note.length > 2000)
+                reply = reply.split('\n').slice(0, -1).join('\n')
 
             if (responses.length === 1)
                 reply = `${reply}${note}`;
@@ -342,31 +337,22 @@ async function callGo() {
     try {
         const dom = parse(await goEarl.fetchText());
 
-        const html = dom[2];
-        if (!html || html.type !== 'tag' || html.name !== 'html')
-            throw new Error('html not found');
-        const body = html.children[3];
-        if (!body || body.type !== 'tag' || body.name !== 'body')
-            throw new Error('body not found');
-        const main = body.children[9];
-        if (!main || main.type !== 'tag' || main.name !== 'main')
-            throw new Error('main not found');
-        const article = main.children[1];
-        if (!article || article.type !== 'tag' || article.name !== 'article')
-            throw new Error('article not found');
+        const article = domStroll(dom, [
+            [2, 'html'],
+            [3, 'body'],
+            [9, 'main'],
+            [1, 'article'],
+        ]);
 
         const paras = article.children.filter(e => e.type === 'tag' && e.name === 'p');
 
         let biggestVer = null;
         let dateOfBiggestVer = null;
 
-        for (const [i, para] of paras.entries()) {
-            const data = para.children[0].data.trim();
-            const mat = data.match(/^go(\d+(?:\.\d+)*)\s+\(released (\d+-\d+-\d+)\)/m);
-            const ver = mat ? mat[1] : undefined;
-
-            if (mat && (biggestVer === null || verCmp(ver, biggestVer) > 0)) {
-                biggestVer = ver;
+        for (const para of paras) {
+            const mat = para.children[0].data.trim().match(/^go(\d+(?:\.\d+)*)\s+\(released (\d+-\d+-\d+)\)/m);
+            if (mat && (biggestVer === null || verCmp(mat[1], biggestVer) > 0)) {
+                biggestVer = mat[1];
                 dateOfBiggestVer = mat[2];
             }
         }
@@ -384,6 +370,22 @@ async function callGo() {
         console.error(`[Go]`, error);
     }
     return [];
+}
+
+function domStroll(kids, data) {
+    let node = null;
+    for (const datum of data) {
+        const [n, name, cls] = datum;
+        node = kids[n];
+
+        if (!node || node.type !== 'tag' || node.name !== name || (cls && !node.attribs?.class?.includes(cls))) {
+            //console.log(`node ${!!node} type ${node?.type} name ${node?.name} cls ${cls} att ${node?.attribs?.class}`);
+            throw new Error(`not <${name}${cls ? `.${cls}` : ''}>`);
+        }
+
+        kids = node.children;
+    }
+    return node;
 }
 
 async function callMame() {
@@ -424,22 +426,16 @@ async function callRvm() {
     try {
         const dom = parse(await rvmEarl.fetchText());
 
-        const html = dom[2];
-        if (!html || html.type !== 'tag' || html.name !== 'html')
-            throw new Error('html not found');
-        const body = html.children[1];
-        if (!body || body.type !== 'tag' || body.name !== 'body')
-            throw new Error('body not found');
-        const mainContent = body.children[2];
-        if (!mainContent || mainContent.type !== 'tag' || mainContent.name !== 'div' || !mainContent.attribs?.class?.includes('mainContent'))
-            throw new Error('mainContent not found');
-        const article = mainContent.children[3];
-        if (!article || article.type !== 'tag' || article.name !== 'article')
-            throw new Error('article not found');
+        const article = domStroll(dom, [
+            [2, 'html'],
+            [1, 'body'],
+            [2, 'div', 'mainContent'],
+            [3, 'article'],
+        ]);
 
         const h2s = article.children.filter(e => e.type === 'tag' && e.name === 'h2');
 
-        for (const [i, h2] of h2s.entries()) {
+        for (const h2 of h2s) {
             const mat = h2.children[0]?.data?.trim().match(/^RetroVM v(\d+(?:\.\d+)*)\s+\((\d+\/\d+\/\d+)\)/m);
             if (mat) {
                 const date = mat[2]?.split('/')?.reverse()?.join('-');
