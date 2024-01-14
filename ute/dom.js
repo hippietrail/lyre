@@ -1,0 +1,44 @@
+
+export function domStroll(site, kids, data) {
+    let node = null;
+    for (const datum of data) {
+        const [n, name, opts] = datum;
+        //console.log(`n ${n} name ${name}${opts ? ` opts '${JSON.stringify(opts)}'` : ''}`);
+        if (opts && typeof opts !== 'object')
+            throw new Error(`[domStroll] ${site} opts must be an object`);
+        node = kids[n];
+
+        if (!node || node.type !== 'tag' || node.name !== name ||
+            (opts && opts.id && node.attribs.id !== opts.id) ||
+            (opts && opts.cls && !node.attribs?.class?.includes(opts.cls))
+        ) {
+            if (!node) {
+                if (opts && opts.optional)
+                    return null;
+                throw new Error(`[domStroll] ${site} not a node`);
+            }
+            if (node.type !== 'tag') throw new Error(`[domStroll] ${site} not a tag node`);
+            if (node.name !== name) throw new Error(`[domStroll] ${site} not ${name}`);
+            if (opts && opts.id && node.attribs.id !== opts.id) {
+                throw new Error(`node id is not ${opts.id}`);
+            }
+            if (opts && opts.cls && !node.attribs?.class?.includes(opts.cls))
+                throw new Error(`<${name}> has no .${opts.cls} class`);
+            throw new Error(`not <${name}${opts && opts.cls ? `.${opts.cls}` : ''}>`);
+        }
+
+        if (opts) {
+            let warn;
+            if ('id' in node.attribs) {
+                if (!opts.id) warn = ['id', '#', node.attribs.id];
+            } else if ('class' in node.attribs) {
+                if (!opts.cls) warn = ['class', '.', node.attribs.class];
+            }
+            if (warn) console.warn(`[domStroll] ${site} ${warn[0]} ${warn[1]}${warn[2]} ignored?`);
+        }
+
+        kids = node.children;
+    }
+
+    return node;
+}

@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
 import { ago } from '../ute/ago.js';
+import { domStroll } from '../ute/dom.js';
 import parse from 'html-dom-parser';
 
 const githubReleasesEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/releases/latest');
@@ -15,6 +16,7 @@ const goEarl = new Earl('https://go.dev', '/doc/devel/release');
 const mameEarl = new Earl('https://raw.githubusercontent.com', '/Calinou/scoop-games/master/bucket/mame.json');
 const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/channels/stable/release/latest/VERSION');
 const rvmEarl = new Earl('https://www.retrovirtualmachine.org', '/changelog/');
+const AsEarl = new Earl('https://androidstudio.googleblog.com');
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -116,6 +118,7 @@ async function latest(interaction) {
             //callMame(),   // just use the GitHub one for now, which has link and date
             callDart(),
             callRvm(),
+            callAS(),
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
@@ -337,11 +340,11 @@ async function callGo() {
     try {
         const dom = parse(await goEarl.fetchText());
 
-        const article = domStroll(dom, [
+        const article = domStroll('Go', dom, [
             [2, 'html'],
-            [3, 'body'],
-            [9, 'main'],
-            [1, 'article'],
+            [3, 'body', { cls: 'Site' }],
+            [9, 'main', { id: 'main-content' }],
+            [1, 'article', { cls: 'Doc' }],
         ]);
 
         const paras = article.children.filter(e => e.type === 'tag' && e.name === 'p');
@@ -370,22 +373,6 @@ async function callGo() {
         console.error(`[Go]`, error);
     }
     return [];
-}
-
-function domStroll(kids, data) {
-    let node = null;
-    for (const datum of data) {
-        const [n, name, cls] = datum;
-        node = kids[n];
-
-        if (!node || node.type !== 'tag' || node.name !== name || (cls && !node.attribs?.class?.includes(cls))) {
-            //console.log(`node ${!!node} type ${node?.type} name ${node?.name} cls ${cls} att ${node?.attribs?.class}`);
-            throw new Error(`not <${name}${cls ? `.${cls}` : ''}>`);
-        }
-
-        kids = node.children;
-    }
-    return node;
 }
 
 async function callMame() {
@@ -426,11 +413,11 @@ async function callRvm() {
     try {
         const dom = parse(await rvmEarl.fetchText());
 
-        const article = domStroll(dom, [
+        const article = domStroll('RVM', dom, [
             [2, 'html'],
             [1, 'body'],
-            [2, 'div', 'mainContent'],
-            [3, 'article'],
+            [2, 'div', { cls: 'mainContent' }],
+            [3, 'article', { cls: 'content' }],
         ]);
 
         const h2s = article.children.filter(e => e.type === 'tag' && e.name === 'h2');
@@ -451,6 +438,98 @@ async function callRvm() {
         }
     } catch (error) {
         console.error(`[RVM]`, error);
+    }
+    return [];
+}
+
+async function callAS() {
+    try {
+        const dom = parse(await AsEarl.fetchText());
+
+        const blarchList = domStroll('AS', dom, [
+            [2, 'html', { cls: 'v2' }],
+            [3, 'body'],
+            [15, 'div', { cls: 'cols-wrapper' }],
+            [1, 'div', { cls: 'col-main-wrapper' }],
+            [1, 'div', { cls: 'col-left' }],
+            [3, 'div', { cls: 'blogger-archives' }],
+            [3, 'div', { id: 'aside' }],
+            [1, 'div', { id: 'sidebar' }],
+            [0, 'div', { id: 'BlogArchive1' }],
+            [3, 'div', { cls: 'widget-content' }],
+            [1, 'div', { id: 'ArchiveList' }],
+            [1, 'div', { id: 'BlogArchive1_ArchiveList' }],
+        ]);
+
+        const yearULs = blarchList.children.filter(e => e.type === 'tag' && e.name === 'ul');
+
+        for (const [y, ul] of yearULs.entries()) {
+            const yearLI = domStroll('AS', ul.children, [
+                [1, 'li', { cls: 'archivedate' }],
+            ]);
+
+            const yearSpan = domStroll('AS', yearLI.children, [
+                [1, 'a', { cls: 'toggle' }],
+                [3, 'span'],
+            ]);
+            const yearText = yearSpan.children[0].data.trim();
+            console.log(`${y}/${yearULs.length} YEAR`, yearText);
+
+            const monthULs = yearLI.children.filter(e => e.type === 'tag' && e.name === 'ul');
+
+            for (const [m, ul2] of monthULs.entries()) {
+                const monthLI = domStroll('AS', ul2.children, [
+                    [1, 'li', { cls: 'archivedate' }],
+                ]);
+
+                const monthSpan = domStroll('AS', monthLI.children, [
+                    [1, 'a', { cls: 'toggle' }],
+                    [3, 'span'],
+                ])
+                const monthText = monthSpan.children[0].data.trim();
+                console.log(`${y}/${yearULs.length} ${m}/${monthULs.length} MONTH`, monthText)//.type, n.name, n.data);
+
+                const ul3 = domStroll('AS', monthLI.children, [
+                    [5, 'ul', { cls: 'posts', optional: true }],
+                ])
+
+                if (ul3) {
+                    const postLIs = ul3.children.filter(e => e.type === 'tag' && e.name === 'li');
+                    console.log(`postLIs ${postLIs.length}`);
+
+                    for (const [i, li] of postLIs.entries()) {
+                        const postA = domStroll('AS', li.children, [
+                            [0, 'a'],
+                        ]);
+                        const postText = postA.children[0].data.trim();
+                        console.log(`  ${postText}`);
+                        /*
+                        Android Studio Jellyfish | 2023.3.1 Canary 4 now a...
+                        Android Studio Iguana | 2023.2.1 Beta 2 now available
+                        Android Studio Jellyfish | 2023.3.1 Canary 3 now a...
+                        Android Studio Hedgehog | 2023.1.1 Patch 1 now ava...
+                        Android Studio Jellyfish | 2023.3.1 Canary 2 now a...
+                        */
+                        const m = postText.match(/^Android Studio (\w+) \| ((\d+)\.\d+\.\d+) (\w+) (\d+) /);
+                        if (m) {
+                            const [codename, ver, year, channel, num] = m.slice(1);
+
+                            console.log(`animal ${codename} ver ${ver} year ${year} channel ${channel} num ${num}`);
+
+                            return [{
+                                name: `Android Studio ${codename}`,
+                                ver: `${ver} ${channel} ${num}`,
+                                link: 'https://developer.android.com/studio/releases/',
+                                timestamp: new Date(`${year}-01-01`),
+                                src: 'androidstudio.googleblog.com',
+                            }];
+                        }
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error(`[AS]`, error);
     }
     return [];
 }
