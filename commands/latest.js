@@ -49,6 +49,7 @@ const ownerRepos = [
     ['apple/swift', xformNameSplit],
     ['audacity/audacity', xformNameSplit],
     ['discordjs/discord.js', xformRepoCapTag],
+    ['elixir-lang/elixir', xformRepoCapTag],
     ['JetBrains/kotlin', xformNameSplit],
     ['mamedev/mame', xformNameSplit],
     ['microsoft/TypeScript', xformRepoTag],
@@ -520,6 +521,7 @@ async function callAS() {
                                 name: `Android Studio ${codename}`,
                                 ver: `${ver} ${channel} ${num}`,
                                 link: 'https://developer.android.com/studio/releases/',
+                                // https://androidstudio.googleblog.com/2024/01/android-studio-jellyfish-202331-canary_12.html
                                 timestamp: new Date(`${year}-01-01`),
                                 src: 'androidstudio.googleblog.com',
                             }];
