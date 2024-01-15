@@ -29,14 +29,12 @@ export function domStroll(site, kids, data) {
 
         if (opts) {
             let warn;
-            const attributes = Object.keys(node.attribs);
-            const invalidAttributes = attributes.filter(attr => attr !== 'id' && attr !== 'class');
-            const options = Object.keys(opts);
-            const invalidOptions = options.filter(opt => opt !== 'id' && opt !== 'cls');
-            if (invalidOptions.length > 0)
-                warn = ['option(s)', '', invalidOptions.join(', ')];
-            else if (invalidAttributes.length > 0)
-                warn = ['attribute(s)', '', invalidAttributes.join(', ')];
+            const unsupportedOpts = Object.keys(opts).filter(opt => !['id', 'cls'].includes(opt));
+            const uncheckedAtts = Object.keys(node.attribs).filter(attr => !['id', 'class'].includes(attr));
+            if (unsupportedOpts.length > 0)
+                warn = ['option(s)', '', unsupportedOpts.join(', ')];
+            else if (uncheckedAtts.length > 0)
+                warn = ['attribute(s)', '', uncheckedAtts.join(', ')];
             else if ('id' in node.attribs)
                 if (!opts.id) warn = ['id', '#', node.attribs.id];
             else if ('class' in node.attribs)
