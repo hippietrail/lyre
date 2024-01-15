@@ -1,7 +1,7 @@
 
 export function domStroll(site, kids, data) {
     let node = null;
-    for (const datum of data) {
+    for (const [i, datum] of data.entries()) {
         const [n, name, opts] = datum;
         //console.log(`n ${n} name ${name}${opts ? ` opts '${JSON.stringify(opts)}'` : ''}`);
         if (opts && typeof opts !== 'object')
@@ -29,12 +29,19 @@ export function domStroll(site, kids, data) {
 
         if (opts) {
             let warn;
-            if ('id' in node.attribs) {
+            const attributes = Object.keys(node.attribs);
+            const invalidAttributes = attributes.filter(attr => attr !== 'id' && attr !== 'class');
+            const options = Object.keys(opts);
+            const invalidOptions = options.filter(opt => opt !== 'id' && opt !== 'cls');
+            if (invalidOptions.length > 0)
+                warn = ['option(s)', '', invalidOptions.join(', ')];
+            else if (invalidAttributes.length > 0)
+                warn = ['attribute(s)', '', invalidAttributes.join(', ')];
+            else if ('id' in node.attribs)
                 if (!opts.id) warn = ['id', '#', node.attribs.id];
-            } else if ('class' in node.attribs) {
+            else if ('class' in node.attribs)
                 if (!opts.cls) warn = ['class', '.', node.attribs.class];
-            }
-            if (warn) console.warn(`[domStroll] ${site} ${warn[0]} ${warn[1]}${warn[2]} ignored?`);
+            if (warn) console.warn(`[domStroll] ${site}#${i}: ${node.name} ${warn[0]} ${warn[1]}${warn[2]} ignored?`);
         }
 
         kids = node.children;
