@@ -92,17 +92,21 @@ async function latest(interaction) {
                 ? `\n\n(Just waiting for ${thatName} now)`
                 : '';
 
-            // print debug/info about number of chars in reply since Discord limits to 2000 chars
-            console.log(`[latest] reply length before: ${reply.length + note.length} chars`);
+            const initialReplyLength = reply.length + note.length;
 
             // if length > 2000, keep removing lines from the end until it's <= 2000
-            while (reply.length + note.length > 2000)
-                reply = reply.split('\n').slice(0, -1).join('\n')
+            let numRemoved = 0;
+            while (reply.length + note.length > 2000) {
+                reply = reply.split('\n').slice(0, -1).join('\n');
+                numRemoved++;
+            }
 
             if (responses.length === 1)
                 reply = `${reply}${note}`;
 
-            console.log(`[latest] reply length after: ${reply.length} chars`);
+            if (initialReplyLength !== reply.length) {
+                console.log(`[latest] trimmed ${numRemoved} lines (${initialReplyLength - reply.length} chars) from end of reply`);
+            }
 
             await interaction.editReply(reply);
         }
