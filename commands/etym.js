@@ -18,7 +18,7 @@ async function etym(interaction) {
         earl.setLastPathSegment(word);
         const dom = parse(await earl.fetchText());
 
-        const lg17 = domStroll('etym', dom, [
+        const lg17 = domStroll('etym', false, dom, [
             [3, 'html'],
             [3, 'body'],
             [1, 'div', { id: 'root' }],

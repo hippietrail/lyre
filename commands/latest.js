@@ -16,7 +16,8 @@ const goEarl = new Earl('https://go.dev', '/doc/devel/release');
 const mameEarl = new Earl('https://raw.githubusercontent.com', '/Calinou/scoop-games/master/bucket/mame.json');
 const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/channels/stable/release/latest/VERSION');
 const rvmEarl = new Earl('https://www.retrovirtualmachine.org', '/changelog/');
-const AsEarl = new Earl('https://androidstudio.googleblog.com');
+const asEarl = new Earl('https://androidstudio.googleblog.com');
+const elixirEarl = new Earl('https://elixir-lang.org', '/blog/categories.html');
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -51,6 +52,7 @@ const ownerRepos = [
     ['discordjs/discord.js', xformRepoCapTag],
     ['elixir-lang/elixir', xformRepoCapTag],
     ['JetBrains/kotlin', xformNameSplit],
+    ['llvm/llvm-project', xformNameSplit],
     ['mamedev/mame', xformNameSplit],
     ['microsoft/TypeScript', xformRepoTag],
     ['NationalSecurityAgency/ghidra', xformNameSplit],
@@ -115,15 +117,16 @@ async function latest(interaction) {
             .then(async arr => await reply(arr, 'GitHub', 'non-GitHub'));
 
         const otherPromises = Promise.all([
-            //callNodejs(), // just use the GitHub one for now, which has link
-            callGimp(),
-            callXcode(),
-            callPython(),
-            callGo(),
-            //callMame(),   // just use the GitHub one for now, which has link and date
-            callDart(),
-            callRvm(),
-            callAS(),
+            //callNodejs(), // JSON - just use the GitHub one for now, which has link
+            callGimp(),     // JSON
+            callXcode(),    // JSON
+            callPython(),   // JSON
+            callGo(),       // scraper
+            //callMame(),   // JSON - just use the GitHub one for now, which has link and date
+            callDart(),     // JSON
+            callRvm(),      // scraper
+            callAS(),       // scraper
+            callElixir(),   // scraper
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
@@ -345,7 +348,7 @@ async function callGo() {
     try {
         const dom = parse(await goEarl.fetchText());
 
-        const article = domStroll('Go', dom, [
+        const article = domStroll('Go', false, dom, [
             [2, 'html'],
             [3, 'body', { cls: 'Site' }],
             [9, 'main', { id: 'main-content' }],
@@ -418,7 +421,7 @@ async function callRvm() {
     try {
         const dom = parse(await rvmEarl.fetchText());
 
-        const article = domStroll('RVM', dom, [
+        const article = domStroll('RVM', false, dom, [
             [2, 'html'],
             [1, 'body'],
             [2, 'div', { cls: 'mainContent' }],
@@ -449,9 +452,9 @@ async function callRvm() {
 
 async function callAS() {
     try {
-        const dom = parse(await AsEarl.fetchText());
+        const dom = parse(await asEarl.fetchText());
 
-        const blarchList = domStroll('AS', dom, [
+        const blarchList = domStroll('AS', false, dom, [
             [2, 'html', { cls: 'v2' }],
             [3, 'body'],
             [15, 'div', { cls: 'cols-wrapper' }],
@@ -469,11 +472,11 @@ async function callAS() {
         const yearULs = blarchList.children.filter(e => e.type === 'tag' && e.name === 'ul');
 
         for (const [y, ul] of yearULs.entries()) {
-            const yearLI = domStroll('AS', ul.children, [
+            const yearLI = domStroll('AS', false, ul.children, [
                 [1, 'li', { cls: 'archivedate' }],
             ]);
 
-            const yearSpan = domStroll('AS', yearLI.children, [
+            const yearSpan = domStroll('AS', false, yearLI.children, [
                 [1, 'a', { cls: 'toggle' }],
                 [3, 'span'],
             ]);
@@ -483,18 +486,18 @@ async function callAS() {
             const monthULs = yearLI.children.filter(e => e.type === 'tag' && e.name === 'ul');
 
             for (const [m, ul2] of monthULs.entries()) {
-                const monthLI = domStroll('AS', ul2.children, [
+                const monthLI = domStroll('AS', false, ul2.children, [
                     [1, 'li', { cls: 'archivedate' }],
                 ]);
 
-                const monthSpan = domStroll('AS', monthLI.children, [
+                const monthSpan = domStroll('AS', false, monthLI.children, [
                     [1, 'a', { cls: 'toggle' }],
                     [3, 'span'],
                 ])
                 const monthText = monthSpan.children[0].data.trim();
                 console.log(`${y}/${yearULs.length} ${m}/${monthULs.length} MONTH`, monthText)//.type, n.name, n.data);
 
-                const ul3 = domStroll('AS', monthLI.children, [
+                const ul3 = domStroll('AS', false, monthLI.children, [
                     [5, 'ul', { cls: 'posts', optional: true }],
                 ])
 
@@ -503,7 +506,7 @@ async function callAS() {
                     console.log(`postLIs ${postLIs.length}`);
 
                     for (const [i, li] of postLIs.entries()) {
-                        const postA = domStroll('AS', li.children, [
+                        const postA = domStroll('AS', false, li.children, [
                             [0, 'a'],
                         ]);
                         const postText = postA.children[0].data.trim();
@@ -536,6 +539,60 @@ async function callAS() {
         }
     } catch (error) {
         console.error(`[AS]`, error);
+    }
+    return [];
+}
+
+async function callElixir() {
+    try {
+        const dom = parse(await elixirEarl.fetchText());
+
+        const releasesLI = domStroll('Elixir', false, dom, [
+            [2, 'html'],
+            [3, 'body', { cls: 'blog' }],
+            [1, 'div', { id: 'container' }],
+            [1, 'div', { cls: 'wrap' }],
+            [3, 'div', { id: 'main' }],
+            [1, 'div', { id: 'content' }],
+            [1, 'div', { cls: 'hcat' }],
+            [3, 'ul'],
+            [7, 'li'],
+        ]);
+
+        domStroll('Elixir2', false, releasesLI.children, [
+            [1, 'h5', { id: 'Releases' }],
+        ]);
+
+        const releasesUL = domStroll('Elixir3', false, releasesLI.children, [
+            [3, 'ul']
+        ]);
+
+        const releaseLIs = releasesUL.children.filter(e => e.type === 'tag' && e.name === 'li');
+
+        for (const rli of releaseLIs) {
+            const a = domStroll('Elixir4', false, rli.children, [
+                [0, 'a']
+            ]);
+
+            const byline = domStroll('Elixir5', false, rli.children, [
+                [2, 'span', { cls: 'byline' }],
+            ]);
+
+            // raw version text is like: `Elixir v1.13 released`
+            // but also possible: `Elixir v0.13.0 released, hex.pm and ElixirConf announced`
+            const version = a.children[0].data.match(/^Elixir (v\d+\.\d+) released\b/)[1];
+
+            return [{
+                name: 'Elixir',
+                ver: version,
+                link: `${elixirEarl.getOrigin()}${a.attribs.href}`,
+                timestamp: new Date(byline.children[0].data),
+                src: 'elixir-lang.org',
+            }]
+        }
+
+    } catch (error) {
+        console.error(`[Elixir]`, error);
     }
     return [];
 }

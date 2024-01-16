@@ -19,6 +19,10 @@ export class Earl {
     setSearchParam(key, value) {
         this.url.searchParams.set(key, value);
     }
+    // handy for relative hrefs
+    getOrigin() {
+        return this.url.origin;
+    }
     // handy since the URL encodes spaces etc for us
     getUrlString() {
         return this.url.toString();
