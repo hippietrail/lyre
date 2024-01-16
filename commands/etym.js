@@ -27,7 +27,7 @@ async function etym(interaction) {
             [1, 'div', { cls: 'main' }],                // TODO: attK: 'data-role', attV: 'content-main'
             [0, 'div', { cls: 'ant-row-flex' }],
             [0, 'div', { cls: 'ant-col-lg-17' }],
-        ])
+        ]);
 
         // if the children are [h2, p, p] then the word is not in etymonline
         if (['h2', 'p', 'p'].every((tagName, i) => lg17.children[i].name === tagName)) {
@@ -45,9 +45,9 @@ async function etym(interaction) {
             // is at least one of the words a case-insensitive match?
             if (words.some(w => w.toLowerCase() === word.toLowerCase())) {
                 if (words.length === 1) {
-                    reply += `\n'${words[0]}' matches '${word}.`;
+                    reply += `\n'${words[0]}' matches '${word}'.`;
                 } else {
-                    reply += `\nat least one of ${words.map(node => `'${node}'`).join(', ')} matches '${word}.`;
+                    reply += `\nat least one of ${words.map(node => `'${node}'`).join(', ')} matches '${word}'.`;
                 }
             } else {
                 if (words.length === 1) {
