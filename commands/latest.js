@@ -126,6 +126,7 @@ async function latest(interaction) {
             callDart(),     // JSON
             callRvm(),      // scraper
             callAS(),       // scraper
+            callAS2(),      // scraper
             callElixir(),   // scraper
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
@@ -543,6 +544,120 @@ async function callAS() {
     return [];
 }
 
+async function callAS2() {
+    // note we can use a URL like
+    // https://androidstudio.googleblog.com/search?updated-max=2022-12-26T10:01:00-08:00&max-results=25
+    // we can use just the `max-results` param - it actually only goes up to 24 though
+    try {
+        asEarl.setPathname('/search');
+        asEarl.setSearchParam('max-results', 24);
+        console.log(`[AS2]`, asEarl.getUrlString());
+        // https://androidstudio.googleblog.com/?max-results=24
+
+        const dom = parse(await asEarl.fetchText());
+
+        const blog1 = domStroll('AS2', false, dom, [
+           [2, 'html', { cls: 'v2' }],
+           [3, 'body'],
+           [15, 'div', { cls: 'cols-wrapper' }],
+           [1, 'div', { cls: 'col-main-wrapper' }],
+           [3, 'div', { cls: 'col-main' }],
+           [3, 'div', { id: 'main' }],
+           [0, 'div', { id: 'Blog1' }],
+        ]);
+
+        // post divs have this form/format:
+        // <div class="post" data-id="2025240746988713105" itemscope="" itemtype="http://schema.org/BlogPosting">
+        // <div class="post" data-id="7420357774364945018" itemscope="" itemtype="http://schema.org/BlogPosting">
+        // so we could check instead of the class being 'post', the presence of `data-id`, itemscope, or itemtype
+
+        const posts = blog1.children.filter(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('post'));
+
+        console.log(`[AS2] posts ${posts.length}`);
+
+        let chosenPost = null;
+
+        // variable(s) for counting the individual codenames/animals, channels, versions, and nums
+        const codenameSet = new Set();
+        const channelSet = new Set();
+        const codenameChannelPairSet = new Set();
+        const versionSet = new Set();
+        const numSet = new Set();
+
+        for (const [i, post] of posts.entries()) {
+            const h2_title = domStroll('AS2', false, post.children, [
+                [1, 'h2', { cls: 'title' }],
+            ]);
+
+            const a_title = domStroll('AS2', false, h2_title.children, [
+                [1, 'a'],
+            ]);
+
+            const span_publishDate = domStroll('AS2', false, post.children, [
+                [3, 'div', { cls: 'post-header' }],
+                [1, 'div', { cls: 'published' }],
+                [1, 'span', { cls: 'publishdate' }],
+            ]);
+
+            const codenameVerChan = a_title.children[0].data.trim();
+            const publishDate = span_publishDate.children[0].data.trim();
+
+            // normally like this:
+            // Android Studio 'Jellyfish | 2023.3.1 Canary 4 now available'
+            // ... but there's at least two mistakes in those strings ...
+            // Android Studio 'Hedgehog | 2023.1.1 now available' - missing 'Beta'
+            // Android Studio 'Iguana Canary 9 now available' - missing 'Hedgehog | 2023.1.1'
+
+            const cvcMat = codenameVerChan.match(/Android Studio (\w+) \| (\d+\.\d+\.\d+) (?:(\w+) )?(\d+) /);
+            if (!cvcMat) {
+                console.log(`[AS2] couldn't parse title/codename/version/channel from '${codenameVerChan}'`);
+            } else {
+                const [, codename, ver, channel, num] = cvcMat;
+                codenameSet.add(codename);
+                channelSet.add(channel);
+                codenameChannelPairSet.add(`${codename} ${channel}`);
+                versionSet.add(ver);
+                numSet.add(num);
+            }
+
+            const datMat = publishDate.match(/(\w+), (\w+) (\d+), (\d+)/);
+            if (datMat) {
+                const date = new Date(`${datMat[2]} ${datMat[3]}, ${datMat[4]}`);
+
+                if (cvcMat && date instanceof Date && !isNaN(date)) {
+                    if (!chosenPost) chosenPost = [cvcMat, a_title.attribs.href, date, i];
+                }
+            } else {
+                console.log(`[AS2] couldn't parse date string '${publishDate}'`);
+            }
+        }
+
+        // dump what we gathered
+        console.log(`[AS2] found ${codenameSet.size} unique codenames: ${Array.from(codenameSet).join(', ')}`);
+        console.log(`[AS2] found ${channelSet.size} unique channels: ${Array.from(channelSet).join(', ')}`);
+        console.log(`[AS2] found ${codenameChannelPairSet.size} unique codename/channel pairs: ${Array.from(codenameChannelPairSet).join(', ')}`);
+        console.log(`[AS2] found ${versionSet.size} unique versions: ${Array.from(versionSet).join(', ')}`);
+        console.log(`[AS2] found ${numSet.size} unique nums: ${Array.from(numSet).join(', ')}`);
+
+        if (chosenPost) {
+            const [cvcMat, link, date, i] = chosenPost;
+            return [{
+                name: `Android Studio ${cvcMat[1]}`,
+                ver: `${cvcMat[2]} ${cvcMat[3]} ${cvcMat[4]}`,
+                link,
+                timestamp: date,
+                src: 'androidstudio.googleblog.com',
+            }];
+        } else {
+            console.log(`[AS2] couldn't find any (valid) posts`);
+        }
+
+    } catch (error) {
+        console.error(`[AS2]`, error);
+    }
+    return [];
+}
+
 async function callElixir() {
     try {
         const dom = parse(await elixirEarl.fetchText());
@@ -588,7 +703,7 @@ async function callElixir() {
                 link: `${elixirEarl.getOrigin()}${a.attribs.href}`,
                 timestamp: new Date(byline.children[0].data),
                 src: 'elixir-lang.org',
-            }]
+            }];
         }
 
     } catch (error) {
