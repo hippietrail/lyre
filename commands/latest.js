@@ -30,8 +30,10 @@ export const data = new SlashCommandBuilder()
 export const execute = latest;
 
 // TODO missing, but not on GitHub
-// Android Studio
 // Intellij IDEA
+// PHP              https://www.php.net/releases/index.php?json
+// Java/JDK/JVM?
+// C#
 
 // GitHub JSON name field is 'name version'
 const xformNameSplit = (_, jn, __) => jn.split(' ');
@@ -41,9 +43,16 @@ const xformRepoTag = (ro, _, jt) => [ro.split('/')[1], jt];
 
 // Repo name capitalized is name, version is GitHub JSON tag
 function xformRepoCapTag(ro, _, jt) {
-    // console.log(`[xformRepoCapTag]`, ron, jt);
+    // console.log(`[xformRepoCapTag]`, ro, jt);
     const rn = ro.split('/')[1];
     return [rn.charAt(0).toUpperCase() + rn.slice(1), jt];
+}
+
+// Repo name capitalized is name, version is GitHub JSON tag with _ converted to .
+function xformRepoCapTagVersionUnderscore(ro, _, jt) {
+    // console.log(`[xformRepoCapTagVersionUnderscore]`, ro, jt);
+    const rn = ro.split('/')[1];
+    return [rn.charAt(0).toUpperCase() + rn.slice(1), jt.replace(/_/g, '.')];
 }
 
 const ownerRepos = [
@@ -53,12 +62,14 @@ const ownerRepos = [
     ['elixir-lang/elixir', xformRepoCapTag],
     ['JetBrains/kotlin', xformNameSplit],
     ['llvm/llvm-project', xformNameSplit],
+    ['lua/lua', xformNameSplit],
     ['mamedev/mame', xformNameSplit],
     ['microsoft/TypeScript', xformRepoTag],
     ['NationalSecurityAgency/ghidra', xformNameSplit],
     ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
     ['odin-lang/Odin', (_, __, jt) => ['Odin', jt]],
     ['oven-sh/bun', xformNameSplit],
+    ['ruby/ruby', xformRepoCapTagVersionUnderscore],
     ['rust-lang/rust', xformRepoCapTag],
     ['ziglang/zig', xformRepoCapTag],
 ];
@@ -79,9 +90,9 @@ async function latest(interaction) {
 
             let reply = responses.flat()
                 .toSorted((a, b) => {
-                    const ageDiff = a.timestamp === undefined
-                        ? b.timestamp === undefined ? 0 : 2
-                        : b.timestamp === undefined ? -2 : b.timestamp - a.timestamp;
+                    const ageDiff = !a.timestamp
+                        ? !b.timestamp ? 0 : 2
+                        : !b.timestamp ? -2 : b.timestamp - a.timestamp;
 
                     return sortByAge && ageDiff
                         ? ageDiff
@@ -125,8 +136,7 @@ async function latest(interaction) {
             //callMame(),   // JSON - just use the GitHub one for now, which has link and date
             callDart(),     // JSON
             callRvm(),      // scraper
-            callAS(),       // scraper
-            callAS2(),      // scraper
+            callAS(),      // scraper
             callElixir(),   // scraper
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
@@ -148,6 +158,7 @@ async function latest(interaction) {
  * @return {string} A string representation of the name, version, link, timestamp, and source.
  */
 function nvltsToString(nvlts) {
+    // TODO doesn't handle being null due to github API limit
     const parts = [
         `${nvlts.name}:`,
         nvlts.link ? `[${nvlts.ver}](<${nvlts.link}>)` : nvlts.ver
@@ -452,111 +463,16 @@ async function callRvm() {
 }
 
 async function callAS() {
-    try {
-        const dom = parse(await asEarl.fetchText());
-
-        const blarchList = domStroll('AS', false, dom, [
-            [2, 'html', { cls: 'v2' }],
-            [3, 'body'],
-            [15, 'div', { cls: 'cols-wrapper' }],
-            [1, 'div', { cls: 'col-main-wrapper' }],
-            [1, 'div', { cls: 'col-left' }],
-            [3, 'div', { cls: 'blogger-archives' }],
-            [3, 'div', { id: 'aside' }],
-            [1, 'div', { id: 'sidebar' }],
-            [0, 'div', { id: 'BlogArchive1' }],
-            [3, 'div', { cls: 'widget-content' }],
-            [1, 'div', { id: 'ArchiveList' }],
-            [1, 'div', { id: 'BlogArchive1_ArchiveList' }],
-        ]);
-
-        const yearULs = blarchList.children.filter(e => e.type === 'tag' && e.name === 'ul');
-
-        for (const [y, ul] of yearULs.entries()) {
-            const yearLI = domStroll('AS', false, ul.children, [
-                [1, 'li', { cls: 'archivedate' }],
-            ]);
-
-            const yearSpan = domStroll('AS', false, yearLI.children, [
-                [1, 'a', { cls: 'toggle' }],
-                [3, 'span'],
-            ]);
-            const yearText = yearSpan.children[0].data.trim();
-            console.log(`${y}/${yearULs.length} YEAR`, yearText);
-
-            const monthULs = yearLI.children.filter(e => e.type === 'tag' && e.name === 'ul');
-
-            for (const [m, ul2] of monthULs.entries()) {
-                const monthLI = domStroll('AS', false, ul2.children, [
-                    [1, 'li', { cls: 'archivedate' }],
-                ]);
-
-                const monthSpan = domStroll('AS', false, monthLI.children, [
-                    [1, 'a', { cls: 'toggle' }],
-                    [3, 'span'],
-                ])
-                const monthText = monthSpan.children[0].data.trim();
-                console.log(`${y}/${yearULs.length} ${m}/${monthULs.length} MONTH`, monthText)//.type, n.name, n.data);
-
-                const ul3 = domStroll('AS', false, monthLI.children, [
-                    [5, 'ul', { cls: 'posts', optional: true }],
-                ])
-
-                if (ul3) {
-                    const postLIs = ul3.children.filter(e => e.type === 'tag' && e.name === 'li');
-                    console.log(`postLIs ${postLIs.length}`);
-
-                    for (const [i, li] of postLIs.entries()) {
-                        const postA = domStroll('AS', false, li.children, [
-                            [0, 'a'],
-                        ]);
-                        const postText = postA.children[0].data.trim();
-                        console.log(`  ${postText}`);
-                        /*
-                        Android Studio Jellyfish | 2023.3.1 Canary 4 now a...
-                        Android Studio Iguana | 2023.2.1 Beta 2 now available
-                        Android Studio Jellyfish | 2023.3.1 Canary 3 now a...
-                        Android Studio Hedgehog | 2023.1.1 Patch 1 now ava...
-                        Android Studio Jellyfish | 2023.3.1 Canary 2 now a...
-                        */
-                        const m = postText.match(/^Android Studio (\w+) \| ((\d+)\.\d+\.\d+) (\w+) (\d+) /);
-                        if (m) {
-                            const [codename, ver, year, channel, num] = m.slice(1);
-
-                            console.log(`animal ${codename} ver ${ver} year ${year} channel ${channel} num ${num}`);
-
-                            return [{
-                                name: `Android Studio ${codename}`,
-                                ver: `${ver} ${channel} ${num}`,
-                                link: 'https://developer.android.com/studio/releases/',
-                                // https://androidstudio.googleblog.com/2024/01/android-studio-jellyfish-202331-canary_12.html
-                                timestamp: new Date(`${year}-01-01`),
-                                src: 'androidstudio.googleblog.com',
-                            }];
-                        }
-                    }
-                }
-            }
-        }
-    } catch (error) {
-        console.error(`[AS]`, error);
-    }
-    return [];
-}
-
-async function callAS2() {
     // note we can use a URL like
     // https://androidstudio.googleblog.com/search?updated-max=2022-12-26T10:01:00-08:00&max-results=25
     // we can use just the `max-results` param - it actually only goes up to 24 though
     try {
         asEarl.setPathname('/search');
         asEarl.setSearchParam('max-results', 24);
-        console.log(`[AS2]`, asEarl.getUrlString());
-        // https://androidstudio.googleblog.com/?max-results=24
 
         const dom = parse(await asEarl.fetchText());
 
-        const blog1 = domStroll('AS2', false, dom, [
+        const blog1 = domStroll('AS2a', false, dom, [
            [2, 'html', { cls: 'v2' }],
            [3, 'body'],
            [15, 'div', { cls: 'cols-wrapper' }],
@@ -566,94 +482,66 @@ async function callAS2() {
            [0, 'div', { id: 'Blog1' }],
         ]);
 
-        // post divs have this form/format:
-        // <div class="post" data-id="2025240746988713105" itemscope="" itemtype="http://schema.org/BlogPosting">
-        // <div class="post" data-id="7420357774364945018" itemscope="" itemtype="http://schema.org/BlogPosting">
-        // so we could check instead of the class being 'post', the presence of `data-id`, itemscope, or itemtype
-
         const posts = blog1.children.filter(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('post'));
 
-        console.log(`[AS2] posts ${posts.length}`);
+        const chosenPostPerChannel = new Map();
 
-        let chosenPost = null;
-
-        // variable(s) for counting the individual codenames/animals, channels, versions, and nums
-        const codenameSet = new Set();
-        const channelSet = new Set();
-        const codenameChannelPairSet = new Set();
-        const versionSet = new Set();
-        const numSet = new Set();
-
-        for (const [i, post] of posts.entries()) {
-            const h2_title = domStroll('AS2', false, post.children, [
+        for (const post of posts) {
+            const linkAnchor = domStroll('AS2b', false, post.children, [
                 [1, 'h2', { cls: 'title' }],
-            ]);
-
-            const a_title = domStroll('AS2', false, h2_title.children, [
                 [1, 'a'],
             ]);
 
-            const span_publishDate = domStroll('AS2', false, post.children, [
+            const link = linkAnchor.attribs.href;
+
+            const publishDate = domStroll('AS2c', false, post.children, [
                 [3, 'div', { cls: 'post-header' }],
                 [1, 'div', { cls: 'published' }],
                 [1, 'span', { cls: 'publishdate' }],
             ]);
 
-            const codenameVerChan = a_title.children[0].data.trim();
-            const publishDate = span_publishDate.children[0].data.trim();
+            const dmat = publishDate.children[0].data.trim().match(/(\w+), (\w+) (\d+), (\d+)/);
 
-            // normally like this:
-            // Android Studio 'Jellyfish | 2023.3.1 Canary 4 now available'
-            // ... but there's at least two mistakes in those strings ...
-            // Android Studio 'Hedgehog | 2023.1.1 now available' - missing 'Beta'
-            // Android Studio 'Iguana Canary 9 now available' - missing 'Hedgehog | 2023.1.1'
+            const timestamp = dmat ? new Date(`${dmat[2]} ${dmat[3]}, ${dmat[4]}`) : null;
 
-            const cvcMat = codenameVerChan.match(/Android Studio (\w+) \| (\d+\.\d+\.\d+) (?:(\w+) )?(\d+) /);
-            if (!cvcMat) {
-                console.log(`[AS2] couldn't parse title/codename/version/channel from '${codenameVerChan}'`);
-            } else {
-                const [, codename, ver, channel, num] = cvcMat;
-                codenameSet.add(codename);
-                channelSet.add(channel);
-                codenameChannelPairSet.add(`${codename} ${channel}`);
-                versionSet.add(ver);
-                numSet.add(num);
-            }
+            const postContent = domStroll('AS2d', false, post.children, [
+                [5, 'div', { cls: 'post-body' }],
+                [1, 'div', { cls: 'post-content' }],
+            ]);
 
-            const datMat = publishDate.match(/(\w+), (\w+) (\d+), (\d+)/);
-            if (datMat) {
-                const date = new Date(`${datMat[2]} ${datMat[3]}, ${datMat[4]}`);
+            const script = postContent.children[1];
 
-                if (cvcMat && date instanceof Date && !isNaN(date)) {
-                    if (!chosenPost) chosenPost = [cvcMat, a_title.attribs.href, date, i];
+            if (script && script.children[0]) {
+                const scriptDom = parse(script.children[0].data);
+
+                const para = domStroll('AS2e', false, scriptDom, [
+                    [1, 'p'],
+                ]);
+
+                const releaseString = para.children[0].data.trim();
+
+                const mack = releaseString.match(/^Android Studio (\w+) \| (\d\d\d\d\.\d\.\d) (?:(\w+) (\d+) )?is now available in the (\w+) channel\.$/);
+                if (mack) {
+                    const channel = mack[5];
+
+                    if (!chosenPostPerChannel.has(channel)) {
+                        chosenPostPerChannel.set(channel, {
+                            name: `Android Studio ${mack[1]}`,
+                            ver: mack.slice(2, 5).filter(Boolean).join(' '),
+                            link,
+                            timestamp,
+                            src: 'androidstudio.googleblog.com',
+                        });
+                    }
+                } else {
+                    console.log(`[AS] couldn't parse title/codename/version/channel from '${codenameVerChan}'`);
                 }
-            } else {
-                console.log(`[AS2] couldn't parse date string '${publishDate}'`);
             }
         }
 
-        // dump what we gathered
-        console.log(`[AS2] found ${codenameSet.size} unique codenames: ${Array.from(codenameSet).join(', ')}`);
-        console.log(`[AS2] found ${channelSet.size} unique channels: ${Array.from(channelSet).join(', ')}`);
-        console.log(`[AS2] found ${codenameChannelPairSet.size} unique codename/channel pairs: ${Array.from(codenameChannelPairSet).join(', ')}`);
-        console.log(`[AS2] found ${versionSet.size} unique versions: ${Array.from(versionSet).join(', ')}`);
-        console.log(`[AS2] found ${numSet.size} unique nums: ${Array.from(numSet).join(', ')}`);
-
-        if (chosenPost) {
-            const [cvcMat, link, date, i] = chosenPost;
-            return [{
-                name: `Android Studio ${cvcMat[1]}`,
-                ver: `${cvcMat[2]} ${cvcMat[3]} ${cvcMat[4]}`,
-                link,
-                timestamp: date,
-                src: 'androidstudio.googleblog.com',
-            }];
-        } else {
-            console.log(`[AS2] couldn't find any (valid) posts`);
-        }
-
+        return Array.from(chosenPostPerChannel.values());
     } catch (error) {
-        console.error(`[AS2]`, error);
+        console.error(`[AS]`, error);
     }
     return [];
 }

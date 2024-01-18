@@ -7,9 +7,7 @@ export function domStroll(site, debug, kids, data) {
         if (opts && typeof opts !== 'object')
             throw new Error(`[domStroll] ${site} opts must be an object`);
 
-        if (debug) console.log(`[donStroll] ${site}#${i} ${
-            kids.map(k => k.type === 'tag' ? `"tag.${k.name}"` : `"${k.type}"`).join(' ')
-        }`);
+        if (debug) kidsForStep(site, i, kids);
 
         node = kids[n];
 
@@ -18,21 +16,22 @@ export function domStroll(site, debug, kids, data) {
             (opts && opts.cls && !node.attribs?.class?.includes(opts.cls))
         ) {
             if (!node) {
-                if (opts && opts.optional)
-                    return null;
+                if (opts && opts.optional) return null;
                 throw new Error(`[domStroll] ${site}#${i} not a node`);
             }
-            if (node.type !== 'tag') throw new Error(`[domStroll] ${site}#${i} not a tag node`);
+            if (node.type !== 'tag') throw new Error(`[domStroll] ${site}#${i} not a tag node but a ${node.type}`);
             if (node.name !== name) throw new Error(`[domStroll] ${site}#${i} not ${name}`);
             if (opts && opts.id && node.attribs.id !== opts.id) {
                 throw new Error(`[domStroll] ${site}#${i} node id is not ${opts.id}`);
             }
-            if (opts && opts.cls && !node.attribs?.class?.includes(opts.cls))
+            if (opts && opts.cls && !node.attribs?.class?.includes(opts.cls)) {
+                if (opts && opts.optional) return null;
                 throw new Error(`<${name}> has no .${opts.cls} class`);
+            }
             throw new Error(`not <${name}${opts && opts.cls ? `.${opts.cls}` : ''}>`);
         }
 
-        if (opts) {
+        if (opts && opts.debug) {
             let warn;
             const unsupportedOpts = Object.keys(opts).filter(opt => !['id', 'cls'].includes(opt));
             const uncheckedAtts = Object.keys(node.attribs).filter(attr => !['id', 'class'].includes(attr));
@@ -51,4 +50,16 @@ export function domStroll(site, debug, kids, data) {
     }
 
     return node;
+}
+
+function kidsForStep(site, st, kids) {
+    console.log(`[domStroll] ${site}#${st} ${kids.map(
+        k => k.type === 'tag'
+            ? `<${k.name}${
+                    k.attribs && k.attribs.id ? `#${k.attribs.id}` : ''
+                }${
+                    k.attribs && k.attribs.class ? `.${k.attribs.class.split(' ').join('.')}` : ''
+                }>`
+            : `#${k.type}`
+    ).join(' ')}`);
 }
