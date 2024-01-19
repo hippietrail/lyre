@@ -32,7 +32,6 @@ export const execute = latest;
 
 // TODO missing, but not on GitHub
 // Intellij IDEA
-// PHP              https://www.php.net/releases/index.php?json
 // Java/JDK/JVM?
 // C#
 
@@ -605,12 +604,14 @@ async function callPhp() {
     phpEarl.setSearchParam('json', '');
     try {
         const phpj = await phpEarl.fetchJson();
-        const lastVal = Object.values(phpj).pop();
+        // we get an object with a key for each major version number, in ascending order
+        const latest = Object.values(phpj).pop();
+        const maj = latest.version.match(/^(\d+)\.\d+\.\d+$/)[1];
         return [{
             name: 'PHP',
-            ver: lastVal.version,
-            link: undefined,
-            timestamp: new Date(lastVal.date),
+            ver: latest.version,
+            link: `https://www.php.net/ChangeLog-${maj}.php#${latest.version}`,
+            timestamp: new Date(latest.date),
             src: 'php.net',
         }];
     } catch (error) {
