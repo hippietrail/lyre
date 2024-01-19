@@ -18,6 +18,7 @@ const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/chann
 const rvmEarl = new Earl('https://www.retrovirtualmachine.org', '/changelog/');
 const asEarl = new Earl('https://androidstudio.googleblog.com');
 const elixirEarl = new Earl('https://elixir-lang.org', '/blog/categories.html');
+const phpEarl = new Earl('https://www.php.net', '/releases/index.php');
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -117,9 +118,8 @@ async function latest(interaction) {
             if (responses.length === 1)
                 reply = `${reply}${note}`;
 
-            if (initialReplyLength !== reply.length) {
+            if (initialReplyLength !== reply.length)
                 console.log(`[latest] trimmed ${numRemoved} lines (${initialReplyLength - reply.length} chars) from end of reply`);
-            }
 
             await interaction.editReply(reply);
         }
@@ -136,8 +136,9 @@ async function latest(interaction) {
             //callMame(),   // JSON - just use the GitHub one for now, which has link and date
             callDart(),     // JSON
             callRvm(),      // scraper
-            callAS(),      // scraper
+            callAS(),       // scraper
             callElixir(),   // scraper
+            callPhp(),      // JSON
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
@@ -181,7 +182,7 @@ async function callGithub() {
         result.push(nvlts);
 
         if (i < ownerRepos.length - 1)
-            await new Promise(resolve => setTimeout(resolve, 4500)); // delay for GitHub API rate limit
+            await new Promise(resolve => setTimeout(resolve, 4600)); // delay for GitHub API rate limit
     }
     return result;
 }
@@ -596,6 +597,24 @@ async function callElixir() {
 
     } catch (error) {
         console.error(`[Elixir]`, error);
+    }
+    return [];
+}
+
+async function callPhp() {
+    phpEarl.setSearchParam('json', '');
+    try {
+        const phpj = await phpEarl.fetchJson();
+        const lastVal = Object.values(phpj).pop();
+        return [{
+            name: 'PHP',
+            ver: lastVal.version,
+            link: undefined,
+            timestamp: new Date(lastVal.date),
+            src: 'php.net',
+        }];
+    } catch (error) {
+        console.error(`[PHP]`, error);
     }
     return [];
 }
