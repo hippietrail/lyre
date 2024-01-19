@@ -19,6 +19,7 @@ const rvmEarl = new Earl('https://www.retrovirtualmachine.org', '/changelog/');
 const asEarl = new Earl('https://androidstudio.googleblog.com');
 const elixirEarl = new Earl('https://elixir-lang.org', '/blog/categories.html');
 const phpEarl = new Earl('https://www.php.net', '/releases/index.php');
+const rubyEarl = new Earl('https://www.ruby-lang.org', '/en/downloads/releases/');
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -59,7 +60,7 @@ const ownerRepos = [
     ['apple/swift', xformNameSplit],
     ['audacity/audacity', xformNameSplit],
     ['discordjs/discord.js', xformRepoCapTag],
-    ['elixir-lang/elixir', xformRepoCapTag],
+    /*['elixir-lang/elixir', xformRepoCapTag],*/
     ['JetBrains/kotlin', xformNameSplit],
     ['llvm/llvm-project', xformNameSplit],
     ['lua/lua', xformNameSplit],
@@ -69,7 +70,7 @@ const ownerRepos = [
     ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
     ['odin-lang/Odin', (_, __, jt) => ['Odin', jt]],
     ['oven-sh/bun', xformNameSplit],
-    ['ruby/ruby', xformRepoCapTagVersionUnderscore],
+    /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
     ['rust-lang/rust', xformRepoCapTag],
     ['ziglang/zig', xformRepoCapTag],
 ];
@@ -138,6 +139,7 @@ async function latest(interaction) {
             callAS(),       // scraper
             callElixir(),   // scraper
             callPhp(),      // JSON
+            callRuby(),     // scraper
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
@@ -616,6 +618,71 @@ async function callPhp() {
         }];
     } catch (error) {
         console.error(`[PHP]`, error);
+    }
+    return [];
+}
+
+async function callRuby() {
+    try {
+        const dom = parse(await rubyEarl.fetchText());
+
+        const relList = domStroll('Ruby', false, dom, [
+            [2, 'html'],
+            [3, 'body'],
+            [3, 'div', { id: 'page' }],
+            [1, 'div', { id: 'main-wrapper' }],
+            [1, 'div', { id: 'main' }],
+            [1, 'div', { id: 'content-wrapper' }],
+            [3, 'div', { id: 'content' }],
+            [9, 'table', { cls: 'release-list' }],
+        ]);
+
+        const releases = [];
+
+        relList.children.forEach(ch => {
+            if (ch.type === 'tag' && ch.name === 'tr' && ch.children.filter((_c, i) => i % 2).every(c => c.type === 'tag' && c.name === 'td')) {
+                const [v, d, , l] = ch.children.filter((_c, i) => i % 2);
+                
+                const rawVer = v.children[0].data;
+                const rawDate = d.children[0].data;
+                const relativeLink = l.children[0].attribs.href;
+
+                // ignore release candidates and previews
+                const ver = rawVer.includes('-') ? null : rawVer.replace(/^Ruby /, '');
+
+                if (ver) {
+                    const [maj, min] = ver.split('.').map(v => Number(v));
+
+                    releases.push([maj, min, ver, rawDate, relativeLink]);
+                }
+            }
+        })
+
+        const currMaj = Math.max(...releases.map(r => r[0]));
+
+        // let's just get the two latest minor versions
+        const minsForMaj = [...new Set(releases.filter(r => r[0] === currMaj).map(r => r[1]))]
+            .sort((a, b) => b - a)
+            .slice(0, 2);
+
+        const latestOfEach = minsForMaj
+            .map(min => releases.find(r => r[0] === currMaj && r[1] === min));
+
+        return latestOfEach.map(([maj, min, ver, date, relLink]) => {
+            const url = new URL(rubyEarl.url);
+            url.pathname = relLink;
+
+            return {
+                name: `Ruby ${maj}.${min}`,
+                ver,
+                link: url.href,
+                timestamp: new Date(date),
+                src: 'ruby-lang.org',
+            }
+        });
+
+    } catch (error) {
+        console.error(`[Ruby]`, error);
     }
     return [];
 }
