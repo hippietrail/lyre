@@ -20,6 +20,7 @@ const asEarl = new Earl('https://androidstudio.googleblog.com');
 const elixirEarl = new Earl('https://elixir-lang.org', '/blog/categories.html');
 const phpEarl = new Earl('https://www.php.net', '/releases/index.php');
 const rubyEarl = new Earl('https://www.ruby-lang.org', '/en/downloads/releases/');
+const ideaEarl = new Earl('https://blog.jetbrains.com', '/idea/category/releases/');
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -90,6 +91,8 @@ async function latest(interaction) {
             responses.push(these.flat());
 
             let reply = responses.flat()
+                // TODO this breaks when we've used up our GitHub API rate limit
+                // [Latest] TypeError: Cannot read properties of null (reading 'timestamp')
                 .toSorted((a, b) => {
                     const ageDiff = !a.timestamp
                         ? !b.timestamp ? 0 : 2
@@ -140,6 +143,7 @@ async function latest(interaction) {
             callElixir(),   // scraper
             callPhp(),      // JSON
             callRuby(),     // scraper
+            callIdea(),     // scraper
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
@@ -642,7 +646,7 @@ async function callRuby() {
         relList.children.forEach(ch => {
             if (ch.type === 'tag' && ch.name === 'tr' && ch.children.filter((_c, i) => i % 2).every(c => c.type === 'tag' && c.name === 'td')) {
                 const [v, d, , l] = ch.children.filter((_c, i) => i % 2);
-                
+
                 const rawVer = v.children[0].data;
                 const rawDate = d.children[0].data;
                 const relativeLink = l.children[0].attribs.href;
@@ -684,5 +688,70 @@ async function callRuby() {
     } catch (error) {
         console.error(`[Ruby]`, error);
     }
+    return [];
+}
+
+async function callIdea() {
+    const dom = parse(await ideaEarl.fetchText());
+
+    try {
+        const row = domStroll('IdeaA', false, dom, [
+            [2, 'html'],
+            [3, 'body'],
+            [6, 'div', { id: 'wrapper' }],
+            [3, 'main', { id: 'main' }],
+            [3, 'section', { cls: 'tax-archive' }],
+            [1, 'div', { cls: 'container' }],
+            [3, 'div', { cls: 'row' }],
+        ]);
+
+        const cols = row.children.filter(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('col'));
+
+        for (const col of cols) {
+            const aLink = domStroll('IdeaB', false, col.children, [
+                [1, 'a', { cls: 'card' }],
+            ]);
+
+            const headerIndex = aLink.children.findIndex(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('card__header'));
+
+            if (headerIndex) {
+                const header = aLink.children[headerIndex];
+                const footer = aLink.children[headerIndex + 4];
+                // card header and footer are normally children #3 and #7
+                // but sometimes an image is missing so the header and footer are #1 and #5
+
+                // if header and footer were wrong (1 and 5 instead of 3 and 7) then h4 will be at 3 instead of 1
+                const h4index = 4 - headerIndex;
+
+                const h4 = domStroll('IdeaC', false, header.children, [
+                    [h4index, 'h4'],
+                ]);
+
+                const publishDate = domStroll('IdeaD', false, footer.children, [
+                    [1, 'div', { cls: 'author' }],
+                    [3, 'div', { cls: 'author__info' }],
+                    [3, 'time', { cls: 'publish-date' }],
+                ]);
+
+                // title will be this form: IntelliJ IDEA 2023.1.4 Is Here!
+                const matt = h4.children[0].data.match(/IntelliJ IDEA (\d+\.\d+(?:\.\d+)?) Is (?:Here|Out)!/);
+                if (matt) {
+                    return [{
+                        name: 'IntelliJ IDEA',
+                        ver: matt[1],
+                        link: aLink.attribs.href,
+                        timestamp: new Date(publishDate.attribs.datetime),
+                        src: 'jetbrains.com',
+                    }];
+                } else {
+                    console.log(`[Idea] ${col.attribs.post_id} :couldn't parse version from '${title}'`);
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error(`[Idea]`, error);
+    }
+
     return [];
 }
