@@ -774,16 +774,19 @@ async function callWikiDump() {
 
         for (const [i, li] of ul.children.entries()) {
             if (i % 2 === 0) continue;
+            // a ul instead of a li is a continuation of the previous li
+            if (li.name === 'ul') continue;
 
             const info = getWikiDumpInfo(li);
 
-            if (['enwiktionary', 'enwiki', 'thwiktionary'].includes(info[0])) {
+            if (info && ['enwiktionary', 'enwiki', 'thwiktionary'].includes(info[0])) {
                 const url = new URL(wikidumpEarl.getOrigin());
                 url.pathname = info[3];
 
+                // for the version we use the date in the form `yyyymmdd`
                 chosen.push({
                     name: `${info[0]} (${info[2]})`,
-                    ver: info[1],
+                    ver: info[1].substring(0, 10).replace(/-/g, ''),
                     link: url.href,
                     timestamp: new Date(info[1]),
                     src: 'dumps.wikimedia.org',
@@ -801,16 +804,28 @@ async function callWikiDump() {
 
     function getWikiDumpInfo(li) {
         if (li.children.length === 4) {
-            const date = li.children[0].data;
-            const name = li.children[1].children[0].data;
-            const link = li.children[1].attribs.href;
-            const status = li.children[3].children[0].data;
-            return [name, date, status, link];
+            // console.log(`[WikiDump] '${li.children[1].children[0].data}'`);
+            return [
+                li.children[1].children[0].data,
+                li.children[0].data,
+                li.children[3].children[0].data,
+                li.children[1].attribs.href
+            ];
         } else {
-            const matt = li.children[0].data.match(/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d) (.*) \(private data\): $/);
-            const [_, date, name] = matt;
-            const status = li.children[1].children[0].data;
-            return [name, date, status, null];
+            const dateAndName = li.children[0].data;
+            if (dateAndName) {
+                const matt = dateAndName.match(/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d) (.*) \(private data\): $/);
+                // console.log(`[WikiDump] '${matt[2]}'`);
+                return [
+                    matt[2],
+                    matt[1],
+                    li.children[1].children[0].data,
+                    null
+                ];
+            } else {
+                console.log(`[WikiDump] couldn't parse info from '${li.children[0].data}'`);
+            }
         }
+        return null;
     }
 }
