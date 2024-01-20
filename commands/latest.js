@@ -21,6 +21,7 @@ const elixirEarl = new Earl('https://elixir-lang.org', '/blog/categories.html');
 const phpEarl = new Earl('https://www.php.net', '/releases/index.php');
 const rubyEarl = new Earl('https://www.ruby-lang.org', '/en/downloads/releases/');
 const ideaEarl = new Earl('https://blog.jetbrains.com', '/idea/category/releases/');
+const wikidumpEarl = new Earl('https://dumps.wikimedia.org', '/backup-index.html');
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -33,7 +34,6 @@ export const data = new SlashCommandBuilder()
 export const execute = latest;
 
 // TODO missing, but not on GitHub
-// Intellij IDEA
 // Java/JDK/JVM?
 // C#
 
@@ -144,6 +144,8 @@ async function latest(interaction) {
             callPhp(),      // JSON
             callRuby(),     // scraper
             callIdea(),     // scraper
+
+            callWikiDump(), // scraper
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
@@ -754,4 +756,61 @@ async function callIdea() {
     }
 
     return [];
+}
+
+import { wonda } from '../ute/riða.js';
+async function callWikiDump() {
+    const dom = parse(await wikidumpEarl.fetchText());
+
+    try {
+        const ul = domStroll('Wikidump', false, dom, [
+            [2, 'html'],
+            [3, 'body'],
+            [1, 'div', { cls: 'lang-list-button-wrapper' }],
+            [25, 'ul'],
+        ]);
+
+        const chosen = [];
+
+        for (const [i, li] of ul.children.entries()) {
+            if (i % 2 === 0) continue;
+
+            const info = getWikiDumpInfo(li);
+
+            if (['enwiktionary', 'enwiki', 'thwiktionary'].includes(info[0])) {
+                const url = new URL(wikidumpEarl.getOrigin());
+                url.pathname = info[3];
+
+                chosen.push({
+                    name: `${info[0]} (${info[2]})`,
+                    ver: info[1],
+                    link: url.href,
+                    timestamp: new Date(info[1]),
+                    src: 'dumps.wikimedia.org',
+                });
+            }
+        }
+
+        return chosen;
+
+    } catch (error) {
+        console.error(`[WikiDump]`, error);
+    }
+
+    return [];
+
+    function getWikiDumpInfo(li) {
+        if (li.children.length === 4) {
+            const date = li.children[0].data;
+            const name = li.children[1].children[0].data;
+            const link = li.children[1].attribs.href;
+            const status = li.children[3].children[0].data;
+            return [name, date, status, link];
+        } else {
+            const matt = li.children[0].data.match(/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d) (.*) \(private data\): $/);
+            const [_, date, name] = matt;
+            const status = li.children[1].children[0].data;
+            return [name, date, status, null];
+        }
+    }
 }
