@@ -11,7 +11,7 @@ const gimpEarl = new Earl('https://gitlab.gnome.org',
     'inline': false
 });
 const xcodeEarl = new Earl('https://xcodereleases.com', '/data.json');
-const pythonEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/tags');
+const githubTagsEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/tags');
 const goEarl = new Earl('https://go.dev', '/doc/devel/release');
 const mameEarl = new Earl('https://raw.githubusercontent.com', '/Calinou/scoop-games/master/bucket/mame.json');
 const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/channels/stable/release/latest/VERSION');
@@ -58,22 +58,22 @@ function xformRepoCapTagVersionUnderscore(ro, _, jt) {
 }
 
 const ownerRepos = [
-    ['apple/swift', xformNameSplit],
-    ['audacity/audacity', xformNameSplit],
-    ['discordjs/discord.js', xformRepoCapTag],
-    /*['elixir-lang/elixir', xformRepoCapTag],*/
-    ['JetBrains/kotlin', xformNameSplit],
-    ['llvm/llvm-project', xformNameSplit],
-    ['lua/lua', xformNameSplit],
-    ['mamedev/mame', xformNameSplit],
-    ['microsoft/TypeScript', xformRepoTag],
-    ['NationalSecurityAgency/ghidra', xformNameSplit],
-    ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
-    ['odin-lang/Odin', (_, __, jt) => ['Odin', jt]],
-    ['oven-sh/bun', xformNameSplit],
-    /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
-    ['rust-lang/rust', xformRepoCapTag],
-    ['ziglang/zig', xformRepoCapTag],
+    // ['apple/swift', xformNameSplit],
+    // ['audacity/audacity', xformNameSplit],
+    // ['discordjs/discord.js', xformRepoCapTag],
+    // /*['elixir-lang/elixir', xformRepoCapTag],*/
+    // ['JetBrains/kotlin', xformNameSplit],
+    // ['llvm/llvm-project', xformNameSplit],
+    // ['lua/lua', xformNameSplit],
+    // ['mamedev/mame', xformNameSplit],
+    // ['microsoft/TypeScript', xformRepoTag],
+    // ['NationalSecurityAgency/ghidra', xformNameSplit],
+    // ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
+    // ['odin-lang/Odin', (_, __, jt) => ['Odin', jt]],
+    // ['oven-sh/bun', xformNameSplit],
+    // /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
+    // ['rust-lang/rust', xformRepoCapTag],
+    // ['ziglang/zig', xformRepoCapTag],
 ];
 
 async function latest(interaction) {
@@ -127,7 +127,7 @@ async function latest(interaction) {
             await interaction.editReply(reply);
         }
 
-        const githubPromises = callGithub()
+        const githubPromises = callGithubReleases()
             .then(async arr => await reply(arr, 'GitHub', 'non-GitHub'));
 
         const otherPromises = Promise.all([
@@ -144,8 +144,8 @@ async function latest(interaction) {
             callPhp(),      // JSON
             callRuby(),     // scraper
             callIdea(),     // scraper
-
             callWikiDump(), // scraper
+            callNim(),      // JSON
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
@@ -177,7 +177,7 @@ function nvltsToString(nvlts) {
     return parts.join(' ');
 }
 
-async function callGithub() {
+async function callGithubReleases() {
     let result = [];
 
     for (const [i, repoEntry] of ownerRepos.entries()) {
@@ -306,16 +306,16 @@ async function callXcode() {
     return [];
 }
 
-async function callPython() {
-    pythonEarl.setPathname('/repos/python/cpython/tags');
+async function callGithubTags(name, ownerRepo) {
+    githubTagsEarl.setPathname(`/repos/${ownerRepo}/tags`);
 
     try {
-        const pya = await pythonEarl.fetchJson();
+        const ght = await githubTagsEarl.fetchJson();
 
-        if (pya.message && pya.documentation_url) {
-            console.log(`[Python] GitHub tags API error: 'python'${pya.message} ${pya.documentation_url}`);
+        if (ght.message && ght.documentation_url) {
+            console.log(`[${name}] GitHub tags API error: '${name}'${ght.message} ${ght.documentation_url}`);
         } else {
-            const rel = pya.find(obj => obj.name.match(/^v(\d+)\.(\d+)\.(\d+)$/));
+            const rel = ght.find(obj => obj.name.match(/^v(\d+)\.(\d+)\.(\d+)$/));
 
             // TODO if the 2nd fetch fails, use this link to the tag release:
             // TODO `https://github.com/python/cpython/releases/tag/${rel.name}`,
@@ -345,10 +345,12 @@ async function callPython() {
                 const [newer, older, diff, date] = committerDate > authorDate
                     ? ['committer', 'author', committerDate - authorDate, committerDate]
                     : ['author', 'committer', authorDate - committerDate, authorDate];
-                console.log(`[Python] ${newer} is newer than ${older} by ${ago(diff).replace(' ago', '')}`);
+
+                if (authorDate !== committerDate)
+                    console.log(`[${name}] ${newer} is newer than ${older} by ${ago(diff).replace(' ago', '')}`);
 
                 return [{
-                    name: 'Python',
+                    name: name,
                     ver: rel.name,
                     link: json.html_url,
                     timestamp: date,
@@ -357,7 +359,7 @@ async function callPython() {
             }
         }
     } catch (error) {
-        console.error(`[Python]`, error);
+        console.error(`[${name}]`, error);
     }
     return [];
 }
@@ -758,7 +760,6 @@ async function callIdea() {
     return [];
 }
 
-import { wonda } from '../ute/riða.js';
 async function callWikiDump() {
     const dom = parse(await wikidumpEarl.fetchText());
 
@@ -779,7 +780,11 @@ async function callWikiDump() {
 
             const info = getWikiDumpInfo(li);
 
-            if (info && ['enwiktionary', 'enwiki', 'thwiktionary'].includes(info[0])) {
+            if (info && [
+                'enwiktionary',
+                // 'enwiki',
+                // 'thwiktionary'
+            ].includes(info[0])) {
                 const url = new URL(wikidumpEarl.getOrigin());
                 url.pathname = info[3];
 
@@ -803,29 +808,38 @@ async function callWikiDump() {
     return [];
 
     function getWikiDumpInfo(li) {
-        if (li.children.length === 4) {
-            // console.log(`[WikiDump] '${li.children[1].children[0].data}'`);
+        const kids = li.children;
+        if (kids.length === 4) {
+            // console.log(`[WikiDump] '${kids[1].children[0].data}'`);
             return [
-                li.children[1].children[0].data,
-                li.children[0].data,
-                li.children[3].children[0].data,
-                li.children[1].attribs.href
+                kids[1].children[0].data,
+                kids[0].data,
+                kids[3].children[0].data,
+                kids[1].attribs.href
             ];
         } else {
-            const dateAndName = li.children[0].data;
+            const dateAndName = kids[0].data;
             if (dateAndName) {
                 const matt = dateAndName.match(/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d) (.*) \(private data\): $/);
                 // console.log(`[WikiDump] '${matt[2]}'`);
                 return [
                     matt[2],
                     matt[1],
-                    li.children[1].children[0].data,
+                    kids[1].children[0].data,
                     null
                 ];
             } else {
-                console.log(`[WikiDump] couldn't parse info from '${li.children[0].data}'`);
+                console.log(`[WikiDump] couldn't parse info from '${kids[0].data}'`);
             }
         }
         return null;
     }
+}
+
+async function callPython() {
+    return callGithubTags('Python', 'python/cpython');
+}
+
+async function callNim() {
+    return callGithubTags('Nim', 'nim-lang/Nim');
 }
