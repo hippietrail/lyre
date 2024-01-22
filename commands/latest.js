@@ -3,6 +3,7 @@ import { Earl } from '../ute/earl.js';
 import { ago } from '../ute/ago.js';
 import { domStroll } from '../ute/dom.js';
 import { callGithubReleases } from './latest/githubreleases.js';
+import { callGithubTags } from './latest/githubtags.js';
 import { callWikiDump } from './latest/wikidump.js';
 import parse from 'html-dom-parser';
 
@@ -12,7 +13,6 @@ const gimpEarl = new Earl('https://gitlab.gnome.org',
     'inline': false
 });
 const xcodeEarl = new Earl('https://xcodereleases.com', '/data.json');
-const githubTagsEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/tags');
 const goEarl = new Earl('https://go.dev', '/doc/devel/release');
 const mameEarl = new Earl('https://raw.githubusercontent.com', '/Calinou/scoop-games/master/bucket/mame.json');
 const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/channels/stable/release/latest/VERSION');
@@ -33,9 +33,23 @@ export const data = new SlashCommandBuilder()
 
 export const execute = latest;
 
-// TODO missing, but not on GitHub
+// TODO
+// C standard?
+// C++ standard?
 // C#
+// EcmaScript standard?
+// Erlang
+// gcc
+// Groovy
+// Haskell
 // Java/JDK/JVM?
+// Julia
+// Objective C? on GitHub tags only apple-oss-distributions/objc4
+// Scala
+// Unicode
+//  CLDR
+//  ICU
+//  ICU4X
 // Vim
 
 async function latest(interaction) {
@@ -96,7 +110,7 @@ async function latest(interaction) {
             //callNodejs(), // JSON - just use the GitHub one for now, which has link
             callGimp(),     // JSON
             callXcode(),    // JSON
-            callPython(),   // GitHub tags
+            callGithubTags('Python', 'python/cpython'),
             callGo(),       // scraper
             //callMame(),   // JSON - just use the GitHub one for now, which has link and date
             callDart(),     // JSON
@@ -107,8 +121,8 @@ async function latest(interaction) {
             callRuby(),     // scraper
             callIdea(),     // scraper
             callWikiDump(), // scraper
-            callNim(),      // GitHub tags
-            callPerl(),     // GitHub tags
+            callGithubTags('Nim', 'nim-lang/Nim'),
+            callGithubTags('Perl', 'Perl/perl5'),
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
@@ -213,64 +227,6 @@ async function callXcode() {
         }
     } catch (error) {
         console.error(`[Xcode]`, error);
-    }
-    return [];
-}
-
-async function callGithubTags(name, ownerRepo) {
-    githubTagsEarl.setPathname(`/repos/${ownerRepo}/tags`);
-
-    try {
-        const ght = await githubTagsEarl.fetchJson();
-
-        if (ght.message && ght.documentation_url) {
-            console.log(`[${name}] GitHub tags API error: '${name}'${ght.message} ${ght.documentation_url}`);
-        } else {
-            const rel = ght.find(obj => obj.name.match(/^v(\d+)\.(\d+)\.(\d+)$/));
-
-            // TODO if the 2nd fetch fails, use this link to the tag release:
-            // TODO `https://github.com/python/cpython/releases/tag/${rel.name}`,
-            // TODO but there is more human-friendly documentation at:
-            // TODO https://docs.python.org/3.12/
-            //
-            // Note that though it mentions the full version number it only goes
-            // on to cover the major/minor version: 3.12.1 vs 3.12
-            //
-            // > Python 3.12.1 documentation
-            // > Welcome! This is the official documentation for Python 3.12.1.
-            // >
-            // > Parts of the documentation:
-            // >
-            // > What's new in Python 3.12?
-            // > or all "What's new" documents since 2.0
-
-            if (rel) {
-                const url = rel.commit.url;
-                const response = await fetch(url);
-                const json = await response.json();
-
-                // there is commit.author.date and commit.committer.date...
-                const [authorDate, committerDate] = ["author", "committer"].map(k => new Date(json.commit[k].date));
-                // print which is newer, and by how many seconds/minutes
-                // in the one I checked, the committer is newer by about 15 minutes
-                const [newer, older, diff, date] = committerDate > authorDate
-                    ? ['committer', 'author', committerDate - authorDate, committerDate]
-                    : ['author', 'committer', authorDate - committerDate, authorDate];
-
-                if (diff)
-                    console.log(`[${name}] ${newer} is newer than ${older} by ${ago(diff).replace(' ago', '')} (diff: ${diff})`);
-
-                return [{
-                    name: name,
-                    ver: rel.name,
-                    link: json.html_url,
-                    timestamp: date,
-                    src: 'github',
-                }];
-            }
-        }
-    } catch (error) {
-        console.error(`[${name}]`, error);
     }
     return [];
 }
@@ -669,16 +625,4 @@ async function callIdea() {
     }
 
     return [];
-}
-
-async function callPython() {
-    return callGithubTags('Python', 'python/cpython');
-}
-
-async function callNim() {
-    return callGithubTags('Nim', 'nim-lang/Nim');
-}
-
-async function callPerl() {
-    return callGithubTags('Perl', 'Perl/perl5');
 }
