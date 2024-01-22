@@ -19,9 +19,16 @@ export function domStroll(site, debug, kids, data) {
                 if (opts && opts.optional) return null;
                 throw new Error(`[domStroll] ${site}#${i} not a node`);
             }
-            if (node.type !== 'tag') throw new Error(`[domStroll] ${site}#${i} not a tag node but a ${node.type}`);
-            if (node.name !== name) throw new Error(`[domStroll] ${site}#${i} not ${name}`);
+            if (node.type !== 'tag') {
+                if (opts && opts.optional) return null;
+                throw new Error(`[domStroll] ${site}#${i} not a tag node but a ${node.type}`);
+            }
+            if (node.name !== name) {
+                if (opts && opts.optional) return null;
+                throw new Error(`[domStroll] ${site}#${i} not ${name}`);
+            }
             if (opts && opts.id && node.attribs.id !== opts.id) {
+                if (opts && opts.optional) return null;
                 throw new Error(`[domStroll] ${site}#${i} node id is not ${opts.id}`);
             }
             if (opts && opts.cls && !node.attribs?.class?.includes(opts.cls)) {
