@@ -58,22 +58,22 @@ function xformRepoCapTagVersionUnderscore(ro, _, jt) {
 }
 
 const ownerRepos = [
-    // ['apple/swift', xformNameSplit],
-    // ['audacity/audacity', xformNameSplit],
-    // ['discordjs/discord.js', xformRepoCapTag],
-    // /*['elixir-lang/elixir', xformRepoCapTag],*/
-    // ['JetBrains/kotlin', xformNameSplit],
-    // ['llvm/llvm-project', xformNameSplit],
-    // ['lua/lua', xformNameSplit],
-    // ['mamedev/mame', xformNameSplit],
-    // ['microsoft/TypeScript', xformRepoTag],
-    // ['NationalSecurityAgency/ghidra', xformNameSplit],
-    // ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
-    // ['odin-lang/Odin', (_, __, jt) => ['Odin', jt]],
-    // ['oven-sh/bun', xformNameSplit],
-    // /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
-    // ['rust-lang/rust', xformRepoCapTag],
-    // ['ziglang/zig', xformRepoCapTag],
+    ['apple/swift', xformNameSplit],
+    ['audacity/audacity', xformNameSplit],
+    ['discordjs/discord.js', xformRepoCapTag],
+    /*['elixir-lang/elixir', xformRepoCapTag],*/
+    ['JetBrains/kotlin', xformNameSplit],
+    ['llvm/llvm-project', xformNameSplit],
+    ['lua/lua', xformNameSplit],
+    ['mamedev/mame', xformNameSplit],
+    ['microsoft/TypeScript', xformRepoTag],
+    ['NationalSecurityAgency/ghidra', xformNameSplit],
+    ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
+    ['odin-lang/Odin', (_, __, jt) => ['Odin', jt]],
+    ['oven-sh/bun', xformNameSplit],
+    /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
+    ['rust-lang/rust', xformRepoCapTag],
+    ['ziglang/zig', xformRepoCapTag],
 ];
 
 async function latest(interaction) {
@@ -134,7 +134,7 @@ async function latest(interaction) {
             //callNodejs(), // JSON - just use the GitHub one for now, which has link
             callGimp(),     // JSON
             callXcode(),    // JSON
-            callPython(),   // JSON
+            callPython(),   // GitHub tags
             callGo(),       // scraper
             //callMame(),   // JSON - just use the GitHub one for now, which has link and date
             callDart(),     // JSON
@@ -145,7 +145,8 @@ async function latest(interaction) {
             callRuby(),     // scraper
             callIdea(),     // scraper
             callWikiDump(), // scraper
-            callNim(),      // JSON
+            callNim(),      // GitHub tags
+            callPerl(),     // GitHub tags
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
@@ -346,8 +347,8 @@ async function callGithubTags(name, ownerRepo) {
                     ? ['committer', 'author', committerDate - authorDate, committerDate]
                     : ['author', 'committer', authorDate - committerDate, authorDate];
 
-                if (authorDate !== committerDate)
-                    console.log(`[${name}] ${newer} is newer than ${older} by ${ago(diff).replace(' ago', '')}`);
+                if (diff)
+                    console.log(`[${name}] ${newer} is newer than ${older} by ${ago(diff).replace(' ago', '')} (diff: ${diff})`);
 
                 return [{
                     name: name,
@@ -761,10 +762,10 @@ async function callIdea() {
 }
 
 async function callWikiDump() {
-    const dom = parse(await wikidumpEarl.fetchText());
+    const indexDom = parse(await wikidumpEarl.fetchText());
 
     try {
-        const ul = domStroll('Wikidump', false, dom, [
+        const ul = domStroll('Wikidump.1', false, indexDom, [
             [2, 'html'],
             [3, 'body'],
             [1, 'div', { cls: 'lang-list-button-wrapper' }],
@@ -784,16 +785,85 @@ async function callWikiDump() {
                 'enwiktionary',
                 // 'enwiki',
                 // 'thwiktionary'
-            ].includes(info[0])) {
+            ].includes(info.w)) {
                 const url = new URL(wikidumpEarl.getOrigin());
-                url.pathname = info[3];
+                url.pathname = info.l;
+
+                // do different things depending on the status
+                switch (info.s) {
+                    case 'Dump in progress':
+                        // status class is 'in-progress'
+                        console.log(`[WikiDump] ${info.c} ${info.w}`);
+                        break;
+
+                    case 'Partial dump':
+                        // status class is ??? TODO...
+                        console.log(`[WikiDump] ${info.c} ${info.w}`);
+                        const wikiEarl = new Earl(url.origin, url.pathname);
+                        console.log(`[WikiDump/dump] ${wikiEarl.getUrlString()}`);
+                        try {
+                            const wikiDom = parse(await wikiEarl.fetchText());
+                            const ul = domStroll('Wikidump.2', false, wikiDom, [
+                                [2, 'html'],
+                                [3, 'body'],
+                                [21, 'ul'],
+                            ]);
+
+                            for (const [i, li] of ul.children.entries()) {
+                                if (i % 2 === 0) continue;
+
+                                const titleSpan = domStroll('Wikidump.3', false, li.children, [
+                                    [4, 'span', { cls: 'title' }],
+                                ]);
+
+                                const titleBold = domStroll('Wikidump.4', false, titleSpan.children, [
+                                    [0, 'big', { optional: true }],
+                                    [0, 'b', { optional: true }],
+                                ]);
+
+                                const title = (titleBold || titleSpan).children[0].data;
+                                
+                                if (title.startsWith('Articles, templates, media/file descriptions, and primary meta-pages')) {
+                                    console.log(`[WikiDump/dump] ART ${info.w} ${i} ${li.type} ${li.name}\n  ${li.attribs.class} : ${title}`);
+
+                                    const titleUlAfterSpan = domStroll('Wikidump.5', true, li.children, [
+                                        [5, 'ul'],
+                                    ]);
+    
+                                    console.log(`[WikiDump/dump] ${titleUlAfterSpan.children.length} kids, title len: ${title.length}, has titleBold? ${!!titleBold}`);
+
+                                    // these three values go together so there should only be two possibilities
+                                    if (titleUlAfterSpan.children.length === 1 && title.length === 69 && titleBold) {
+                                        console.log(`  pages-articles.xml.bz2`);
+                                    } else if (titleUlAfterSpan.children.length === 3 && title.length === 115 && !titleBold) {
+                                        console.log(`  pages-articles-multistream.xml.bz2 (and index)`);
+                                    } else {
+                                        console.log(`[WikiDump/dump] failed to parse ${titleUlAfterSpan.children.length} kids, title len: ${title.length}, has titleBold? ${!!titleBold}`);
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            console.error(`[WikiDump]`, error);
+                        }
+                        break;
+
+                    case 'Dump complete':
+                        // status class is 'done'
+                        console.log(`[WikiDump] ${info.c} ${info.w}`);
+                        break;
+
+                    default:
+                        // unexpected status
+                        // other known statuses classes are 'waiting' and 'skipped'
+                        console.log(`[WikiDump] ${info.c} (${info.s}) ${info.w}`);
+                }
 
                 // for the version we use the date in the form `yyyymmdd`
                 chosen.push({
-                    name: `${info[0]} (${info[2]})`,
-                    ver: info[1].substring(0, 10).replace(/-/g, ''),
+                    name: `${info.w} (${info.c})`,
+                    ver: info.d.substring(0, 10).replace(/-/g, ''),
                     link: url.href,
-                    timestamp: new Date(info[1]),
+                    timestamp: new Date(info.d),
                     src: 'dumps.wikimedia.org',
                 });
             }
@@ -810,24 +880,24 @@ async function callWikiDump() {
     function getWikiDumpInfo(li) {
         const kids = li.children;
         if (kids.length === 4) {
-            // console.log(`[WikiDump] '${kids[1].children[0].data}'`);
-            return [
-                kids[1].children[0].data,
-                kids[0].data,
-                kids[3].children[0].data,
-                kids[1].attribs.href
-            ];
+            return {
+                w: kids[1].children[0].data,
+                d: kids[0].data,
+                c: kids[3].attribs.class,
+                s: kids[3].children[0].data,
+                l: kids[1].attribs.href,
+            };
         } else {
             const dateAndName = kids[0].data;
             if (dateAndName) {
                 const matt = dateAndName.match(/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d) (.*) \(private data\): $/);
-                // console.log(`[WikiDump] '${matt[2]}'`);
-                return [
-                    matt[2],
-                    matt[1],
-                    kids[1].children[0].data,
-                    null
-                ];
+                return {
+                    w: matt[2],
+                    d: matt[1],
+                    c: kids[1].attribs.class,
+                    s: kids[1].children[0].data,
+                    l: null,
+                }
             } else {
                 console.log(`[WikiDump] couldn't parse info from '${kids[0].data}'`);
             }
@@ -842,4 +912,8 @@ async function callPython() {
 
 async function callNim() {
     return callGithubTags('Nim', 'nim-lang/Nim');
+}
+
+async function callPerl() {
+    return callGithubTags('Perl', 'Perl/perl5');
 }
