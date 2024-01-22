@@ -7,22 +7,6 @@ import { callGithubTags } from './latest/githubtags.js';
 import { callWikiDump } from './latest/wikidump.js';
 import parse from 'html-dom-parser';
 
-const nodejsEarl = new Earl('https://nodejs.org', '/dist/index.json');
-const gimpEarl = new Earl('https://gitlab.gnome.org',
-    '/Infrastructure/gimp-web/-/raw/testing/content/gimp_versions.json', {
-    'inline': false
-});
-const xcodeEarl = new Earl('https://xcodereleases.com', '/data.json');
-const goEarl = new Earl('https://go.dev', '/doc/devel/release');
-const mameEarl = new Earl('https://raw.githubusercontent.com', '/Calinou/scoop-games/master/bucket/mame.json');
-const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/channels/stable/release/latest/VERSION');
-const rvmEarl = new Earl('https://www.retrovirtualmachine.org', '/changelog/');
-const asEarl = new Earl('https://androidstudio.googleblog.com');
-const elixirEarl = new Earl('https://elixir-lang.org', '/blog/categories.html');
-const phpEarl = new Earl('https://www.php.net', '/releases/index.php');
-const rubyEarl = new Earl('https://www.ruby-lang.org', '/en/downloads/releases/');
-const ideaEarl = new Earl('https://blog.jetbrains.com', '/idea/category/releases/');
-
 export const data = new SlashCommandBuilder()
     .setName('latest')
     .setDescription('Latest releases of various projects')
@@ -155,6 +139,7 @@ function nvltsToString(nvlts) {
 }
 
 async function callNodejs() {
+    const nodejsEarl = new Earl('https://nodejs.org', '/dist/index.json');
     try {
         const rels = await nodejsEarl.fetchJson();
 
@@ -175,6 +160,10 @@ async function callNodejs() {
 }
 
 async function callGimp() {
+    const gimpEarl = new Earl('https://gitlab.gnome.org',
+        '/Infrastructure/gimp-web/-/raw/testing/content/gimp_versions.json', {
+        'inline': false
+    });
     try {
         const gj = await gimpEarl.fetchJson();
 
@@ -204,6 +193,7 @@ async function callGimp() {
 }
 
 async function callXcode() {
+    const xcodeEarl = new Earl('https://xcodereleases.com', '/data.json');
     try {
         const xcj = await xcodeEarl.fetchJson();
 
@@ -234,6 +224,7 @@ async function callXcode() {
 async function callGo() {
     const verCmp = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 
+    const goEarl = new Earl('https://go.dev', '/doc/devel/release');
     try {
         const dom = parse(await goEarl.fetchText());
 
@@ -273,6 +264,7 @@ async function callGo() {
 }
 
 async function callMame() {
+    const mameEarl = new Earl('https://raw.githubusercontent.com', '/Calinou/scoop-games/master/bucket/mame.json');
     try {
         const mamej = await mameEarl.fetchJson();
 
@@ -290,6 +282,7 @@ async function callMame() {
 }
 
 async function callDart() {
+    const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/channels/stable/release/latest/VERSION');
     try {
         const dartj = await dartEarl.fetchJson();
 
@@ -307,6 +300,7 @@ async function callDart() {
 }
 
 async function callRvm() {
+    const rvmEarl = new Earl('https://www.retrovirtualmachine.org', '/changelog/');
     try {
         const dom = parse(await rvmEarl.fetchText());
 
@@ -343,10 +337,11 @@ async function callAS() {
     // note we can use a URL like
     // https://androidstudio.googleblog.com/search?updated-max=2022-12-26T10:01:00-08:00&max-results=25
     // we can use just the `max-results` param - it actually only goes up to 24 though
-    try {
-        asEarl.setPathname('/search');
-        asEarl.setSearchParam('max-results', 24);
+    const asEarl = new Earl('https://androidstudio.googleblog.com', '/search', {
+        'max-results': 24,
+    });
 
+    try {
         const dom = parse(await asEarl.fetchText());
 
         const blog1 = domStroll('AS2a', false, dom, [
@@ -424,6 +419,7 @@ async function callAS() {
 }
 
 async function callElixir() {
+    const elixirEarl = new Earl('https://elixir-lang.org', '/blog/categories.html');
     try {
         const dom = parse(await elixirEarl.fetchText());
 
@@ -478,6 +474,7 @@ async function callElixir() {
 }
 
 async function callPhp() {
+    const phpEarl = new Earl('https://www.php.net', '/releases/index.php');
     phpEarl.setSearchParam('json', '');
     try {
         const phpj = await phpEarl.fetchJson();
@@ -498,6 +495,7 @@ async function callPhp() {
 }
 
 async function callRuby() {
+    const rubyEarl = new Earl('https://www.ruby-lang.org', '/en/downloads/releases/');
     try {
         const dom = parse(await rubyEarl.fetchText());
 
@@ -563,9 +561,11 @@ async function callRuby() {
 }
 
 async function callIdea() {
-    const dom = parse(await ideaEarl.fetchText());
+    const ideaEarl = new Earl('https://blog.jetbrains.com', '/idea/category/releases/');
 
     try {
+        const dom = parse(await ideaEarl.fetchText());
+
         const row = domStroll('IdeaA', false, dom, [
             [2, 'html'],
             [3, 'body'],
