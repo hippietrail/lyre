@@ -1,5 +1,8 @@
 import { config } from 'dotenv';
 
+// TODO a way to handle redirects?
+// TODO add .fetch() that stores the redirected URL?
+
 export class Earl {
     constructor(origin, optionalBasicPathname, optionalSearchParams) {
         this.basicPathname = optionalBasicPathname || '/';
@@ -9,6 +12,9 @@ export class Earl {
         if (optionalSearchParams)
             for (const [key, value] of Object.entries(optionalSearchParams))
                 this.url.searchParams.set(key, value);
+    }
+    setBasicPathname(basicPathname) {
+        this.basicPathname = basicPathname;
     }
     setPathname(pathname) {
         this.url.pathname = pathname;
