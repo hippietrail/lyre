@@ -49,7 +49,7 @@ export async function callGithubReleases() {
         // console.log(`[callGithub] i: ${i}, owner/repo: ${repoEntry[0]}`);
         githubReleasesEarl.setPathname(`/repos/${repoEntry[0]}/releases/latest`);
         const ob = await githubReleasesEarl.fetchJson();
-        console.log(`GitHub [${i + 1}/${ownerRepos.length}] ${repoEntry[0]}`);
+        console.log(`GitHub Rels [${i + 1}/${ownerRepos.length}] ${repoEntry[0]}`);
         const nvlts = githubJsonToNVLTS(repoEntry, ob);
         result.push(nvlts);
 

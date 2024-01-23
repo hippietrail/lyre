@@ -94,7 +94,7 @@ async function latest(interaction) {
             //callNodejs(), // JSON - just use the GitHub one for now, which has link
             callGimp(),     // JSON
             callXcode(),    // JSON
-            callGithubTags('Python', 'python/cpython'),
+            callGithubTags(),
             callGo(),       // scraper
             //callMame(),   // JSON - just use the GitHub one for now, which has link and date
             callDart(),     // JSON
@@ -105,8 +105,6 @@ async function latest(interaction) {
             callRuby(),     // scraper
             callIdea(),     // scraper
             callWikiDump(), // scraper
-            callGithubTags('Nim', 'nim-lang/Nim'),
-            callGithubTags('Perl', 'Perl/perl5'),
         ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
 
         await Promise.all([githubPromises, otherPromises]);
