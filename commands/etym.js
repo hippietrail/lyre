@@ -35,7 +35,8 @@ async function etym(interaction) {
         } else {
             const wordNodes = lg17.children.filter(node => node.name === 'div' && node.attribs?.class?.includes('word--C9UPa'));
 
-            let reply = `[there are ${wordNodes.length} word sections.](${earl.getUrlString()})`;
+            const [verb, suffix] = wordNodes.length === 1 ? ['is', ''] : ['are', 's'];
+            let reply = `[there ${verb} ${wordNodes.length} word section${suffix}.](${earl.getUrlString()})`;
 
             const words = [...new Set(wordNodes
                 .map(node => node.children[0].children[0])
@@ -44,9 +45,7 @@ async function etym(interaction) {
 
             // is at least one of the words a case-insensitive match?
             if (words.some(w => w.toLowerCase() === word.toLowerCase())) {
-                if (words.length === 1) {
-                    reply += `\n'${words[0]}' matches '${word}'.`;
-                } else {
+                if (words.length !== 1) {
                     reply += `\nat least one of ${words.map(node => `'${node}'`).join(', ')} matches '${word}'.`;
                 }
             } else {
