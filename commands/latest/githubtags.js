@@ -31,9 +31,7 @@ export async function callGithubTags(name, ownerRepo) {
             // > or all "What's new" documents since 2.0
 
             if (rel) {
-                const url = rel.commit.url;
-                const response = await fetch(url);
-                const json = await response.json();
+                const json = await (await fetch(rel.commit.url)).json();
 
                 // there is commit.author.date and commit.committer.date...
                 const [authorDate, committerDate] = ["author", "committer"].map(k => new Date(json.commit[k].date));

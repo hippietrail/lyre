@@ -24,32 +24,34 @@ export async function callWikiDump() {
 
             const info = getWikiDumpInfo(li);
 
+            // NOTE `info.l` contains a relative link that if followed
+            // NOTE will redirect to add a slash to the end
+
             if (info && [
                 'enwiktionary',
                 'enwiki',
                 // 'thwiktionary'
+                'wikidatawiki',
             ].includes(info.w)) {
-                const url = new URL(wikidumpEarl.getOrigin());
-                url.pathname = info.l;
-
                 // do different things depending on the status
+                let sdp = null;
                 switch (info.s) {
                     case 'Dump in progress':
                         // status class is 'in-progress'
-                        console.log(`[WikiDump] ${info.c} ${info.w}`);
-                        await scrapeThisDumpsPage(url, info);
+                        //console.log(`[WikiDump] ${info.c} ${info.w}`);
+                        sdp = await scrapeThisDumpsPage(info);
                         break;
 
                     case 'Partial dump':
                         // status class is ??? TODO...
                         console.log(`[WikiDump] ${info.c} ${info.w}`);
-                        await scrapeThisDumpsPage(url, info);
+                        sdp = await scrapeThisDumpsPage(info);
                         break;
 
                     case 'Dump complete':
                         // status class is 'done'
-                        console.log(`[WikiDump] ${info.c} ${info.w}`);
-                        await scrapeThisDumpsPage(url, info);
+                        //console.log(`[WikiDump] ${info.c} ${info.w}`);
+                        sdp = await scrapeThisDumpsPage(info);
                         break;
 
                     default:
@@ -59,13 +61,61 @@ export async function callWikiDump() {
                 }
 
                 // for the version we use the date in the form `yyyymmdd`
-                chosen.push({
-                    name: `${info.w} (${info.c})`,
-                    ver: info.d.substring(0, 10).replace(/-/g, ''),
-                    link: url.href,
-                    timestamp: new Date(info.d),
-                    src: 'dumps.wikimedia.org',
-                });
+                const url = new URL(wikidumpEarl.getOrigin());
+                url.pathname = info.l;
+
+                const ver = info.d.substring(0, 10).replace(/-/g, '');
+                const link = url.href;
+                const src = 'dumps.wikimedia.org';
+
+                let added = 0;
+
+                if (sdp) {
+                    // if we have both pages-articles *and* pages-articles-multistream then just add once,
+                    // noting that we have both, and using the more recent timestamp
+
+                    if ('articlesdump' in sdp && sdp.articlesdump !== '' && 'articlesmultistreamdump' in sdp && sdp.articlesmultistreamdump !== '') {
+                        const adTime = new Date(sdp.articlesdump);
+                        const admTime = new Date(sdp.articlesmultistreamdump);
+                        const timestamp = adTime > admTime ? adTime : admTime;
+                        chosen.push({
+                            name: `${info.w} pages-articles and pages-articles-multistream`,
+                            ver,
+                            link,
+                            timestamp,
+                            src,
+                        });
+                        added++;
+                    } else if ('articlesdump' in sdp && sdp.articlesdump !== '') {
+                        chosen.push({
+                            name: `${info.w} pages-articles`,
+                            ver,
+                            link,
+                            timestamp: new Date(sdp.articlesdump),
+                            src,
+                        });
+                        added++;
+                    } else if ('articlesmultistreamdump' in sdp && sdp.articlesmultistreamdump !== '') {
+                        chosen.push({
+                            name: `${info.w} pages-articles-multistream`,
+                            ver,
+                            link,
+                            timestamp: new Date(sdp.articlesmultistreamdump),
+                            src,
+                        });
+                        added++;
+                    }
+                }
+                
+                if (!added) {
+                    chosen.push({
+                        name: `${info.w} (${info.c})`,
+                        ver,
+                        link,
+                        timestamp: new Date(info.d),
+                        src,
+                    });
+                }
             }
         }
 
@@ -78,64 +128,65 @@ export async function callWikiDump() {
     return [];
 }
 
-async function scrapeThisDumpsPage(url, info) {
+async function scrapeThisDumpsPage(info) {
     try {
-        const wikiEarl = new Earl(url.origin, url.pathname);
-        console.log(`[WikiDump/dump] ${wikiEarl.getUrlString()}`);
+        wikidumpEarl.setPathname(info.l);
+        console.log(`[WikiDump/dump] ${wikidumpEarl.getUrlString()}`);
 
-        const wikiDom = parse(await wikiEarl.fetchText());
-        const ul = domStroll('Wikidump.2', false, wikiDom, [
+        // NOTE the url we got from the page has the form `wikidatawiki/20240120`
+        // NOTE but it redirects to add a slash: `wikidatawiki/20240120/`
+
+        const wikiDom = parse(await wikidumpEarl.fetchText());
+
+        const body = domStroll('Wikidump.2', false, wikiDom, [
             [2, 'html'],
             [3, 'body'],
-            [21, 'ul'],
+        ])
+
+        const jsonA = domStroll('Wikidump.3', false, body.children, [
+            [15, 'p'],
+            [1, 'a'],
         ]);
 
-        for (const [i, li] of ul.children.entries()) {
-            if (i % 2 === 0) continue;
+        // TODO this link is relative to the *redirected* URL
+        const dj = await getThisDumpsJson(info.w, jsonA.attribs.href);
 
-            const titleSpan = domStroll('Wikidump.3', false, li.children, [
-                [4, 'span', { cls: 'title' }],
-            ]);
-
-            const titleBold = domStroll('Wikidump.4', false, titleSpan.children, [
-                [0, 'big', { optional: true }],
-                [0, 'b', { optional: true }],
-            ]);
-
-            const title = (titleBold || titleSpan).children[0].data;
-
-            if (title.startsWith('Articles, templates, media/file descriptions, and primary meta-pages')) {
-                //console.log(`[WikiDump/dump] ART ${info.w} ${i} ${li.type} ${li.name}\n  ${li.attribs.class} : ${title}`);
-
-                const titleUlAfterSpan = domStroll('Wikidump.5', false, li.children, [
-                    [5, 'ul'],
-                ]);
-
-                const numKids = titleUlAfterSpan.children.length;
-
-                // console.log(`[WikiDump/dump] ${numKids} kids, title len: ${title.length}, has titleBold? ${!!titleBold}`);
-
-                // these three values go together so there should only be two possibilities
-                if (title.length === 69 && titleBold) {
-                    if (numKids === 1)
-                        console.log(`  pages-articles.xml.bz2`);
-                    else
-                        console.log(`  multipart pages-articles.xml.bz2 (${(numKids + 1) / 2} archive files)`);
-                } else if (title.length === 115 && !titleBold) {
-                    if (numKids === 3)
-                        console.log(`  pages-articles-multistream.xml.bz2 (and index)`);
-                    else
-                        console.log(`  multipart pages-articles-multistream.xml.bz2 (${(numKids + 1) / 4} archive+index file pairs)`);
-                } else {
-                    console.log(`[WikiDump/dump] failed to parse ${numKids} kids, title len: ${title.length}, has titleBold? ${!!titleBold}`);
-                }
-            }
-        }
+        //console.log(JSON.stringify(dj, null, 2));
+        return dj;
     } catch (error) {
         console.error(`[WikiDump]`, error);
     }
+    return null;
 }
 
+import { ago } from '../../ute/ago.js';
+async function getThisDumpsJson(wiki, jsonRelLink) {
+    wikidumpEarl.setBasicPathname(`${wikidumpEarl.url.pathname}/`);
+    wikidumpEarl.setLastPathSegment(`${jsonRelLink}`);
+
+    try {
+        const jobs = (await wikidumpEarl.fetchJson()).jobs;
+
+        const now = new Date();
+
+        const stuffs = {};
+
+        [
+            'articlesmultistreamdumprecombine',
+            'articlesmultistreamdump',
+            'articlesdumprecombine',
+            'articlesdump'
+        ].filter(key => key in jobs).forEach(key => stuffs[key] = jobs[key].updated);
+
+        return stuffs;
+    } catch (error) {
+        console.error(`[WikiDump/json] ${wiki}`, error);
+    }
+    return null;
+}
+
+// NOTE `l` will contain a relative link that looks like a file, no trailing slash
+// NOTE but that link will redirect to one like a dir, with a trailing slash
 function getWikiDumpInfo(li) {
     const kids = li.children;
     if (kids.length === 4) {

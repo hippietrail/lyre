@@ -36,6 +36,7 @@ const ownerRepos = [
     ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
     ['odin-lang/Odin', (_, __, jt) => ['Odin', jt]],
     ['oven-sh/bun', xformNameSplit],
+    ['rakudo/rakudo', xformRepoCapTag],
     /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
     ['rust-lang/rust', xformRepoCapTag],
     ['ziglang/zig', xformRepoCapTag],
