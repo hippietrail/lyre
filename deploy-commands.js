@@ -15,39 +15,22 @@ const commandFiles = fs.readdirSync('./commands').filter((file) => file.endsWith
 for (const file of commandFiles) {
   let i = 0; const c = [];
   const command = await import(`./commands/${file}`); // Using dynamic import
-  if ('data' in command && 'execute' in command) {
-    ++i; c.push(command.data.name);
-    commands.push(command.data.toJSON());
-
-    if ('data2' in command && 'execute2' in command) {
-      ++i; c.push(command.data2.name);
-      commands.push(command.data2.toJSON());
-
-      if ('data3' in command && 'execute3' in command) {
-        ++i; c.push(command.data3.name);
-        commands.push(command.data3.toJSON());
-
-        if ('data4' in command && 'execute4' in command) {
-          ++i; c.push(command.data4.name);
-          commands.push(command.data4.toJSON());
-
-          if ('data5' in command && 'execute5' in command) {
-            ++i; c.push(command.data5.name);
-            commands.push(command.data5.toJSON());
-
-            if ('data6' in command && 'execute6' in command) {
-              ++i; c.push(command.data6.name);
-              commands.push(command.data6.toJSON());
-            }
-          }
-        }
-      }
+  let n = 1;
+  while (true) {
+    const [data, execute] = ['data', 'execute'].map(k => `${k}${n > 1 ? n : ''}`);
+    if (data in command && execute in command) {
+      ++i; c.push(command[data].name);
+      commands.push(command[data].toJSON());
+      n++;
+    } else if (data in command || execute in command) {
+      console.log(`[WARNING] The command ${file} is missing a required "${data}" or "${execute}" property.`);
+      break;
+    } else {
+      break;
     }
-    // note how many commands in this file
-    console.log(`[INFO] Loaded ${i} commands from ${file}: ${c.join(', ')}`);
-  } else {
-    console.log(`[WARNING] The command ${file} is missing a required "data" or "execute" property.`);
   }
+  // note how many commands in this file
+  console.log(`[INFO] Loaded ${i} commands from ${file}: ${c.join(', ')}`);
 }
 
 // Construct and prepare an instance of the REST module
