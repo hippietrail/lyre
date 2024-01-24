@@ -11,16 +11,34 @@ function fetchVideos(playlistId) {
 }
 
 export const data = new SlashCommandBuilder()
-    .setName('youtube')
+    .setName('ytcoding')
     .setDescription('Latest from my favourite coding youtube channels');
 
 export const execute = ytcoding;
 
 export const data2 = new SlashCommandBuilder()
-    .setName('retro')
+    .setName('ytretro')
     .setDescription('Latest from my favourite retrocomputing youtube channels');
 
 export const execute2 = ytretro;
+
+export const data3 = new SlashCommandBuilder()
+    .setName('ytcoding2')
+    .setDescription('Latest from other coding youtube channels');
+
+export const execute3 = ytcoding2;
+
+export const data4 = new SlashCommandBuilder()
+    .setName('ytretro2')
+    .setDescription('Latest from other retrocomputing youtube channels');
+
+export const execute4 = ytretro2;
+
+export const data5 = new SlashCommandBuilder()
+    .setName('ytother')
+    .setDescription('Latest from other youtube channels');
+
+export const execute5 = ytother;
 
 // make a map of my favourite coding youtube channel names to their channel IDs
 // IDs starting with UU are the playlists for the whole channel
@@ -31,13 +49,11 @@ const codingChans = {
     'AppleProgramming':             'UUDg-YmnNehm3KB0BpytkUJg',
     'Ben Eater':                    'UUS0N5baNlQWJCUrhCEo8WlA',
     'Bisqwit':                      'UUKTehwyGCKF-b2wo0RKwrcg',
-    'ChibiAkumas':                  'UU8t99gp5IN-FTf5rGVaRevw',
     'Code Bullet':                  'UU0e3QhIYukixgh5VVpKHH9Q',
     'fasterthanlime':               'UUs4fQRyl1TJvoeOdekW6lYA',
     'Inigo Quilez':                 'UUdmAhiG8HQDlz8uyekw4ENw',
     'javidx9':                      'UU-yuWVUplUJZvieEligKBkA',
     'Sebastian Lague':              'UUmtyQOKKmrMVaKuRXz02jbQ',
-    'sphaerophoria':                'UUXzL31BCxf8En1KT34gSK6g',
     'StatQuest with Josh Starmer':  'UUtYLUTtgS3k1Fg4y5tAhLbw',
     'suckerpinch':                  'UU3azLjQuz9s5qk76KEXaTvA',
     'The Art of Code':              'UUcAlTqd9zID6aNX3TzwxJXg',
@@ -46,20 +62,21 @@ const codingChans = {
     'Tsoding Daily':                'UUrqM0Ym_NbK1fqeQG2VIohg',
 };
 
+const codingChans2 = {
+    'ChibiAkumas':                  'UU8t99gp5IN-FTf5rGVaRevw',
+    'sphaerophoria':                'UUXzL31BCxf8En1KT34gSK6g',
+};
+
 const retroChans = {
     'Action Retro':                     'UUoL8olX-259lS1N6QPyP4IQ',
     'Adrian\'s Digital Basement':       'UUE5dIscvDxrb7CD5uiJJOiw',
     'Adrian\'s Digital Basement ][':    'UUbtwi4wK1YXd9AyV_4UcE6g',
-    'ChibiAkumas':                      'UU8t99gp5IN-FTf5rGVaRevw',
     'Jan Beta':                         'UUftUpOO4h9EgH0eDOZtjzcA',
-    'Kim Justice':                      'UU9ZWVL1Elyt2cdiQYjxS_1w',
-    'LGR':                              'UULx053rWZxCiYWsBETgdKrQ',
     'Modern Vintage Gamer':             'UUjFaPUcJU1vwk193mnW_w1w',
     'Noel\'s Retro Lab':                'UU2-SP1bYi3ueKlVU7I75wFw',
     'Nostalgia Nerd':                   'UU7qPftDWPw9XuExpSgfkmJQ',
     'PCRetroTech':                      'UUWYne_mhlRE1AiN2ApjmZDA',
     'Retro Hack Shack':                 'UUN_u47_wJuhh249H9E8sjtw',
-    'Retro Recipes':                    'UU6gARF3ICgaLfs3o2znuqXA',
     'RetroVirtualMachine':              'UUgNfOsqL76T13tUex62gonA',
     'RMC - The Cave':                   'UULEoyoOKZK0idGqSc6Pi23w',
     'Tech Tangents':                    'UUerEIdrEW-IqwvlH8lTQUJQ',
@@ -70,12 +87,35 @@ const retroChans = {
     'Usagi Electric':                   'UUE4xstUnu0YmkG-W9_PyYrQ',
 };
 
+const retroChans2 = {
+    'Cathode Ray Dude':                 'UU9HHZMXng9reLBQmNc1Y8iA',
+    'ChibiAkumas':                      'UU8t99gp5IN-FTf5rGVaRevw',
+    'Kim Justice':                      'UU9ZWVL1Elyt2cdiQYjxS_1w',
+    'LGR':                              'UULx053rWZxCiYWsBETgdKrQ',
+    'Retro Recipes':                    'UU6gARF3ICgaLfs3o2znuqXA',
+};
+
+const otherChans = {
+};
+
 async function ytcoding(interaction) {
     await yt(interaction, codingChans);
 }
 
+async function ytcoding2(interaction) {
+    await yt(interaction, codingChans2);
+}
+
 async function ytretro(interaction) {
     await yt(interaction, retroChans);
+}
+
+async function ytretro2(interaction) {
+    await yt(interaction, retroChans2);
+}
+
+async function ytother(interaction) {
+    await yt(interaction, otherChans);
 }
 
 async function yt(interaction, chans) {

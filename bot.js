@@ -71,10 +71,10 @@ async function handleInteraction(interaction) {
             await github.execute(interaction);
             break;
 
-        case 'youtube':
+        case 'ytcoding':
             await yt.execute(interaction);
             break;
-        case 'retro':
+        case 'ytretro':
             await yt.execute2(interaction);
             break;
 
