@@ -70,6 +70,12 @@ const codingChans2 = {
     list: {
         'ChibiAkumas':      'UU8t99gp5IN-FTf5rGVaRevw',
         'sphaerophoria':    'UUXzL31BCxf8En1KT34gSK6g',
+        'Let\'s Get Rusty': 'UUSp-OaMpsO8K0KkOqyBl7_w',
+        'No Boilerplates':  'UCUMwY9iS8oMyWDYIe6_RmoA',
+        'Paul Hudson':      'UUmJi5RdDLgzvkl3Ly0DRMlQ', // Swift, SwiftUI
+        'Philipp Lackner':  'UUKNTZMRHPLXfqlbdOI7mCkg', // Android, Jetpack Compose, Kotlin
+        'ThePrimeTime':     'UUUyeluBRhGPCW4rPe_UvBZQ',
+        'Zig SHOWTIME':     'UU2EQzAewrC10KCDFSS4j-zA',
     }
 };
 
@@ -99,11 +105,12 @@ const retroChans = {
 const retroChans2 = {
     name: 'Retrocomputing (2)',
     list: {
-        'Cathode Ray Dude': 'UUXnNibvR_YIdyPs8PZIBoEw',
-        'ChibiAkumas':      'UU8t99gp5IN-FTf5rGVaRevw',
-        'Kim Justice':      'UU9ZWVL1Elyt2cdiQYjxS_1w',
-        'LGR':              'UULx053rWZxCiYWsBETgdKrQ',
-        'Retro Recipes':    'UU6gARF3ICgaLfs3o2znuqXA',
+        'Cathode Ray Dude':     'UUXnNibvR_YIdyPs8PZIBoEw',
+        'ChibiAkumas':          'UU8t99gp5IN-FTf5rGVaRevw',
+        'Kim Justice':          'UU9ZWVL1Elyt2cdiQYjxS_1w',
+        'LGR':                  'UULx053rWZxCiYWsBETgdKrQ',
+        'Retro Recipes':        'UU6gARF3ICgaLfs3o2znuqXA',
+        'The Spectrum Show':    'UUDOV38mSrjtoFkNpaPuIjLQ',
     }
 };
 
@@ -112,8 +119,11 @@ const otherChans = {
     list: {
         'Barn Find Hunter':     'UULgEVx4mzk3T3mzgbKG54Eg',
         'Captain Disillusion':  'UUEOXxzW2vU0P-0THehuIIeg',
+        'ColdFusion':           'UU4QZ_LsYcvcq7qOsOhpAX4A',
         'coldwarmotors':        'UUoculxk4_H8XzjPS_zbYUpQ',
         'Darknet Diaries':      'UUMIqrmh2lMdzhlCPK5ahsAg',
+        'Jay Leno\'s Garage':   'UUQMELFlXQL38KPm8kM-4Adg',
+        'Trash Theory':         'UUxHcoI9ndIdAihEB7ODTOfQ',
     }
 };
 
