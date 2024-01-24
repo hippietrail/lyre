@@ -83,8 +83,11 @@ async function handleInteraction(interaction) {
         case 'ytretro2':
             await yt.execute4(interaction);
             break;
-        case 'ytother':
+        case 'ytstories':
             await yt.execute5(interaction);
+            break;
+        case 'ytother':
+            await yt.execute6(interaction);
             break;
     
         case 'tsoding':

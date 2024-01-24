@@ -35,10 +35,16 @@ export const data4 = new SlashCommandBuilder()
 export const execute4 = ytretro2;
 
 export const data5 = new SlashCommandBuilder()
+    .setName('ytstories')
+    .setDescription('Latest from storytelling youtube channels');
+
+export const execute5 = ytstories;
+
+export const data6 = new SlashCommandBuilder()
     .setName('ytother')
     .setDescription('Latest from other youtube channels');
 
-export const execute5 = ytother;
+export const execute6 = ytother;
 
 // make a map of my favourite coding youtube channel names to their channel IDs
 // IDs starting with UU are the playlists for the whole channel
@@ -114,6 +120,16 @@ const retroChans2 = {
     }
 };
 
+const storiesChans = {
+    name: 'Storytelling',
+    list: {
+        'amglimpse':    'UUv766eFS-V6auawYiqXyU1w',
+        'MrBallen':     'UUtPrkXdtCM5DACLufB9jbsA',
+        'Qxir':         'UUGHDQtN_vzFYJaq_Fx1eikg',
+        'Thoughty2':    'UURlICXvO4XR4HMeEB9JjDlA',
+    }
+};
+
 const otherChans = {
     name: 'Other',
     list: {
@@ -123,6 +139,7 @@ const otherChans = {
         'coldwarmotors':        'UUoculxk4_H8XzjPS_zbYUpQ',
         'Darknet Diaries':      'UUMIqrmh2lMdzhlCPK5ahsAg',
         'Jay Leno\'s Garage':   'UUQMELFlXQL38KPm8kM-4Adg',
+        'Mustie1':              'UUcSeeATlWJJbXpOZRYOfaDg',
         'Trash Theory':         'UUxHcoI9ndIdAihEB7ODTOfQ',
     }
 };
@@ -141,6 +158,10 @@ async function ytretro(interaction) {
 
 async function ytretro2(interaction) {
     await yt(interaction, retroChans2);
+}
+
+async function ytstories(interaction) {
+    await yt(interaction, storiesChans);
 }
 
 async function ytother(interaction) {

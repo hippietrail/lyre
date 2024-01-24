@@ -34,6 +34,11 @@ for (const file of commandFiles) {
           if ('data5' in command && 'execute5' in command) {
             ++i; c.push(command.data5.name);
             commands.push(command.data5.toJSON());
+
+            if ('data6' in command && 'execute6' in command) {
+              ++i; c.push(command.data6.name);
+              commands.push(command.data6.toJSON());
+            }
           }
         }
       }
