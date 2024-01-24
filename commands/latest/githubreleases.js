@@ -50,8 +50,8 @@ export async function callGithubReleases() {
         githubReleasesEarl.setPathname(`/repos/${repoEntry[0]}/releases/latest`);
         const ob = await githubReleasesEarl.fetchJson();
         console.log(`GitHub Rels [${i + 1}/${ownerRepos.length}] ${repoEntry[0]}`);
-        const nvlts = githubJsonToNVLTS(repoEntry, ob);
-        result.push(nvlts);
+        const vi = githubJsonToVersionInfo(repoEntry, ob);
+        result.push(vi);
 
         if (i < ownerRepos.length - 1)
             await new Promise(resolve => setTimeout(resolve, 4600)); // delay for GitHub API rate limit
@@ -59,7 +59,7 @@ export async function callGithubReleases() {
     return result;
 }
 
-function githubJsonToNVLTS(repoEntry, jsonObj) {
+function githubJsonToVersionInfo(repoEntry, jsonObj) {
     // if ob has just the two keys "message" and "documentation_url"
     // we've hit the API limit or some other error
     if ('message' in jsonObj && 'documentation_url' in jsonObj) {

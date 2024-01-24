@@ -62,7 +62,7 @@ async function latest(interaction) {
                         ? ageDiff
                         : a.name.localeCompare(b.name);
                 })
-                .map(nvlt => nvltsToString(nvlt))
+                .map(vi => versionInfoToString(vi))
                 .join('\n');
 
             const note = responses.length === 1
@@ -114,25 +114,25 @@ async function latest(interaction) {
 }
 
 /**
- * Generates a string representation of a name, version, link, timestamp, and source.
+ * Generates a string representation of a VersionInfo object.
  *
- * @param {object} nvlts - An object containing the name, version, link, timestamp, and source.
- * @param {string} nvlts.name - The name.
- * @param {string} nvlts.ver - The version.
- * @param {string} [nvlts.link] - The optional link.
- * @param {number} [nvlts.timestamp] - The optional timestamp.
- * @param {string} nvlts.src - The source.
+ * @param {object} vi - A VersionInfo object containing the name, version, link, timestamp, and source.
+ * @param {string} vi.name - The name.
+ * @param {string} vi.ver - The version.
+ * @param {string} [vi.link] - The optional link.
+ * @param {number} [vi.timestamp] - The optional timestamp.
+ * @param {string} vi.src - The source.
  * @return {string} A string representation of the name, version, link, timestamp, and source.
  */
-function nvltsToString(nvlts) {
+function versionInfoToString(vi) {
     // TODO doesn't handle being null due to github API limit
     const parts = [
-        `${nvlts.name}:`,
-        nvlts.link ? `[${nvlts.ver}](<${nvlts.link}>)` : nvlts.ver
+        `${vi.name}:`,
+        vi.link ? `[${vi.ver}](<${vi.link}>)` : vi.ver
     ];
 
-    if (nvlts.timestamp) parts.push(`- ${ago(new Date() - nvlts.timestamp)}`);
-    parts.push(`(${nvlts.src})`);
+    if (vi.timestamp) parts.push(`- ${ago(new Date() - vi.timestamp)}`);
+    parts.push(`(${vi.src})`);
     return parts.join(' ');
 }
 
