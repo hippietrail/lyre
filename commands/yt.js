@@ -44,58 +44,77 @@ export const execute5 = ytother;
 // IDs starting with UU are the playlists for the whole channel
 // and are derived from the channel IDs, which start with UC
 const codingChans = {
-    'Acerola':                      'UUQG40havu4kNpB4pxUDQhYQ',
-    'AngeTheGreat':                 'UUV0t1y4h_6-2SqEpXBXgwFQ',
-    'AppleProgramming':             'UUDg-YmnNehm3KB0BpytkUJg',
-    'Ben Eater':                    'UUS0N5baNlQWJCUrhCEo8WlA',
-    'Bisqwit':                      'UUKTehwyGCKF-b2wo0RKwrcg',
-    'Code Bullet':                  'UU0e3QhIYukixgh5VVpKHH9Q',
-    'fasterthanlime':               'UUs4fQRyl1TJvoeOdekW6lYA',
-    'Inigo Quilez':                 'UUdmAhiG8HQDlz8uyekw4ENw',
-    'javidx9':                      'UU-yuWVUplUJZvieEligKBkA',
-    'Sebastian Lague':              'UUmtyQOKKmrMVaKuRXz02jbQ',
-    'StatQuest with Josh Starmer':  'UUtYLUTtgS3k1Fg4y5tAhLbw',
-    'suckerpinch':                  'UU3azLjQuz9s5qk76KEXaTvA',
-    'The Art of Code':              'UUcAlTqd9zID6aNX3TzwxJXg',
-    'The Coding Train':             'UUvjgXvBlbQiydffZU7m1_aw',
-    'Tom Marks Talks Code':         'UUknRd0bSUDYJ-_oA2r2S6IA',
-    'Tsoding Daily':                'UUrqM0Ym_NbK1fqeQG2VIohg',
+    name: 'Coding',
+    list: {
+        'Acerola':                      'UUQG40havu4kNpB4pxUDQhYQ',
+        'AngeTheGreat':                 'UUV0t1y4h_6-2SqEpXBXgwFQ',
+        'AppleProgramming':             'UUDg-YmnNehm3KB0BpytkUJg',
+        'Ben Eater':                    'UUS0N5baNlQWJCUrhCEo8WlA',
+        'Bisqwit':                      'UUKTehwyGCKF-b2wo0RKwrcg',
+        'Code Bullet':                  'UU0e3QhIYukixgh5VVpKHH9Q',
+        'fasterthanlime':               'UUs4fQRyl1TJvoeOdekW6lYA',
+        'Inigo Quilez':                 'UUdmAhiG8HQDlz8uyekw4ENw',
+        'javidx9':                      'UU-yuWVUplUJZvieEligKBkA',
+        'Sebastian Lague':              'UUmtyQOKKmrMVaKuRXz02jbQ',
+        'StatQuest with Josh Starmer':  'UUtYLUTtgS3k1Fg4y5tAhLbw',
+        'suckerpinch':                  'UU3azLjQuz9s5qk76KEXaTvA',
+        'The Art of Code':              'UUcAlTqd9zID6aNX3TzwxJXg',
+        'The Coding Train':             'UUvjgXvBlbQiydffZU7m1_aw',
+        'Tom Marks Talks Code':         'UUknRd0bSUDYJ-_oA2r2S6IA',
+        'Tsoding Daily':                'UUrqM0Ym_NbK1fqeQG2VIohg',
+    }
 };
 
 const codingChans2 = {
-    'ChibiAkumas':                  'UU8t99gp5IN-FTf5rGVaRevw',
-    'sphaerophoria':                'UUXzL31BCxf8En1KT34gSK6g',
+    name: 'Coding (2)',
+    list: {
+        'ChibiAkumas':      'UU8t99gp5IN-FTf5rGVaRevw',
+        'sphaerophoria':    'UUXzL31BCxf8En1KT34gSK6g',
+    }
 };
 
 const retroChans = {
-    'Action Retro':                     'UUoL8olX-259lS1N6QPyP4IQ',
-    'Adrian\'s Digital Basement':       'UUE5dIscvDxrb7CD5uiJJOiw',
-    'Adrian\'s Digital Basement ][':    'UUbtwi4wK1YXd9AyV_4UcE6g',
-    'Jan Beta':                         'UUftUpOO4h9EgH0eDOZtjzcA',
-    'Modern Vintage Gamer':             'UUjFaPUcJU1vwk193mnW_w1w',
-    'Noel\'s Retro Lab':                'UU2-SP1bYi3ueKlVU7I75wFw',
-    'Nostalgia Nerd':                   'UU7qPftDWPw9XuExpSgfkmJQ',
-    'PCRetroTech':                      'UUWYne_mhlRE1AiN2ApjmZDA',
-    'Retro Hack Shack':                 'UUN_u47_wJuhh249H9E8sjtw',
-    'RetroVirtualMachine':              'UUgNfOsqL76T13tUex62gonA',
-    'RMC - The Cave':                   'UULEoyoOKZK0idGqSc6Pi23w',
-    'Tech Tangents':                    'UUerEIdrEW-IqwvlH8lTQUJQ',
-    'The 8-Bit Guy':                    'UU8uT9cgJorJPWu7ITLGo9Ww',
-    'The Byte Attic':                   'UUfzZNuoHys1t-AdwYDhOz8g',
-    'The Clueless Engineer':            'UURgWN7MQrH4V3o9wB47DYzA',
-    'The Retro Desk':                   'UUWihlGXWuyJbjP5vjzD03Rw',
-    'Usagi Electric':                   'UUE4xstUnu0YmkG-W9_PyYrQ',
+    name: 'Retrocomputing',
+    list: {
+        'Action Retro':                     'UUoL8olX-259lS1N6QPyP4IQ',
+        'Adrian\'s Digital Basement':       'UUE5dIscvDxrb7CD5uiJJOiw',
+        'Adrian\'s Digital Basement ][':    'UUbtwi4wK1YXd9AyV_4UcE6g',
+        'Jan Beta':                         'UUftUpOO4h9EgH0eDOZtjzcA',
+        'Modern Vintage Gamer':             'UUjFaPUcJU1vwk193mnW_w1w',
+        'Noel\'s Retro Lab':                'UU2-SP1bYi3ueKlVU7I75wFw',
+        'Nostalgia Nerd':                   'UU7qPftDWPw9XuExpSgfkmJQ',
+        'PCRetroTech':                      'UUWYne_mhlRE1AiN2ApjmZDA',
+        'Retro Hack Shack':                 'UUN_u47_wJuhh249H9E8sjtw',
+        'RetroVirtualMachine':              'UUgNfOsqL76T13tUex62gonA',
+        'RMC - The Cave':                   'UULEoyoOKZK0idGqSc6Pi23w',
+        'Tech Tangents':                    'UUerEIdrEW-IqwvlH8lTQUJQ',
+        'The 8-Bit Guy':                    'UU8uT9cgJorJPWu7ITLGo9Ww',
+        'The Byte Attic':                   'UUfzZNuoHys1t-AdwYDhOz8g',
+        'The Clueless Engineer':            'UURgWN7MQrH4V3o9wB47DYzA',
+        'The Retro Desk':                   'UUWihlGXWuyJbjP5vjzD03Rw',
+        'Usagi Electric':                   'UUE4xstUnu0YmkG-W9_PyYrQ',
+    }
 };
 
 const retroChans2 = {
-    'Cathode Ray Dude':                 'UU9HHZMXng9reLBQmNc1Y8iA',
-    'ChibiAkumas':                      'UU8t99gp5IN-FTf5rGVaRevw',
-    'Kim Justice':                      'UU9ZWVL1Elyt2cdiQYjxS_1w',
-    'LGR':                              'UULx053rWZxCiYWsBETgdKrQ',
-    'Retro Recipes':                    'UU6gARF3ICgaLfs3o2znuqXA',
+    name: 'Retrocomputing (2)',
+    list: {
+        'Cathode Ray Dude': 'UUXnNibvR_YIdyPs8PZIBoEw',
+        'ChibiAkumas':      'UU8t99gp5IN-FTf5rGVaRevw',
+        'Kim Justice':      'UU9ZWVL1Elyt2cdiQYjxS_1w',
+        'LGR':              'UULx053rWZxCiYWsBETgdKrQ',
+        'Retro Recipes':    'UU6gARF3ICgaLfs3o2znuqXA',
+    }
 };
 
 const otherChans = {
+    name: 'Other',
+    list: {
+        'Barn Find Hunter':     'UULgEVx4mzk3T3mzgbKG54Eg',
+        'Captain Disillusion':  'UUEOXxzW2vU0P-0THehuIIeg',
+        'coldwarmotors':        'UUoculxk4_H8XzjPS_zbYUpQ',
+        'Darknet Diaries':      'UUMIqrmh2lMdzhlCPK5ahsAg',
+    }
 };
 
 async function ytcoding(interaction) {
@@ -118,12 +137,17 @@ async function ytother(interaction) {
     await yt(interaction, otherChans);
 }
 
-async function yt(interaction, chans) {
+async function yt(interaction, chanGroup) {
     await interaction.deferReply();
     try {
         const now = new Date();
 
-        const allVids = (await Promise.all(Object.values(chans).map(
+        if (Object.keys(chanGroup.list).length === 0) {
+            await interaction.editReply(`No channels in group '${chanGroup.name}'`);
+            return;
+        }
+
+        const allVids = (await Promise.all(Object.values(chanGroup.list).map(
             async plid => await fetchVideos(plid)
         ))).map(chanVids => chanVids.items).flat();
         
