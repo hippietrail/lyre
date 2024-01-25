@@ -12,39 +12,45 @@ function fetchVideos(playlistId) {
 
 export const data = new SlashCommandBuilder()
     .setName('ytcoding')
-    .setDescription('Latest from my favourite coding youtube channels');
+    .setDescription('Latest from my favourite coding YouTube channels');
 
 export const execute = ytcoding;
 
 export const data2 = new SlashCommandBuilder()
     .setName('ytretro')
-    .setDescription('Latest from my favourite retrocomputing youtube channels');
+    .setDescription('Latest from my favourite retrocomputing YouTube channels');
 
 export const execute2 = ytretro;
 
 export const data3 = new SlashCommandBuilder()
     .setName('ytcoding2')
-    .setDescription('Latest from other coding youtube channels');
+    .setDescription('Latest from other coding YouTube channels');
 
 export const execute3 = ytcoding2;
 
 export const data4 = new SlashCommandBuilder()
     .setName('ytretro2')
-    .setDescription('Latest from other retrocomputing youtube channels');
+    .setDescription('Latest from other retrocomputing YouTube channels');
 
 export const execute4 = ytretro2;
 
 export const data5 = new SlashCommandBuilder()
     .setName('ytstories')
-    .setDescription('Latest from storytelling youtube channels');
+    .setDescription('Latest from storytelling YouTube channels');
 
 export const execute5 = ytstories;
 
 export const data6 = new SlashCommandBuilder()
     .setName('ytother')
-    .setDescription('Latest from other youtube channels');
+    .setDescription('Latest from other YouTube channels');
 
 export const execute6 = ytother;
+
+export const data7 = new SlashCommandBuilder()
+    .setName('ytall')
+    .setDescription('Latest from all YouTube channels');
+
+export const execute7 = ytall;
 
 // make a map of my favourite coding youtube channel names to their channel IDs
 // IDs starting with UU are the playlists for the whole channel
@@ -141,6 +147,7 @@ const otherChans = {
         'Jay Leno\'s Garage':   'UUQMELFlXQL38KPm8kM-4Adg',
         'Mustie1':              'UUcSeeATlWJJbXpOZRYOfaDg',
         'Trash Theory':         'UUxHcoI9ndIdAihEB7ODTOfQ',
+        'Two Minute Papers':    'UUbfYPyITQ-7l4upoX8nvctg',
     }
 };
 
@@ -166,6 +173,20 @@ async function ytstories(interaction) {
 
 async function ytother(interaction) {
     await yt(interaction, otherChans);
+}
+
+async function ytall(interaction) {
+    await yt(interaction, {
+        name: 'All',
+        list: {
+            ...codingChans.list,
+            ...codingChans2.list,
+            ...retroChans.list,
+            ...retroChans2.list,
+            ...storiesChans.list,
+            ...otherChans.list,
+        }
+    })
 }
 
 async function yt(interaction, chanGroup) {
