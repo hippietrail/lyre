@@ -54,6 +54,10 @@ async function latest(interaction) {
                 // TODO this breaks when we've used up our GitHub API rate limit
                 // [Latest] TypeError: Cannot read properties of null (reading 'timestamp')
                 .toSorted((a, b) => {
+                    const nullComparison = a === null ? (b === null ? 0 : -1) : (b === null ? 1 : 0);
+                    if (nullComparison !== 0)
+                        return nullComparison;
+                  
                     const ageDiff = !a.timestamp
                         ? !b.timestamp ? 0 : 2
                         : !b.timestamp ? -2 : b.timestamp - a.timestamp;
@@ -87,14 +91,14 @@ async function latest(interaction) {
             await interaction.editReply(reply);
         }
 
-        const githubPromises = callGithubReleases()
+        const githubPromises = callGithubReleases(false)
             .then(async arr => await reply(arr, 'GitHub', 'non-GitHub'));
 
         const otherPromises = Promise.all([
             //callNodejs(), // JSON - just use the GitHub one for now, which has link
             callGimp(),     // JSON
             callXcode(),    // JSON
-            callGithubTags(),
+            callGithubTags(false),
             callGo(),       // scraper
             //callMame(),   // JSON - just use the GitHub one for now, which has link and date
             callDart(),     // JSON
@@ -125,7 +129,6 @@ async function latest(interaction) {
  * @return {string} A string representation of the name, version, link, timestamp, and source.
  */
 function versionInfoToString(vi) {
-    // TODO doesn't handle being null due to github API limit
     const parts = [
         `${vi.name}:`,
         vi.link ? `[${vi.ver}](<${vi.link}>)` : vi.ver

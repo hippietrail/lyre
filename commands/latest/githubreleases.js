@@ -42,18 +42,21 @@ const ownerRepos = [
     ['ziglang/zig', xformRepoCapTag],
 ];
 
-export async function callGithubReleases() {
+export async function callGithubReleases(debug = false) {
     let result = [];
 
-    for (const [i, repoEntry] of ownerRepos.entries()) {
+    // in debug mode, just take the first entry
+    const chosenOwnerRepos = debug ? [ownerRepos[0]] : ownerRepos;
+
+    for (const [i, repoEntry] of chosenOwnerRepos.entries()) {
         // console.log(`[callGithub] i: ${i}, owner/repo: ${repoEntry[0]}`);
         githubReleasesEarl.setPathname(`/repos/${repoEntry[0]}/releases/latest`);
         const ob = await githubReleasesEarl.fetchJson();
-        console.log(`GitHub Rels [${i + 1}/${ownerRepos.length}] ${repoEntry[0]}`);
+        console.log(`GitHub Rels [${i + 1}/${chosenOwnerRepos.length}] ${repoEntry[0]}`);
         const vi = githubJsonToVersionInfo(repoEntry, ob);
         result.push(vi);
 
-        if (i < ownerRepos.length - 1)
+        if (i < chosenOwnerRepos.length - 1)
             await new Promise(resolve => setTimeout(resolve, 4600)); // delay for GitHub API rate limit
     }
     return result;
@@ -64,6 +67,13 @@ function githubJsonToVersionInfo(repoEntry, jsonObj) {
     // we've hit the API limit or some other error
     if ('message' in jsonObj && 'documentation_url' in jsonObj) {
         console.log(`GitHub releases API error: ${jsonObj.message} ${jsonObj.documentation_url}`);
+        return {
+            name: repoEntry[0],
+            ver: 'GitHub API error R',
+            link: null,
+            timestamp: null,
+            src: 'github',
+        };
     } else try {
         const [name, version] = xformRepoNameTagVer(repoEntry, jsonObj);
 

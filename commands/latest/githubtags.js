@@ -13,15 +13,18 @@ const ownerRepos = [
     ['V8', 'v8/v8', regexVmajMinPatch],
 ];
 
-export async function callGithubTags() {
+export async function callGithubTags(debug = false) {
     let result = [];
 
-    for (const [i, repoEntry] of ownerRepos.entries()) {
+    // in debug mode, just take the first entry
+    const chosenOwnerRepos = debug ? [ownerRepos[0]] : ownerRepos;
+
+    for (const [i, repoEntry] of chosenOwnerRepos.entries()) {
         const ob = await callGithubTagsRepo(repoEntry[0], repoEntry[1]);
-        console.log(`GitHub Tags [${i + 1}/${ownerRepos.length}] ${repoEntry[0]}`);
+        console.log(`GitHub Tags [${i + 1}/${chosenOwnerRepos.length}] ${repoEntry[0]}`);
         result = result.concat(ob);
 
-        if (i < ownerRepos.length - 1)
+        if (i < chosenOwnerRepos.length - 1)
             await new Promise(resolve => setTimeout(resolve, 4600)); // delay for GitHub API rate limit
     }
 
@@ -35,7 +38,15 @@ async function callGithubTagsRepo(name, ownerRepo, regex) {
         const ght = await githubTagsEarl.fetchJson();
 
         if (ght.message && ght.documentation_url) {
-            console.log(`[${name}] GitHub tags API error: '${name}'${ght.message} ${githubTagsEarl.getUrlString()}`);
+            console.log(`[${name}] GitHub tags API error: '${name}' ${ght.message} ${githubTagsEarl.getUrlString()}`);
+            return {
+                name: name,
+                ver: 'GitHub API error T1',
+                link: null,
+                timestamp: null,
+                src: 'github',
+            };
+    
         } else {
             const rel = ght.find(obj => obj.name.match(regex));
 
@@ -43,7 +54,14 @@ async function callGithubTagsRepo(name, ownerRepo, regex) {
                 const json = await (await fetch(rel.commit.url)).json();
 
                 if (json.message && json.documentation_url) {
-                    console.log(`[${name}] GitHub tags API error: '${name}'${json.message} ${rel.commit.url}`);
+                    console.log(`[${name}] GitHub tags API error: '${name}' ${json.message} ${rel.commit.url}`);
+                    return {
+                        name,
+                        ver: 'GitHub API error T2',
+                        link: null,
+                        timestamp: null,
+                        src: 'github',
+                    };
                 } else {
                     // there is commit.author.date and commit.committer.date...
                     const [authorDate, committerDate] = ["author", "committer"].map(k => new Date(json.commit[k].date));
