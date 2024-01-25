@@ -2,9 +2,10 @@ import { Earl } from '../../ute/earl.js';
 import { domStroll } from '../../ute/dom.js';
 import parse from 'html-dom-parser';
 
-const wikidumpEarl = new Earl('https://dumps.wikimedia.org', '/backup-index.html');
+const wikidumpEarl = new Earl('https://dumps.wikimedia.org');
 
 export async function callWikiDump() {
+    wikidumpEarl.setPathname('/backup-index.html');
     const indexDom = parse(await wikidumpEarl.fetchText());
 
     try {
