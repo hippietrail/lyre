@@ -51,13 +51,7 @@ async function latest(interaction) {
             responses.push(these.flat());
 
             let reply = responses.flat()
-                // TODO this breaks when we've used up our GitHub API rate limit
-                // [Latest] TypeError: Cannot read properties of null (reading 'timestamp')
                 .toSorted((a, b) => {
-                    const nullComparison = a === null ? (b === null ? 0 : -1) : (b === null ? 1 : 0);
-                    if (nullComparison !== 0)
-                        return nullComparison;
-                  
                     const ageDiff = !a.timestamp
                         ? !b.timestamp ? 0 : 2
                         : !b.timestamp ? -2 : b.timestamp - a.timestamp;
