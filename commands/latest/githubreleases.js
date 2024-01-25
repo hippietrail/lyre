@@ -6,19 +6,19 @@ const githubReleasesEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO
 const xformNameSplit = (_, jn, __) => jn.split(' ');
 
 // Repo name is name, version is GitHub JSON tag
-const xformRepoTag = (ro, _, jt) => [ro.split('/')[1], jt];
+const xformRepoTag = (gor, _, jt) => [gor.split('/')[1], jt];
 
 // Repo name capitalized is name, version is GitHub JSON tag
-function xformRepoCapTag(ro, _, jt) {
-    // console.log(`[xformRepoCapTag]`, ro, jt);
-    const rn = ro.split('/')[1];
+function xformRepoCapTag(gor, _, jt) {
+    // console.log(`[xformRepoCapTag]`, gor, jt);
+    const rn = gor.split('/')[1];
     return [rn.charAt(0).toUpperCase() + rn.slice(1), jt];
 }
 
 // Repo name capitalized is name, version is GitHub JSON tag with _ converted to .
-function xformRepoCapTagVersionUnderscore(ro, _, jt) {
-    // console.log(`[xformRepoCapTagVersionUnderscore]`, ro, jt);
-    const rn = ro.split('/')[1];
+function xformRepoCapTagVersionUnderscore(gor, _, jt) {
+    // console.log(`[xformRepoCapTagVersionUnderscore]`, gor, jt);
+    const rn = gor.split('/')[1];
     return [rn.charAt(0).toUpperCase() + rn.slice(1), jt.replace(/_/g, '.')];
 }
 
@@ -82,6 +82,12 @@ function githubJsonToVersionInfo(repoEntry, jsonObj) {
     return null;
 }
 
+// Call the appropriate xform function for the repo
+// to get the [name, version] tuple in the right format.
+// Depending on the repo, the xform function might
+// derive either field from the GitHub owner and repo names
+// or from the name and tag fields in the JSON.
+// Will call one of: xformNameSplit, xformRepoTag, xformRepoCapTag, etc
 function xformRepoNameTagVer(repo, jsonOb) {
     const [githubOwnerRepo, xform] = repo;
     const [jsonName, jsonTag] = [jsonOb.name, jsonOb.tag_name];
@@ -89,7 +95,11 @@ function xformRepoNameTagVer(repo, jsonOb) {
     if (xform) {
         return xform(githubOwnerRepo, jsonName, jsonTag);
     } else {
-        console.log(`Unrecognized repo: ${githubOwnerRepo}, name: ${jsonName}, tag: ${jsonTag}`);
-        return ['?name?', '?ver?'];
+        // for newly added repos, output the name and version so we can see which
+        // transform it should use, or if we need a new one
+        const name = `${githubOwnerRepo} (GitHub owner/repo) / ${jsonName} (JSON name)`;
+        const ver = `${jsonTag} (JSON tag)`;
+        console.log(`[GitHub] New repo: ${name} / ${ver}`);
+        return [name, ver];
     }
 }
