@@ -71,28 +71,10 @@ async function handleInteraction(interaction) {
             await github.execute(interaction);
             break;
 
-        case 'ytcoding':
+        case 'yt':
             await yt.execute(interaction);
             break;
-        case 'ytretro':
-            await yt.execute2(interaction);
-            break;
-        case 'ytcoding2':
-            await yt.execute3(interaction);
-            break;
-        case 'ytretro2':
-            await yt.execute4(interaction);
-            break;
-        case 'ytstories':
-            await yt.execute5(interaction);
-            break;
-        case 'ytother':
-            await yt.execute6(interaction);
-            break;
-        case 'ytall':
-            await yt.execute7(interaction);
-            break;
-    
+        
         case 'tsoding':
             await tsoding.execute(interaction);
             break;

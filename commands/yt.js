@@ -19,91 +19,37 @@ function fetchVideos(playlistId) {
 }
 
 export const data = new SlashCommandBuilder()
-    .setName('ytcoding')
-    .setDescription('Latest from my favourite coding YouTube channels');
+    .setName('yt')
+    .setDescription('Latest from a group of YouTube channels')
+    .addStringOption(option => option
+        .setName('group')
+        .setDescription('The name of the group')
+        .setRequired(true)
+    );
 
-export const execute = ytcoding;
+export const execute = ytParamArg;
 
-export const data2 = new SlashCommandBuilder()
-    .setName('ytretro')
-    .setDescription('Latest from my favourite retrocomputing YouTube channels');
+async function ytParamArg(interaction) {
+    const groupName = interaction.options.getString('group');
 
-export const execute2 = ytretro;
+    const chanList = groupName in config
+        ? config[groupName]
+        : groupName === 'all' || groupName === '*'
+            ? Object.values(config).reduce((a, b) => ({ ...a, ...b }), {})
+            : null;
 
-export const data3 = new SlashCommandBuilder()
-    .setName('ytcoding2')
-    .setDescription('Latest from other coding YouTube channels');
-
-export const execute3 = ytcoding2;
-
-export const data4 = new SlashCommandBuilder()
-    .setName('ytretro2')
-    .setDescription('Latest from other retrocomputing YouTube channels');
-
-export const execute4 = ytretro2;
-
-export const data5 = new SlashCommandBuilder()
-    .setName('ytstories')
-    .setDescription('Latest from storytelling YouTube channels');
-
-export const execute5 = ytstories;
-
-export const data6 = new SlashCommandBuilder()
-    .setName('ytother')
-    .setDescription('Latest from other YouTube channels');
-
-export const execute6 = ytother;
-
-export const data7 = new SlashCommandBuilder()
-    .setName('ytall')
-    .setDescription('Latest from all YouTube channels');
-
-export const execute7 = ytall;
-
-async function ytcoding(interaction) {
-    await yt(interaction, 'coding', config.coding);
-}
-
-async function ytcoding2(interaction) {
-    await yt(interaction, 'coding2', config.coding2);
-}
-
-async function ytretro(interaction) {
-    await yt(interaction, 'retro', config.retro);
-}
-
-async function ytretro2(interaction) {
-    await yt(interaction, 'retro2', config.retro2);
-}
-
-async function ytstories(interaction) {
-    await yt(interaction, 'stories', config.stories);
-}
-
-async function ytother(interaction) {
-    await yt(interaction, 'other', config.other);
-}
-
-async function ytall(interaction) {
-    await yt(interaction, 'all', {
-        ...config.coding,
-        ...config.coding2,
-        ...config.retro,
-        ...config.retro2,
-        ...config.stories,
-        ...config.other
-    });
+    if (!chanList)
+        await interaction.reply(`No group of YouTube channels by the name '${groupName}'`);
+    else if (Object.keys(chanList).length === 0)
+        await interaction.reply(`No channels in group '${groupName}'`);
+    else
+        await yt(interaction, groupName, chanList);
 }
 
 async function yt(interaction, chanGroupName, chanList) {
     await interaction.deferReply();
     try {
         const now = new Date();
-
-        if (chanList.length === 0) {
-            await interaction.editReply(`No channels in group '${chanGroupName}'`);
-            return;
-        }
 
         const allVids = (await Promise.all(Object.values(chanList).map(
             async plid => await fetchVideos(plid)
