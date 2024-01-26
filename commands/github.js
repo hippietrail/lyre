@@ -34,7 +34,12 @@ export const execute = async interaction => {
             const reply = (await Promise.all(usernames.map(async user => {
                 githubEarl.setUserName(user);
 
-                return (await githubEarl.fetchJson())
+                const json = await githubEarl.fetchJson();
+                if (json.message && json.documentation_url) {
+                    console.log(`[GitHub] GitHub API error: '${user}' ${json.message} ${githubEarl.getUrlString()}`);
+                    return [];
+                }
+                return json
                     .slice(0, NUM_TO_FETCH)
                     .map(e => ({
                         user: e.actor.login,
@@ -55,7 +60,7 @@ export const execute = async interaction => {
             await interaction.editReply(reply !== "" ? reply : 'No events found');
         }
     } catch (error) {
-        console.error(error);
+        console.error(`[GitHub] ${error}`);
         await interaction.editReply('An error occurred while fetching data.');
     }
 }
