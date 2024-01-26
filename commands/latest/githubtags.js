@@ -22,7 +22,7 @@ export async function callGithubTags(debug = false) {
     for (const [i, repoEntry] of chosenOwnerRepos.entries()) {
         const ob = await callGithubTagsRepo(repoEntry[0], repoEntry[1]);
         console.log(`GitHub Tags [${i + 1}/${chosenOwnerRepos.length}] ${repoEntry[0]}`);
-        result = result.concat(ob);
+        result.push(ob);
 
         if (i < chosenOwnerRepos.length - 1)
             await new Promise(resolve => setTimeout(resolve, 4600)); // delay for GitHub API rate limit
@@ -34,19 +34,14 @@ export async function callGithubTags(debug = false) {
 async function callGithubTagsRepo(name, ownerRepo, regex) {
     githubTagsEarl.setPathname(`/repos/${ownerRepo}/tags`);
 
+    let [ver, link, timestamp, src] = [null, null, null, 'github'];
+
     try {
         const ght = await githubTagsEarl.fetchJson();
 
         if (ght.message && ght.documentation_url) {
             console.log(`[${name}] GitHub tags API error: '${name}' ${ght.message} ${githubTagsEarl.getUrlString()}`);
-            return {
-                name: name,
-                ver: 'GitHub API error T1',
-                link: null,
-                timestamp: null,
-                src: 'github',
-            };
-    
+            ver = 'GitHub API error T1';
         } else {
             const rel = ght.find(obj => obj.name.match(regex));
 
@@ -55,13 +50,7 @@ async function callGithubTagsRepo(name, ownerRepo, regex) {
 
                 if (json.message && json.documentation_url) {
                     console.log(`[${name}] GitHub tags API error: '${name}' ${json.message} ${rel.commit.url}`);
-                    return {
-                        name,
-                        ver: 'GitHub API error T2',
-                        link: null,
-                        timestamp: null,
-                        src: 'github',
-                    };
+                    ver = 'GitHub API error T2';
                 } else {
                     // there is commit.author.date and commit.committer.date...
                     const [authorDate, committerDate] = ["author", "committer"].map(k => new Date(json.commit[k].date));
@@ -74,18 +63,22 @@ async function callGithubTagsRepo(name, ownerRepo, regex) {
                     if (diff)
                         console.log(`[${name}] ${newer} is newer than ${older} by ${ago(diff).replace(' ago', '')} (diff: ${diff})`);
 
-                    return [{
-                        name: name,
-                        ver: rel.name,
-                        link: json.html_url,
-                        timestamp: date,
-                        src: 'github',
-                    }];
+                    [ver, link, timestamp] = [rel.name, json.html_url, date];
                 }
+            } else {
+                // TODO no tags found?
+                console.log(`[${name}] No tags found`);
             }
         }
     } catch (error) {
         console.error(`[${name}]`, error);
     }
-    return [];
+
+    return {
+        name,
+        ver,
+        link,
+        timestamp,
+        src,
+    };
 }
