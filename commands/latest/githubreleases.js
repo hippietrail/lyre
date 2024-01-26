@@ -39,6 +39,7 @@ const ownerRepos = [
     ['rakudo/rakudo', xformRepoCapTag],
     /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
     ['rust-lang/rust', xformRepoCapTag],
+    ['vlang/v', xformRepoCapTag],
     ['ziglang/zig', xformRepoCapTag],
 ];
 
@@ -65,31 +66,26 @@ export async function callGithubReleases(debug = false) {
 function githubJsonToVersionInfo(repoEntry, jsonObj) {
     // if ob has just the two keys "message" and "documentation_url"
     // we've hit the API limit or some other error
+    let [name, ver, link, timestamp, src] = [null, null, null, null, 'github'];
+
     if ('message' in jsonObj && 'documentation_url' in jsonObj) {
         console.log(`GitHub releases API error: ${jsonObj.message} ${jsonObj.documentation_url}`);
-        return {
-            name: repoEntry[0],
-            ver: 'GitHub API error R',
-            link: null,
-            timestamp: null,
-            src: 'github',
-        };
+        [name, ver] = [repoEntry[0], 'GitHub API error R'];
     } else try {
-        const [name, version] = xformRepoNameTagVer(repoEntry, jsonObj);
-
-        return {
-            name,
-            ver: version,
-            link: jsonObj.html_url,
-            timestamp: new Date(jsonObj.published_at),
-            src: 'github',
-        };
+        [name, ver] = xformRepoNameTagVer(repoEntry, jsonObj);
+        [link, timestamp] = [jsonObj.html_url, new Date(jsonObj.published_at)];
     } catch (error) {
         // console.error("<<<", error);
         // console.log(JSON.stringify(ob, null, 2));
         // console.log(">>>");
     }
-    return null;
+    return {
+        name,
+        ver,
+        link,
+        timestamp,
+        src,
+    };
 }
 
 // Call the appropriate xform function for the repo
