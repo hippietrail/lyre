@@ -43,8 +43,11 @@ async function latest(interaction) {
         let sortByAge = interaction.options.getBoolean('sortbyage');
         console.log(`[latest] sortByAge: ${sortByAge}`);
 
-        async function reply(these, thisName, thatName) {
+        const sourceNames = ['GitHub Releases', 'GitHub Tags', 'HTML', 'JSON'];
+
+        async function updateReply(these, thisName) {
             console.log(`All ${thisName} have been fetched. ${responses.length === 0 ? 'First.' : 'Last.'}`);
+            sourceNames.splice(sourceNames.indexOf(thisName), 1);
 
             responses.push(these.flat());
 
@@ -61,8 +64,8 @@ async function latest(interaction) {
                 .map(vi => versionInfoToString(vi))
                 .join('\n');
 
-            const note = responses.length === 1
-                ? `\n\n(Just waiting for ${thatName} now)`
+            const note = sourceNames.length !== 0
+                ? `\n\n(Still waiting for: ${sourceNames.join(', ')})`
                 : '';
 
             const initialReplyLength = reply.length + note.length;
@@ -74,7 +77,7 @@ async function latest(interaction) {
                 numRemoved++;
             }
 
-            if (responses.length === 1)
+            if (sourceNames.length !== 0)
                 reply = `${reply}${note}`;
 
             if (initialReplyLength !== reply.length)
@@ -83,27 +86,32 @@ async function latest(interaction) {
             await interaction.editReply(reply);
         }
 
-        const githubPromises = callGithubReleases(false)
-            .then(async arr => await reply(arr, 'GitHub', 'non-GitHub'));
+        const githubRelPromises = callGithubReleases(false)
+            .then(async arr => await updateReply(arr, 'GitHub Releases'));
 
-        const otherPromises = Promise.all([
-            //callNodejs(), // JSON - just use the GitHub one for now, which has link
-            callGimp(),     // JSON
-            callXcode(),    // JSON
-            callGithubTags(false),
-            callGo(),       // scraper
-            //callMame(),   // JSON - just use the GitHub one for now, which has link and date
-            callDart(),     // JSON
-            callRvm(),      // scraper
-            callAS(),       // scraper
-            callElixir(),   // scraper
-            callPhp(),      // JSON
-            callRuby(),     // scraper
-            callIdea(),     // scraper
-            callWikiDump(), // scraper
-        ]).then(async arr => await reply(arr, 'Non-GitHub', 'GitHub'));
+        const githubTagPromises = callGithubTags(false)
+            .then(async arr => await updateReply(arr, 'GitHub Tags'));
+        
+        const jsonPromises = Promise.all([
+            //callNodejs(),
+            callGimp(),
+            callXcode(),
+            callMame(),
+            callDart(),
+            callPhp(),            
+        ]).then(async arr => await updateReply(arr, 'JSON'));
 
-        await Promise.all([githubPromises, otherPromises]);
+        const htmlPromises = Promise.all([
+            callGo(),
+            callRvm(),
+            callAS(),
+            callElixir(),
+            callRuby(),
+            callIdea(),
+            callWikiDump(), // actually HTML first then JSON
+        ]).then(async arr => await updateReply(arr, 'HTML'));
+
+        await Promise.all([githubRelPromises, githubTagPromises, jsonPromises, htmlPromises]);
     } catch (error) {
         console.error('[Latest]', error);
     }
