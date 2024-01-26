@@ -27,9 +27,7 @@ export const data = new SlashCommandBuilder()
         .setRequired(true)
     );
 
-export const execute = ytParamArg;
-
-async function ytParamArg(interaction) {
+export async function execute(interaction) {
     const groupName = interaction.options.getString('group');
 
     const chanList = groupName in config
@@ -51,20 +49,39 @@ async function yt(interaction, chanGroupName, chanList) {
     try {
         const now = new Date();
 
+        const videoIdToHeadPromise = {};
+
         const allVids = (await Promise.all(Object.values(chanList).map(
             async plid => await fetchVideos(plid)
-        ))).map(chanVids => chanVids.items).flat();
-        
-        allVids.sort((a, b) => b.snippet.publishedAt.localeCompare(a.snippet.publishedAt));
+        ))).map(chanVids => {
+            chanVids.items.forEach(v => {
+                videoIdToHeadPromise[v.snippet.resourceId.videoId] = fetch(
+                    `https://www.youtube.com/shorts/${v.snippet.resourceId.videoId}`,
+                    { method: 'HEAD', redirect: 'manual' }
+                );
+            })
+            return chanVids.items
+        }).flat();
+
+        const videoIdToHeadStatus = await Promise.all(
+            Object.entries(videoIdToHeadPromise).map(
+                async ([videoId, headPromise]) => [videoId, (await headPromise).status]
+            )
+        ).then(Object.fromEntries);
 
         const reply = `${
-            allVids.slice(0, 10).map(v => `${v.snippet.channelTitle}: [${
+            allVids
+            .toSorted((a, b) => b.snippet.publishedAt.localeCompare(a.snippet.publishedAt))
+            .filter(v => videoIdToHeadStatus[v.snippet.resourceId.videoId] !== 200)
+            .slice(0, 10)
+            .map(v => `${v.snippet.channelTitle}: [${
                 v.snippet.title
             }](<https://www.youtube.com/watch?v=${
                 v.snippet.resourceId.videoId
             }>) - ${
                 ago(now - new Date(v.snippet.publishedAt))
-            }`).join('\n')
+            }`)
+            .join('\n')
         }`;
         await interaction.editReply(reply);
     } catch (error) {
