@@ -9,6 +9,7 @@ import * as yt from './commands/yt.js';
 import * as tsoding from './commands/tsoding.js';
 import * as etym from './commands/etym.js';
 import * as latest from './commands/latest.js';
+import * as thai from './commands/thai.js';
 
 config();
 
@@ -87,9 +88,13 @@ async function handleInteraction(interaction) {
             await latest.execute(interaction);
             break;
 
+        case 'thai':
+            await thai.execute(interaction);
+            break;
+
         default:
             console.error(`Unknown command ${interaction.commandName}`);
-        }
+    }
 }
 
 client.once(Events.ClientReady, readyDiscord);
