@@ -1,6 +1,5 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
-import { wonda } from '../ute/riða.js';
 import { domStroll } from '../ute/dom.js';
 import parse from 'html-dom-parser';
 
