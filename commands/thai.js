@@ -45,7 +45,7 @@ async function thaiLanguage(word) {
 
     const dom = parse(await thaiLangEarl.fetchText());
 
-    const results = domStroll('thailang', true, dom, [
+    const results = domStroll('thailang', false, dom, [
         [1, 'tl-xml-response'],
         [0, 'results'],
     ]);
@@ -100,7 +100,7 @@ async function seaLang(word) {
     process.env.NODE_TLS_REJECT_UNAUTHORIZED = "1";
 
     if (dom) {
-        const body = domStroll('sea', true, dom, [
+        const body = domStroll('sea', false, dom, [
             [4, 'html'],
             [3, 'body'],
         ]);
