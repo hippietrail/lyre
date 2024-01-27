@@ -28,6 +28,7 @@ const ownerRepos = [
     ['discordjs/discord.js', xformRepoCapTag],
     /*['elixir-lang/elixir', xformRepoCapTag],*/
     ['JetBrains/kotlin', xformNameSplit],
+    ['JuliaLang/julia', xformRepoCapTag],
     ['llvm/llvm-project', xformNameSplit],
     ['lua/lua', xformNameSplit],
     ['mamedev/mame', xformNameSplit],

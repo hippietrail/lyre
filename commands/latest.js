@@ -25,7 +25,6 @@ export const execute = latest;
 // Groovy
 // Haskell
 // Java/JDK/JVM?
-// Julia
 // Objective C? on GitHub tags only apple-oss-distributions/objc4
 // Scala
 // Unicode
