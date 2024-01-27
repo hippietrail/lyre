@@ -15,17 +15,17 @@ async function thai(interaction) {
     try {
         const word = interaction.options.getString('word');
 
-        const replies = await Promise.all(
-            [
-                ['thaiLang', thaiLanguage],
-                ['SEAlang', seaLang]
-            ].map(async ([name, func]) => {
-                const reply = await func(word);
-                return reply !== null
-                    ? `${name}: ${reply} results.`
-                    : `${name}: error.`
-            })
-        );
+        const replies = await Promise.all([
+            ['thaiLang', thaiLanguage],
+            ['SEAlang', seaLang],
+            ['enwiktionary', () => wikt('en', word)],
+            ['thwiktionary', () => wikt('th', word)],
+        ].map(async ([name, func]) => {
+            const reply = await func(word);
+            return reply !== null
+                ? `${name}: ${reply} results.`
+                : `${name}: error.`
+        }));
 
         await interaction.editReply(replies.join('\n'));
     } catch (error) {
@@ -67,21 +67,21 @@ async function thaiLanguage(word) {
 async function seaLang(word) {
     const seaEarl = new Earl('https://sealang.net', '/thai/search.pl', {
         'dict': 'thai',
-        'hasFocus': 'orth',
+        'hasFocus': 'orth',         // def, orth, phone
         'approx': '',
         'orth': word,
         'phone': '',
         'def': '',
         //'filedata': '',
         'matchEntry': 'any',
-        'matchLength': 'word',
+        'matchLength': 'word',      // syllable, whole, word
         'matchPosition': 'any',
         'anon': 'on',
-        'ety': '',
-        'pos': '',
-        'usage': '',
+        'ety': '',                  // Burmese, ...
+        'pos': '',                  // C, ...
+        'usage': '',                // imitative, ...
         'useTags': '1',
-        'derivatives': 'always',
+        'derivatives': 'always',    // never, ...
         'hyphenateSyls': '0',
         'redundantData': '0',
     });
@@ -118,5 +118,24 @@ async function seaLang(word) {
             }
         }
     }
+    return null;
+}
+
+// wikt uses the old MediaWiki API
+async function wikt(wikiLang, word) {
+    const wiktEarl = new Earl(`https://${wikiLang}.wiktionary.org`, '/w/api.php', {
+        'action': 'query',
+        'format': 'json',
+        'titles': word
+    });
+    const data = await wiktEarl.fetchJson();
+
+    if (Object.keys(data.query.pages).length === 1) {
+        const page = Object.values(data.query.pages)[0];
+        
+        if ('pageid' in page) return 1;
+        else if ('missing' in page) return 0;
+    }
+    
     return null;
 }
