@@ -92,58 +92,9 @@ async function isaword(interaction) {
         const word = interaction.options.getString('word');
         console.log(`isaword: '${word}'`);
         
-        const lower = word.toLowerCase();
+        const variants = makeVariants(word);
 
-        const uniqVariants = Array.from(new Set([
-            word,
-            lower,
-            word.toUpperCase(),
-            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
-        ]));
-
-        // if word consists only of unaccented English letters, hyphen, fullstop, apostrophes, and spaces
-        const regex = /^[a-z\-.' ]+$/;
-        if (regex.test(lower)) {
-            console.log(`word '${word}' consists only of unaccented English letters, hyphen, fullstop, apostrophes, and spaces`);
-            const ar = Array.from(lower);
-            const d1 = ar.join('.');
-            const d2 = ar.join('. ');
-            uniqVariants.push(
-                lower,
-                lower.toUpperCase(),
-                d1,
-                d2,
-                d1.toUpperCase(),
-                d2.toUpperCase(),
-                `${d1}.`,
-                `${d2}.`,
-                `${d1.toUpperCase()}.`,
-                `${d2.toUpperCase()}.`,
-            );
-        } else {
-            console.log(`word '${word}' does not consist only of unaccented English letters, hyphen, fullstop, apostrophes, and spaces`);
-        }
-        if (word.endsWith("s")) {
-            if (word.endsWith("'s"))
-                uniqVariants.push(`${word.slice(0, -2)}s`);
-            else
-                uniqVariants.push(`${word.slice(0, -1)}'s`);
-        }
-        if (word.endsWith(".")) {
-            uniqVariants.push(word.slice(0, -1));
-        } else {
-            uniqVariants.push(`${word}.`);
-        }
-        if (word.includes(" ")) {
-            uniqVariants.push(word.replaceAll(" ", "-"));
-            uniqVariants.push(word.replaceAll(" ", ""));
-        }
-        if (word.includes("-")) {
-            uniqVariants.push(word.replaceAll("-", ""));
-            uniqVariants.push(word.replaceAll("-", " "));
-        }
-
-        wiktIsAWordEarl.setTitles(uniqVariants);
+        wiktIsAWordEarl.setTitles(variants);
         const data = await wiktIsAWordEarl.fetchJson();
 
         const present = [];
@@ -194,6 +145,61 @@ async function isaword(interaction) {
         console.error(error);
         await interaction.editReply('An error occurred while fetching data.');
     }
+}
+
+function makeVariants(word) {
+    const lower = word.toLowerCase();
+
+    const uniqVariants = Array.from(new Set([
+        word,
+        lower,
+        word.toUpperCase(),
+        word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+    ]));
+
+    // if word consists only of unaccented English letters, hyphen, fullstop, apostrophes, and spaces
+    const regex = /^[a-z\-.' ]+$/;
+    if (regex.test(lower)) {
+        console.log(`word '${word}' consists only of unaccented English letters, hyphen, fullstop, apostrophes, and spaces`);
+        const ar = Array.from(lower);
+        const d1 = ar.join('.');
+        const d2 = ar.join('. ');
+        uniqVariants.push(
+            lower,
+            lower.toUpperCase(),
+            d1,
+            d2,
+            d1.toUpperCase(),
+            d2.toUpperCase(),
+            `${d1}.`,
+            `${d2}.`,
+            `${d1.toUpperCase()}.`,
+            `${d2.toUpperCase()}.`
+        );
+    } else {
+        console.log(`word '${word}' does not consist only of unaccented English letters, hyphen, fullstop, apostrophes, and spaces`);
+    }
+    if (word.endsWith("s")) {
+        if (word.endsWith("'s"))
+            uniqVariants.push(`${word.slice(0, -2)}s`);
+
+        else
+            uniqVariants.push(`${word.slice(0, -1)}'s`);
+    }
+    if (word.endsWith(".")) {
+        uniqVariants.push(word.slice(0, -1));
+    } else {
+        uniqVariants.push(`${word}.`);
+    }
+    if (word.includes(" ")) {
+        uniqVariants.push(word.replaceAll(" ", "-"));
+        uniqVariants.push(word.replaceAll(" ", ""));
+    }
+    if (word.includes("-")) {
+        uniqVariants.push(word.replaceAll("-", ""));
+        uniqVariants.push(word.replaceAll("-", " "));
+    }
+    return uniqVariants;
 }
 
 // return the defintion of a word from Wiktionary using the new API I only just found out about
