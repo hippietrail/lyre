@@ -20,24 +20,23 @@ async function isaword(interaction) {
         ['Cambridge', cambridge],
         ['Chambers', chambers],
         ['Wiktionary', wikt],
+        ['Urban Dictionary', urban],
     ];
 
-    // let's put the promise for each in element [2] and the result of each in element [3] of the dictionaries tuple
-    const proms = dictionaries.map(d => d[1](word));
-    const results = await Promise.all(proms);
+    const results = await Promise.all(dictionaries.map(d => d[1](word)));
 
     try {
         const ins = dictionaries.filter((d, i) => results[i] === true).map((d, i) => d[0]);
         const notins = dictionaries.filter((d, i) => results[i] === false).map((d, i) => d[0]);
         const nulls = dictionaries.filter((d, i) => results[i] === null).map((d, i) => d[0]);
-        console.log(`[ISAWORD] in ${ins.join(', ')}`);
-        console.log(`[ISAWORD] not in ${notins.join(', ')}`);
-        console.log(`[ISAWORD] null (error): ${nulls.join(', ')}`);
+        console.log(`[ISAWORD] in: ${humanFriendlyListFormatter(ins)}`);
+        console.log(`[ISAWORD] not in: ${humanFriendlyListFormatter(notins)}`);
+        if (nulls.length !== 0) console.log(`[ISAWORD] null (error): ${humanFriendlyListFormatter(nulls)}`);
 
         if (ins.length === 0) await interaction.editReply(`No sign of '${word}' in any dictionary I checked!`);
         else if (ins.length === 1) await interaction.editReply(`Hmm '${word}' is in ${ins[0]}, but not in any other dictionary!`);
         else if (ins.length === dictionaries.length) await interaction.editReply(`'${word}' is in every dictionary I checked!`);
-        else if (notins.length !== 0) await interaction.editReply(`'${word}' is in ${humanFriendlyListFormatter(ins)} but not in ${humanFriendlyListFormatter(notins)}`);
+        else if (notins.length !== 0) await interaction.editReply(`'${word}' is in ${humanFriendlyListFormatter(ins)} but not in ${humanFriendlyListFormatter(notins, 'or')}`);
         // this last case should only happen if at least one dictionary returned null rather than true or false
         else await interaction.editReply(`'${word}' is in ${humanFriendlyListFormatter(ins)} at least...`);
     } catch (error) {
@@ -94,6 +93,7 @@ async function chambers(word) {
 
 // we should probably use the new definition API since this returns true for stubs, redirects, common misspellings, foreign words
 async function wikt(word) {
+    // https://en.wiktionary.org/w/api.php?action=query&format=json&titles=WORD
     const wiktEarl = new Earl(`https://en.wiktionary.org`, '/w/api.php', {
         'action': 'query',
         'format': 'json',
@@ -114,9 +114,26 @@ async function wikt(word) {
     return null;
 }
 
-function humanFriendlyListFormatter(arrayOfStrings) {
+async function urban(word) {
+    // https://api.urbandictionary.com/v0/define?term=WORD
+    const earl = new Earl('https://api.urbandictionary.com', '/v0/define', {
+        'term': word
+    }
+    );
+    try {
+        const data = await earl.fetchJson();
+        console.log(`[ISAWORD/urban] ${word} status: ${data.list.length}`);
+        if (data.list.length === 0) return false;
+        else if (data.list.length > 0) return true;
+    } catch (error) {
+        console.error(`[ISAWORD/urban]`, error);
+    }
+    return null;
+}
+
+function humanFriendlyListFormatter(arrayOfStrings, conj = 'and') {
     if (arrayOfStrings.length === 0) return '';
     else if (arrayOfStrings.length === 1) return arrayOfStrings[0];
-    else if (arrayOfStrings.length === 2) return `${arrayOfStrings[0]} and ${arrayOfStrings[1]}`;
-    else return `${arrayOfStrings.slice(0, -1).join(', ')}, and ${arrayOfStrings[arrayOfStrings.length - 1]}`;
+    else if (arrayOfStrings.length === 2) return `${arrayOfStrings[0]} ${conj} ${arrayOfStrings[1]}`;
+    else return `${arrayOfStrings.slice(0, -1).join(', ')}, ${conj} ${arrayOfStrings[arrayOfStrings.length - 1]}`;
 }
