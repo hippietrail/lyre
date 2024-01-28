@@ -20,6 +20,9 @@ async function isaword(interaction) {
         ['American Heritage', ahd],
         ['Cambridge', cambridge],
         ['Chambers', chambers],
+        //['Collins', collins],
+        ['Merriam-Webster', mw],
+        ['Oxford Learners', oxfordLearners],
         ['Wiktionary', wikt],
         ['Urban Dictionary', urban],
     ];
@@ -73,7 +76,7 @@ async function chambers(word) {
         const html = await earl.fetchText();
         const dom = parse(html);
 
-        const fsr = domStroll('cham', false, dom, [
+        const message = domStroll('cham', false, dom, [
             [8, 'html'],
             [5, 'body', { cls: 'page-template-template-search-results' }],
             [7, 'div', { id: 'wrapper' }],
@@ -81,14 +84,22 @@ async function chambers(word) {
             [1, 'div', { cls: 'row' }],
             [1, 'div', { id: 'search-results' }],
             [8, 'div', { id: 'fullsearchresults' }],
+            [0, 'p', { cls: 'message' }],
         ])
 
-        console.log(`[ISAWORD/chambers] ${word} status: div#fullsearchresults has ${fsr.children.length} children`);
+        // console.log(`[ISAWORD/chambers] ${word} status: div#fullsearchresults has ${fsr.children.length} children`);
         // 4 children: <p.message> <p> <p> <p> - means the word is in Chambers
         //   actually, it can have any number of <p> after the <p.message>
         // 1 child: <p.message> - means the word is not in Chambers
-        if (fsr.children.length === 1) return false;
-        else if (fsr.children.length > 1) return true;
+        // n? children: <p.message> - means the word is not in but it's offering suggestions
+        //    message kids: #text <b> #text
+        //    message.kids[0] === 'No exact matches for '
+        // if (fsr.children.length === 1) return false;
+        // else if (fsr.children.length > 1) return true;
+
+        console.log(`[ISAWORD/chambers] ${word} status: p.message has ${message.children.length} children`);
+        if (message.children.length === 1) return true;
+        else if (message.children.length === 3) return false;
     } catch (error) {
         console.error(`[ISAWORD/chambers]`, error);
     }
@@ -175,6 +186,98 @@ async function ahd(word) {
         }
     } catch (error) {
         console.error(`[ISAWORD/ahd]`, error);
+    }
+    return null;
+}
+
+async function oxfordLearners(word) {
+    // https://www.oxfordlearnersdictionaries.com/definition/english/WORD
+    const earl = new Earl('https://www.oxfordlearnersdictionaries.com', '/definition/english/' + word);
+    try {
+        const dom = parse(await earl.fetchText());
+        const oxContainer = domStroll('ox', false, dom, [
+            [2, 'html'],
+            [3, 'body'],
+            [1, 'div', { id: 'ox-container' }],
+        ]);
+
+        const xEnglish = domStroll('ox', false, oxContainer.children, [
+            [5, 'div', { cls: 'xenglish', optional: true }],
+        ]);
+
+        if (xEnglish === null) {
+            console.log(`[ISAWORD/oxlearn] ${word} no 'xenglish' class`);
+            return false;
+        }
+
+        const webtop = domStroll('ox', false, xEnglish.children, [
+            [3, 'div', { cls: 'responsive_row' }],
+            [3, 'div', { cls: 'responsive_entry_center' }],
+            [1, 'div', { cls: 'responsive_entry_center_wrap' }],
+            [3, 'div', { id: 'ox-wrapper' }],            
+            [1, 'div', { id: 'main_column' }],
+            [1, 'div', { id: 'main-container' }],
+            [5, 'div', { id: 'entryContent' }],
+            [0, 'div'], // id will be WORD
+            [0, 'div', { cls: 'top-container' }],
+            [0, 'div'], // id will be 'WORD_topg_N' }],
+            [0, 'div', { cls: 'webtop' }],
+        ]);
+
+        const [pid, pppid] = [webtop.parent.attribs.id, webtop.parent.parent.parent.attribs.id];
+        console.log(`[ISAWORD/oxlearn] ${word} pid: '${pid}', pppid: '${pppid}'`);
+        return true;
+    } catch (error) {
+        console.error(`[ISAWORD/oxlearn]`, error);
+    }
+    return null;
+}
+
+// TODO Collins seem to be entirely built by JavaScript
+// async function collins(word) {
+//     // https://www.collinsdictionary.com/dictionary/english/WORD
+//     const earl = new Earl('https://www.collinsdictionary.com', '/dictionary/english/');
+//     earl.setLastPathSegment(word);
+//     try {
+//         const dom = parse(await earl.fetchText());
+//         // html
+//         // body.definition
+//         // main
+//         // div#main_content
+//         // div.res_cell_center
+//         // div.dc res_cell_center_content
+//         const resCellCenterContent = domStroll('coll', true, dom, [
+//             [1, 'html'],
+//             [1, 'body', { cls: 'definition' }],
+//             [11, 'main'],
+//             [7, 'div', { id: 'main_content' }],
+//             [1, 'div', { cls: 'res_cell_center' }],
+//             [1, 'div', { cls: 'dc res_cell_center_content' }],
+//         ]);
+//     } catch (error) {
+//         console.error(`[ISAWORD/collins]`, error);
+//     }
+//     return null;
+// }
+
+async function mw(word) {
+    // https://www.merriam-webster.com/dictionary/WORD
+    const earl = new Earl('https://www.merriam-webster.com', '/dictionary/');
+    earl.setLastPathSegment(word);
+    try {
+        const dom = parse(await earl.fetchText());
+        const body = domStroll('mw', true, dom, [
+            [2, 'html'],
+            [3, 'body'],
+        ]);
+        const bodyClasses = body.attribs.class.trim().split(/ +/);
+        console.log(`[ISAWORD/mw] ${word} body class: ${bodyClasses.map(x => `'.${x}'`).join(', ')}`);
+        if (bodyClasses.includes('definitions-page'))
+            return true;
+        else
+            return false;
+    } catch (error) {
+        console.error(`[ISAWORD/mw]`, error);
     }
     return null;
 }
