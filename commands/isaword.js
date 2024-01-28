@@ -17,6 +17,7 @@ async function isaword(interaction) {
     const word = interaction.options.getString('word');
 
     const dictionaries = [
+        ['American Heritage', ahd],
         ['Cambridge', cambridge],
         ['Chambers', chambers],
         ['Wiktionary', wikt],
@@ -59,6 +60,9 @@ async function cambridge(word) {
     return null;
 }
 
+// TODO doesn't check for cases like this when I search for 'wende':
+// No exact matches for wende, but the following may be helpful.
+// wend verb (wended, wending) archaic or literary to go or direct (one's course). wend one's way to go steadily and purposefully on a route or journey.
 async function chambers(word) {
     // https://chambers.co.uk/search/?query=WORD&title=21st
     const earl = new Earl('https://chambers.co.uk', '/search/', {
@@ -127,6 +131,50 @@ async function urban(word) {
         else if (data.list.length > 0) return true;
     } catch (error) {
         console.error(`[ISAWORD/urban]`, error);
+    }
+    return null;
+}
+
+async function ahd(word) {
+    // https://ahdictionary.com/word/search.html?q=WORD
+    const earl = new Earl('https://ahdictionary.com', '/word/search.html', {
+        'q': word
+    });
+    try {
+        const html = await earl.fetchText();
+        const dom = parse(html);
+        const results = domStroll('ahd', false, dom, [
+            [0, 'html'],
+            [1, 'body'],
+            [3, 'div', { id: 'content' }],
+            [2, 'div', { cls: 'container3' }],
+            [1, 'div', { id: 'results' }],
+        ]);
+
+        // wonda(results.children, 'ahd-wonda', 0, 1, [], false);
+        try {
+            // this is just to print out the next bit of debugging
+            domStroll('ahd', true, results.children, [
+                [99, 'fake']
+            ]);
+        } catch (e) {
+            //
+        }
+        
+        // false:
+        // [domStroll] ahd#5 #text
+        // true:
+        // [domStroll] ahd#5 <table> <hr> <span.copyright> #comment
+        // [domStroll] ahd#5 <table> <hr> <span.copyright> #comment <table> <hr> <span.copyright> #comment
+        if (results.children.length === 1 && results.children[0].type === 'text') return false;
+        else if ([4, 8].includes(results.children.length) && results.children[0].type === 'tag' && results.children[0].name === 'table') return true;
+        else {
+            console.log(`[ISAWORD/ahd] ${word} div#results.children.length: ${results.children.length}`);
+            console.log(`[ISAWORD/ahd] ${word} div#results.children[0].type: ${results.children[0].type}`);
+            console.log(`[ISAWORD/ahd] ${word} div#results.children[0].name: ${results.children[0].name}`);
+        }
+    } catch (error) {
+        console.error(`[ISAWORD/ahd]`, error);
     }
     return null;
 }
