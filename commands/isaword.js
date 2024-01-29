@@ -261,12 +261,24 @@ async function mw(word) {
             [2, 'html'],
             [3, 'body'],
         ]);
+
         const bodyClasses = body.attribs.class.trim().split(/ +/);
         console.log(`[ISAWORD/mw] ${word} body class: ${bodyClasses.map(x => `'.${x}'`).join(', ')}`);
-        if (bodyClasses.includes('definitions-page'))
-            return true;
-        else
+
+        if (bodyClasses.includes('definitions-page')) {
+            // check for partial matches, they lack the 'redesign-container' div
+            const maybeRedesignContainer = domStroll('mw', true, body.children, [
+                [17, 'div', { cls: 'outer-container' }],
+                [1, 'div', { cls: 'main-container' }],
+                [3, 'div', { cls: 'redesign-container', optional: true }],
+            ]);
+
+            console.log(`[ISAWORD/mw] ${word} maybeRedesignContainer: ${maybeRedesignContainer ? 'exists' : 'does not exist'}`);
+
+            return maybeRedesignContainer !== null;
+        } else {
             return false;
+        }
     } catch (error) {
         console.error(`[ISAWORD/mw]`, error);
     }
