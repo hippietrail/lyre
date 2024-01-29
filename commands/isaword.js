@@ -24,6 +24,7 @@ async function isaword(interaction) {
         ['Longman', longman],
         ['Merriam-Webster', mw],
         ['Oxford Learners', oxfordLearners],
+        ['Scrabble', scrabble],
         ['Wiktionary', wikt],
         ['Urban Dictionary', urban],
     ];
@@ -287,6 +288,33 @@ async function longman(word) {
         return headHasMetadata;
     } catch (error) {
         console.error(`[ISAWORD/longman]`, error);
+    }
+    return null;
+}
+
+async function scrabble(word) {
+    // https://scrabblechecker.collinsdictionary.com/check/api/index.php?key=WORD&isFriendly=1&nocache=1706498554793
+    const earl = new Earl('https://scrabblechecker.collinsdictionary.com', '/check/api/index.php', {
+        'key': word,
+        'isFriendly': '1',
+        'nocache': new Date().getTime()
+    });
+    try {
+        const text = await earl.fetchText();
+        try {
+            const json = JSON.parse(text);
+            console.log(`[ISAWORD/scrabble] '${word}'${
+                word === json.data.word ? '' : ` ≠ '${json.data.word}'`
+            } status: ${json.status} ${json.success}\n  ${json.data.definition}`);
+            if ('success' in json) return json.success;
+        } catch (error) {
+            console.error(`[ISAWORD/scrabble] JSON error`, error);
+            console.error(`[ISAWORD/scrabble] JSON url was ${earl.getUrlString()}`);
+            console.error(text);
+            console.error(`[ISAWORD/scrabble] JSON error END`);
+        }
+    } catch (error) {
+        console.error(`[ISAWORD/scrabble]`, error);
     }
     return null;
 }
