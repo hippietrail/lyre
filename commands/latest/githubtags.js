@@ -7,10 +7,10 @@ const regexMajMinPatch = /^(\d+)\.(\d+)\.(\d+)$/
 const regexVmajMinPatch = /^v(\d+)\.(\d+)\.(\d+)$/
 
 const ownerRepos = [
-    ['Nim', 'nim-lang/Nim', regexMajMinPatch],
-    ['Perl', 'Perl/perl5', regexMajMinPatch],
-    ['Python', 'python/cpython', regexMajMinPatch],
-    ['V8', 'v8/v8', regexVmajMinPatch],
+    ['Nim', 'nim-lang/Nim', regexVmajMinPatch],
+    ['Perl', 'Perl/perl5', regexVmajMinPatch],
+    ['Python', 'python/cpython', regexVmajMinPatch],
+    ['V8', 'v8/v8', regexMajMinPatch],
 ];
 
 export async function callGithubTags(debug = false) {
@@ -20,7 +20,7 @@ export async function callGithubTags(debug = false) {
     const chosenOwnerRepos = debug ? [ownerRepos[0]] : ownerRepos;
 
     for (const [i, repoEntry] of chosenOwnerRepos.entries()) {
-        const ob = await callGithubTagsRepo(repoEntry[0], repoEntry[1]);
+        const ob = await callGithubTagsRepo(repoEntry[0], repoEntry[1], repoEntry[2]);
         console.log(`GitHub Tags [${i + 1}/${chosenOwnerRepos.length}] ${repoEntry[0]}`);
         result.push(ob);
 
@@ -44,7 +44,7 @@ async function callGithubTagsRepo(name, ownerRepo, regex) {
             ver = 'GitHub API error T1';
         } else {
             const rel = ght.find(obj => obj.name.match(regex));
-
+            
             if (rel) {
                 const json = await (await fetch(rel.commit.url)).json();
 
