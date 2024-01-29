@@ -30,9 +30,9 @@ export async function callWikiDump() {
 
             if (info && [
                 'enwiktionary',
-                'enwiki',
+                // 'enwiki',
                 // 'thwiktionary'
-                'wikidatawiki',
+                // 'wikidatawiki',
             ].includes(info.w)) {
                 // do different things depending on the status
                 let sdp = null;

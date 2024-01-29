@@ -156,7 +156,13 @@ export async function callAS() {
             }
         }
 
-        return Array.from(chosenPostPerChannel.values());
+        return Array.from(chosenPostPerChannel.entries()).filter(e => [
+            // 'Canary',    // Canary builds are the bleeding edge, released about weekly. While these builds do get tested, they are still subject to bugs, as we want people to see what's new as soon as possible. This is not recommended for production development.
+            // 'Dev',       // Dev builds are hand-picked older canary builds that survived the test of time. It should be updated roughly bi-weekly or monthly.
+            // 'Beta',      // When we reach a beta milestone for the next version of Android Studio, we post the beta builds here. When the version is stable, the beta channel contains the stable version until the next version's beta.
+            'Stable',       // Contains the most recent stable version of Android Studio. 
+        ].includes(e[0])).map(e => e[1]);
+        
     } catch (error) {
         console.error(`[AS]`, error);
     }

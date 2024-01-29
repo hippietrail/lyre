@@ -27,6 +27,7 @@ const ownerRepos = [
     ['audacity/audacity', xformNameSplit],
     ['discordjs/discord.js', xformRepoCapTag],
     /*['elixir-lang/elixir', xformRepoCapTag],*/
+    ['exiftool/exiftool', xformNameSplit],
     ['JetBrains/kotlin', xformNameSplit],
     ['JuliaLang/julia', xformRepoCapTag],
     ['llvm/llvm-project', xformNameSplit],

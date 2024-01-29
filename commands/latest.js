@@ -45,7 +45,7 @@ async function latest(interaction) {
         const sourceNames = ['GitHub Releases', 'GitHub Tags', 'HTML', 'JSON'];
 
         async function updateReply(these, thisName) {
-            console.log(`All ${thisName} have been fetched. ${responses.length === 0 ? 'First.' : 'Last.'}`);
+            console.log(`All ${thisName} have been fetched.`);
             sourceNames.splice(sourceNames.indexOf(thisName), 1);
 
             responses.push(these.flat());
