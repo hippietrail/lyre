@@ -173,7 +173,7 @@ async function ahd(word) {
         // [domStroll] ahd#5 <table> <hr> <span.copyright> #comment
         // [domStroll] ahd#5 <table> <hr> <span.copyright> #comment <table> <hr> <span.copyright> #comment
         if (results.children.length === 1 && results.children[0].type === 'text') return false;
-        else if ([4, 8].includes(results.children.length) && results.children[0].type === 'tag' && results.children[0].name === 'table') return true;
+        else if (results.children.length % 4 === 0 && results.children[0].type === 'tag' && results.children[0].name === 'table') return true;
         else {
             console.log(`[ISAWORD/ahd] ${word} div#results.children.length: ${results.children.length}`);
             console.log(`[ISAWORD/ahd] ${word} div#results.children[0].type: ${results.children[0].type}`);
