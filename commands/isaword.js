@@ -21,6 +21,7 @@ async function isaword(interaction) {
         ['Cambridge', cambridge],
         ['Chambers', chambers],
         //['Collins', collins],
+        ['Longman', longman],
         ['Merriam-Webster', mw],
         ['Oxford Learners', oxfordLearners],
         ['Wiktionary', wikt],
@@ -152,8 +153,7 @@ async function ahd(word) {
         'q': word
     });
     try {
-        const html = await earl.fetchText();
-        const dom = parse(html);
+        const dom = parse(await earl.fetchText());
         const results = domStroll('ahd', false, dom, [
             [0, 'html'],
             [1, 'body'],
@@ -162,16 +162,6 @@ async function ahd(word) {
             [1, 'div', { id: 'results' }],
         ]);
 
-        // wonda(results.children, 'ahd-wonda', 0, 1, [], false);
-        try {
-            // this is just to print out the next bit of debugging
-            domStroll('ahd', true, results.children, [
-                [99, 'fake']
-            ]);
-        } catch (e) {
-            //
-        }
-        
         // false:
         // [domStroll] ahd#5 #text
         // true:
@@ -266,7 +256,7 @@ async function mw(word) {
     earl.setLastPathSegment(word);
     try {
         const dom = parse(await earl.fetchText());
-        const body = domStroll('mw', true, dom, [
+        const body = domStroll('mw', false, dom, [
             [2, 'html'],
             [3, 'body'],
         ]);
@@ -278,6 +268,25 @@ async function mw(word) {
             return false;
     } catch (error) {
         console.error(`[ISAWORD/mw]`, error);
+    }
+    return null;
+}
+
+async function longman(word) {
+    // https://www.ldoceonline.com/dictionary/definition
+    const earl = new Earl('https://www.ldoceonline.com', '/dictionary/');
+    earl.setLastPathSegment(word);
+    try {
+        const headHasMetadata = (domStroll('ld', false, parse(await earl.fetchText()), [
+            [2, 'html'],
+            [1, 'head', { cls: 'metadata', optional: true }],
+        ]) !== null);
+
+        console.log(`[ISAWORD/longman] ${word} <head> ${headHasMetadata ? 'has' : 'does not have'} .metadata class`);
+
+        return headHasMetadata;
+    } catch (error) {
+        console.error(`[ISAWORD/longman]`, error);
     }
     return null;
 }
