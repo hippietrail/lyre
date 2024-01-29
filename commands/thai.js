@@ -1,7 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
 import { domStroll } from '../ute/dom.js';
-import parse from 'html-dom-parser';
 
 export const data = new SlashCommandBuilder()
     .setName('thai')
@@ -43,9 +42,7 @@ async function thaiLanguage(word) {
     });
     console.log(`thaiLangEarl: ${thaiLangEarl.getUrlString()}`);
 
-    const dom = parse(await thaiLangEarl.fetchText());
-
-    const results = domStroll('thailang', false, dom, [
+    const results = domStroll('thailang', false, await thaiLangEarl.fetchDom(), [
         [1, 'tl-xml-response'],
         [0, 'results'],
     ]);
@@ -90,7 +87,7 @@ async function seaLang(word) {
 
     const dom = await (async () => {
         try {
-            return parse(await seaEarl.fetchText());
+            return await seaEarl.fetchDom();
         } catch (error) {
             console.error(`[THAI/sealang] ${word}:`, error);
             return null;

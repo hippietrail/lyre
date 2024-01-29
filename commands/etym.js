@@ -1,7 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
 import { domStroll } from '../ute/dom.js';
-import parse from 'html-dom-parser';
 
 export const data = new SlashCommandBuilder()
     .setName('etym')
@@ -16,9 +15,8 @@ async function etym(interaction) {
         const earl = new Earl('https://etymonline.com', '/word/');
         const word = interaction.options.getString('word');
         earl.setLastPathSegment(word);
-        const dom = parse(await earl.fetchText());
 
-        const lg17 = domStroll('etym', false, dom, [
+        const lg17 = domStroll('etym', false, await earl.fetchDom(), [
             [3, 'html'],
             [3, 'body'],
             [1, 'div', { id: 'root' }],

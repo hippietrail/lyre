@@ -1,15 +1,13 @@
 import { Earl } from '../../ute/earl.js';
 import { domStroll } from '../../ute/dom.js';
-import parse from 'html-dom-parser';
 
 const wikidumpEarl = new Earl('https://dumps.wikimedia.org');
 
 export async function callWikiDump() {
     wikidumpEarl.setPathname('/backup-index.html');
-    const indexDom = parse(await wikidumpEarl.fetchText());
 
     try {
-        const ul = domStroll('Wikidump.1', false, indexDom, [
+        const ul = domStroll('Wikidump.1', false, await wikidumpEarl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
             [1, 'div', { cls: 'lang-list-button-wrapper' }],
@@ -137,9 +135,7 @@ async function scrapeThisDumpsPage(info) {
         // NOTE the url we got from the page has the form `wikidatawiki/20240120`
         // NOTE but it redirects to add a slash: `wikidatawiki/20240120/`
 
-        const wikiDom = parse(await wikidumpEarl.fetchText());
-
-        const body = domStroll('Wikidump.2', false, wikiDom, [
+        const body = domStroll('Wikidump.2', false, await wikidumpEarl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
         ])
@@ -150,25 +146,19 @@ async function scrapeThisDumpsPage(info) {
         ]);
 
         // TODO this link is relative to the *redirected* URL
-        const dj = await getThisDumpsJson(info.w, jsonA.attribs.href);
-
-        //console.log(JSON.stringify(dj, null, 2));
-        return dj;
+        return await getThisDumpsJson(info.w, jsonA.attribs.href);
     } catch (error) {
         console.error(`[WikiDump]`, error);
     }
     return null;
 }
 
-import { ago } from '../../ute/ago.js';
 async function getThisDumpsJson(wiki, jsonRelLink) {
     wikidumpEarl.setBasicPathname(`${wikidumpEarl.url.pathname}/`);
     wikidumpEarl.setLastPathSegment(`${jsonRelLink}`);
 
     try {
         const jobs = (await wikidumpEarl.fetchJson()).jobs;
-
-        const now = new Date();
 
         const stuffs = {};
 

@@ -7,9 +7,7 @@ export async function callGo() {
 
     const goEarl = new Earl('https://go.dev', '/doc/devel/release');
     try {
-        const dom = parse(await goEarl.fetchText());
-
-        const article = domStroll('Go', false, dom, [
+        const article = domStroll('Go', false, await goEarl.fetchDom(), [
             [2, 'html'],
             [3, 'body', { cls: 'Site' }],
             [9, 'main', { id: 'main-content' }],
@@ -47,9 +45,7 @@ export async function callGo() {
 export async function callRvm() {
     const rvmEarl = new Earl('https://www.retrovirtualmachine.org', '/changelog/');
     try {
-        const dom = parse(await rvmEarl.fetchText());
-
-        const article = domStroll('RVM', false, dom, [
+        const article = domStroll('RVM', false, await rvmEarl.fetchDom(), [
             [2, 'html'],
             [1, 'body'],
             [2, 'div', { cls: 'mainContent' }],
@@ -87,9 +83,7 @@ export async function callAS() {
     });
 
     try {
-        const dom = parse(await asEarl.fetchText());
-
-        const blog1 = domStroll('AS2a', false, dom, [
+        const blog1 = domStroll('AS2a', false, await asEarl.fetchDom(), [
            [2, 'html', { cls: 'v2' }],
            [3, 'body'],
            [15, 'div', { cls: 'cols-wrapper' }],
@@ -172,9 +166,7 @@ export async function callAS() {
 export async function callElixir() {
     const elixirEarl = new Earl('https://elixir-lang.org', '/blog/categories.html');
     try {
-        const dom = parse(await elixirEarl.fetchText());
-
-        const releasesLI = domStroll('Elixir', false, dom, [
+        const releasesLI = domStroll('Elixir', false, await elixirEarl.fetchDom(), [
             [2, 'html'],
             [3, 'body', { cls: 'blog' }],
             [1, 'div', { id: 'container' }],
@@ -227,9 +219,7 @@ export async function callElixir() {
 export async function callRuby() {
     const rubyEarl = new Earl('https://www.ruby-lang.org', '/en/downloads/releases/');
     try {
-        const dom = parse(await rubyEarl.fetchText());
-
-        const relList = domStroll('Ruby', false, dom, [
+        const relList = domStroll('Ruby', false, await rubyEarl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
             [3, 'div', { id: 'page' }],
@@ -294,9 +284,7 @@ export async function callIdea() {
     const ideaEarl = new Earl('https://blog.jetbrains.com', '/idea/category/releases/');
 
     try {
-        const dom = parse(await ideaEarl.fetchText());
-
-        const row = domStroll('IdeaA', false, dom, [
+        const row = domStroll('IdeaA', false, await ideaEarl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
             [6, 'div', { id: 'wrapper' }],

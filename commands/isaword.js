@@ -1,7 +1,6 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
 import { domStroll } from '../ute/dom.js';
-import { wonda } from '../ute/riða.js';
 import parse from 'html-dom-parser';
 
 export const data = new SlashCommandBuilder()
@@ -93,10 +92,7 @@ async function chambers(word) {
         title: '21st'
     });
     try {
-        const html = await earl.fetchText();
-        const dom = parse(html);
-
-        const message = domStroll('cham', false, dom, [
+        const message = domStroll('cham', false, await earl.fetchDom(), [
             [8, 'html'],
             [5, 'body', { cls: 'page-template-template-search-results' }],
             [7, 'div', { id: 'wrapper' }],
@@ -163,8 +159,7 @@ async function ahd(word) {
         'q': word
     });
     try {
-        const dom = parse(await earl.fetchText());
-        const results = domStroll('ahd', false, dom, [
+        const results = domStroll('ahd', false, await earl.fetchDom(), [
             [0, 'html'],
             [1, 'body'],
             [3, 'div', { id: 'content' }],
@@ -194,8 +189,7 @@ async function oxfordLearners(word) {
     // https://www.oxfordlearnersdictionaries.com/definition/english/WORD
     const earl = new Earl('https://www.oxfordlearnersdictionaries.com', '/definition/english/' + word);
     try {
-        const dom = parse(await earl.fetchText());
-        const oxContainer = domStroll('ox', false, dom, [
+        const oxContainer = domStroll('ox', false, await earl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
             [1, 'div', { id: 'ox-container' }],
@@ -239,14 +233,13 @@ async function oxfordLearners(word) {
 //     const earl = new Earl('https://www.collinsdictionary.com', '/dictionary/english/');
 //     earl.setLastPathSegment(word);
 //     try {
-//         const dom = parse(await earl.fetchText());
 //         // html
 //         // body.definition
 //         // main
 //         // div#main_content
 //         // div.res_cell_center
 //         // div.dc res_cell_center_content
-//         const resCellCenterContent = domStroll('coll', true, dom, [
+//         const resCellCenterContent = domStroll('coll', true, await earl.fetchDom(), [
 //             [1, 'html'],
 //             [1, 'body', { cls: 'definition' }],
 //             [11, 'main'],
@@ -265,8 +258,7 @@ async function mw(word) {
     const earl = new Earl('https://www.merriam-webster.com', '/dictionary/');
     earl.setLastPathSegment(word);
     try {
-        const dom = parse(await earl.fetchText());
-        const body = domStroll('mw', false, dom, [
+        const body = domStroll('mw', false, await earl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
         ]);
@@ -299,7 +291,7 @@ async function longman(word) {
     const earl = new Earl('https://www.ldoceonline.com', '/dictionary/');
     earl.setLastPathSegment(word);
     try {
-        const headHasMetadata = (domStroll('ld', false, parse(await earl.fetchText()), [
+        const headHasMetadata = (domStroll('ld', false, await earl.fetchDom(), [
             [2, 'html'],
             [1, 'head', { cls: 'metadata', optional: true }],
         ]) !== null);
@@ -374,10 +366,7 @@ async function dictCom(word) {
     const earl = new Earl('https://www.dictionary.com', '/browse/');
     earl.setLastPathSegment(word);
     try {
-        const html = await earl.fetchText();
-        const dom = parse(html);
-
-        const main = domStroll('dict.com', true, dom, [
+        const main = domStroll('dict.com', false, await earl.fetchDom(), [
             [3, 'html'],
             [3, 'body'],
             [1, 'div', { id: 'root' }],
