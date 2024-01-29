@@ -16,17 +16,22 @@ async function isaword(interaction) {
 
     const word = interaction.options.getString('word');
 
+    // schema: [name: string, func: (word: string) => boolean | null, anyoneCanContribute: boolean]
     const dictionaries = [
-        ['American Heritage', ahd],
-        ['Cambridge', cambridge],
-        ['Chambers', chambers],
-        //['Collins', collins],
-        ['Longman', longman],
-        ['Merriam-Webster', mw],
-        ['Oxford Learners', oxfordLearners],
-        ['Scrabble', scrabble],
-        ['Wiktionary', wikt],
-        ['Urban Dictionary', urban],
+        // dictionaries that are professionally maintained
+        ['American Heritage', ahd, false],
+        ['Cambridge', cambridge, false],
+        ['Chambers', chambers, false],
+        //['Collins', collins, false],
+        ['Longman', longman, false],
+        ['Merriam-Webster', mw, false],
+        ['Oxford Learners', oxfordLearners, false],
+        ['Scrabble', scrabble, false],
+        ['Dictionary.com', dictCom, false],                                    
+
+        // dictionaries that anyone can contribute to
+        ['Wiktionary', wikt, true],
+        ['Urban Dictionary', urban, true],
     ];
 
     const results = await Promise.all(dictionaries.map(d => d[1](word)));
@@ -35,21 +40,37 @@ async function isaword(interaction) {
         const ins = dictionaries.filter((d, i) => results[i] === true).map((d, i) => d[0]);
         const notins = dictionaries.filter((d, i) => results[i] === false).map((d, i) => d[0]);
         const nulls = dictionaries.filter((d, i) => results[i] === null).map((d, i) => d[0]);
-        console.log(`[ISAWORD] in: ${humanFriendlyListFormatter(ins)}`);
-        console.log(`[ISAWORD] not in: ${humanFriendlyListFormatter(notins)}`);
-        if (nulls.length !== 0) console.log(`[ISAWORD] null (error): ${humanFriendlyListFormatter(nulls)}`);
+        
+        const communityDictCount = dictionaries.filter((d, i) => d[2] && results[i] === true).map((d, i) => d[0]).length;
+        const proDictCount = dictionaries.filter((d, i) => !d[2] && results[i] === true).map((d, i) => d[0]).length;
+
+        console.log(`[ISAWORD] in: ${ins.length === 0 ? 'none' : humanFriendlyListFormatter(ins)}`);
+        if (ins.length !== 0) console.log(`[ISAWORD] in ${proDictCount} professional dictionaries vs ${communityDictCount} community dictionaries`);
+        if (notins.length !== 0) console.log(`[ISAWORD] not in: ${humanFriendlyListFormatter(notins)}`);
+        if (nulls.length !== 0) console.log(`[ISAWORD] null: ${humanFriendlyListFormatter(nulls)}`);
 
         if (ins.length === 0) await interaction.editReply(`No sign of '${word}' in any dictionary I checked!`);
-        else if (ins.length === 1) await interaction.editReply(`Hmm '${word}' is in ${ins[0]}, but not in any other dictionary!`);
         else if (ins.length === dictionaries.length) await interaction.editReply(`'${word}' is in every dictionary I checked!`);
-        else if (notins.length !== 0) await interaction.editReply(`'${word}' is in ${humanFriendlyListFormatter(ins)} but not in ${humanFriendlyListFormatter(notins, 'or')}`);
-        // this last case should only happen if at least one dictionary returned null rather than true or false
-        else await interaction.editReply(`'${word}' is in ${humanFriendlyListFormatter(ins)} at least...`);
+
+        // it's only in one dictionary
+        else if (ins.length === 1) {
+            if (proDictCount === 0) await interaction.editReply(`'${word}' is only in ${ins[0]}, not in any professionally edited dictionary!`);
+            else await interaction.editReply(`Hmm '${word}' is in ${ins[0]}, but not in any other dictionary!`);
+        }
+
+        // it's in multiple dictionaries, but not all of them (or some returned errors)
+        else {
+            if (communityDictCount === ins.length) await interaction.editReply(`'${word}' is only in ${humanFriendlyListFormatter(ins)} but not in any professionally edited dictionary!`);
+            else if (notins.length !== 0) await interaction.editReply(`'${word}' is in ${humanFriendlyListFormatter(ins)} but not in ${humanFriendlyListFormatter(notins, 'or')}`);
+            // this last case should only happen if at least one dictionary returned null rather than true or false
+            else await interaction.editReply(`'${word}' is in ${humanFriendlyListFormatter(ins)} at least...`);
+        }
     } catch (error) {
         console.error(`[ISAWORD]`, error);
     }
 }
 
+// TODO sometimes returns 502 (bad gateway)
 async function cambridge(word) {
     // https://dictionary.cambridge.org/dictionary/english/WORD
     const earl = new Earl('https://dictionary.cambridge.org', '/dictionary/english/');
@@ -65,9 +86,6 @@ async function cambridge(word) {
     return null;
 }
 
-// TODO doesn't check for cases like this when I search for 'wende':
-// No exact matches for wende, but the following may be helpful.
-// wend verb (wended, wending) archaic or literary to go or direct (one's course). wend one's way to go steadily and purposefully on a route or journey.
 async function chambers(word) {
     // https://chambers.co.uk/search/?query=WORD&title=21st
     const earl = new Earl('https://chambers.co.uk', '/search/', {
@@ -89,17 +107,8 @@ async function chambers(word) {
             [0, 'p', { cls: 'message' }],
         ])
 
-        // console.log(`[ISAWORD/chambers] ${word} status: div#fullsearchresults has ${fsr.children.length} children`);
-        // 4 children: <p.message> <p> <p> <p> - means the word is in Chambers
-        //   actually, it can have any number of <p> after the <p.message>
-        // 1 child: <p.message> - means the word is not in Chambers
-        // n? children: <p.message> - means the word is not in but it's offering suggestions
-        //    message kids: #text <b> #text
-        //    message.kids[0] === 'No exact matches for '
-        // if (fsr.children.length === 1) return false;
-        // else if (fsr.children.length > 1) return true;
-
         console.log(`[ISAWORD/chambers] ${word} status: p.message has ${message.children.length} children`);
+
         if (message.children.length === 1) return true;
         else if (message.children.length === 3) return false;
     } catch (error) {
@@ -205,7 +214,7 @@ async function oxfordLearners(word) {
             [3, 'div', { cls: 'responsive_row' }],
             [3, 'div', { cls: 'responsive_entry_center' }],
             [1, 'div', { cls: 'responsive_entry_center_wrap' }],
-            [3, 'div', { id: 'ox-wrapper' }],            
+            [3, 'div', { id: 'ox-wrapper' }],
             [1, 'div', { id: 'main_column' }],
             [1, 'div', { id: 'main-container' }],
             [5, 'div', { id: 'entryContent' }],
@@ -267,7 +276,7 @@ async function mw(word) {
 
         if (bodyClasses.includes('definitions-page')) {
             // check for partial matches, they lack the 'redesign-container' div
-            const maybeRedesignContainer = domStroll('mw', true, body.children, [
+            const maybeRedesignContainer = domStroll('mw', false, body.children, [
                 [17, 'div', { cls: 'outer-container' }],
                 [1, 'div', { cls: 'main-container' }],
                 [3, 'div', { cls: 'redesign-container', optional: true }],
@@ -312,21 +321,76 @@ async function scrabble(word) {
         'nocache': new Date().getTime()
     });
     try {
-        const text = await earl.fetchText();
+        const randomUserAgents = [
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/19B74 [FBAN/FBIOS;FBAV/343.1.0.53.117;FBBV/330408024;FBDV/iPhone12,5;FBMD/iPhone;FBSN/iOS;FBSV/15.1;FBSS/3;FBID/phone;FBLC/it_IT;FBOP/5;FBRV/331379382]',
+            'Mozilla/5.0 (Linux; Android 10; Infinix X657B Build/QP1A.190711.020; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/80.0.3987.99 Mobile Safari/537.36 trill_2022009030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/20.9.3 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
+            'Mozilla/5.0 (Linux; Android 10; M2006C3LI Build/QP1A.190711.020; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/94.0.4606.71 Mobile Safari/537.36 trill_2022107060 JsSdk/1.0 NetType/4G Channel/googleplay AppName/musical_ly app_version/21.7.6 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/KG BytedanceWebview/d8a21c6',
+            'Mozilla/5.0 (Linux; Android 11; RMX2002 Build/RP1A.200720.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/90.0.4430.210 Mobile Safari/537.36 trill_2022106050 JsSdk/1.0 NetType/MOBILE Channel/googleplay AppName/musical_ly app_version/21.6.5 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
+            'Mozilla/5.0 (Linux; Android 11; SM-A025F Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/91.0.4472.120 Mobile Safari/537.36 trill_2022102050 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/21.2.5 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/KZ BytedanceWebview/d8a21c6',
+            'Mozilla/5.0 (Linux; Android 11; SM-A105F Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/89.0.4389.90 Safari/537.36 trill_2022109040 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/21.9.4 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
+            'Mozilla/5.0 (Linux; Android 11; SM-A505FM Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/95.0.4638.74 Mobile Safari/537.36 trill_220001 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musically_go app_version/22.0.1 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU',
+            'Mozilla/5.0 (Linux; Android 11; vivo 1906 Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/95.0.4638.74 Mobile Safari/537.36 trill_2022106050 JsSdk/1.0 NetType/WIFI Channel/vivoglobal_int AppName/musical_ly app_version/21.6.5 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
+            'Mozilla/5.0 (Linux; Android 6.0.1; VFD 600) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.50 Mobile Safari/537.36',
+            'Mozilla/5.0 (Linux; Android 6.0.1; VFD 600) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.50 Mobile Safari/537.36',
+            'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.50 Mobile Safari/537.36',
+            'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/95.0.4638.74 Mobile Safari/537.36 trill_2022109040 JsSdk/1.0 NetType/4G Channel/googleplay AppName/musical_ly app_version/21.9.4 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/KZ BytedanceWebview/d8a21c6',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        ];
+
+        const initOptions = Math.random() > 0.5 ? {
+            headers: new Headers({
+                Accept: 'application/json',
+                'User-Agent': randomUserAgents[Math.floor(Math.random() * randomUserAgents.length)],
+                })
+        } : {};
+
+        const resp = fetch(earl.getUrlString(), initOptions);
+        const text = await (await resp).text();
         try {
             const json = JSON.parse(text);
+
             console.log(`[ISAWORD/scrabble] '${word}'${
                 word === json.data.word ? '' : ` ≠ '${json.data.word}'`
             } status: ${json.status} ${json.success}\n  ${json.data.definition}`);
+
             if ('success' in json) return json.success;
         } catch (error) {
-            console.error(`[ISAWORD/scrabble] JSON error`, error);
-            console.error(`[ISAWORD/scrabble] JSON url was ${earl.getUrlString()}`);
-            console.error(text);
-            console.error(`[ISAWORD/scrabble] JSON error END`);
+            const dom = parse(text);
+            if (Array.isArray(dom) && dom.length !== 0 && 'type' in dom[0] && 'name' in dom[0] && dom[0].type === 'directive' && dom[0].name === '!doctype') {
+                console.log(`[ISAWORD/scrabble] ${word} doctype: ${dom[0].data}`);
+            } else {
+                throw error;
+            }
         }
     } catch (error) {
         console.error(`[ISAWORD/scrabble]`, error);
+    }
+    return null;
+}
+
+async function dictCom(word) {
+    // https://www.dictionary.com/browse/captsha
+    const earl = new Earl('https://www.dictionary.com', '/browse/');
+    earl.setLastPathSegment(word);
+    try {
+        const html = await earl.fetchText();
+        const dom = parse(html);
+
+        const main = domStroll('dict.com', true, dom, [
+            [3, 'html'],
+            [3, 'body'],
+            [1, 'div', { id: 'root' }],
+            [0, 'div', { cls: 'dictionary-site' }],
+            [1, 'main'],
+        ]);
+
+        if ('children' in main) {
+            if (main.children.length === 3) return false;
+            else if (main.children.length === 4) return true;
+        }        
+    } catch (error) {
+        console.error(`[ISAWORD/dict.com]`, error);
     }
     return null;
 }
