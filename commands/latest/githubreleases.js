@@ -30,6 +30,7 @@ const ownerRepos = [
     ['exiftool/exiftool', xformNameSplit],
     ['JetBrains/kotlin', xformNameSplit],
     ['JuliaLang/julia', xformRepoCapTag],
+    ['lampepfl/dotty', (_, __, jt) => ['Scala 3', jt]],     // "tag_name": "3.3.1", "name": "3.3.1",
     ['llvm/llvm-project', xformNameSplit],
     ['lua/lua', xformNameSplit],
     ['mamedev/mame', xformNameSplit],
@@ -40,6 +41,7 @@ const ownerRepos = [
     ['oven-sh/bun', xformNameSplit],
     ['rakudo/rakudo', xformRepoCapTag],
     /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
+    ['scala/scala', (_, __, jt) => ['Scala 2', jt]],        // "tag_name": "v2.13.12", "name": "Scala 2.13.12",
     ['rust-lang/rust', xformRepoCapTag],
     ['vlang/v', xformRepoCapTag],
     ['zed-industries/zed', xformRepoTag],
