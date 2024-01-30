@@ -65,7 +65,7 @@ function kidsForStep(site, st, kids) {
             ? `<${k.name}${
                     k.attribs && k.attribs.id ? `#${k.attribs.id}` : ''
                 }${
-                    k.attribs && k.attribs.class ? `.${k.attribs.class.split(' ').join('.')}` : ''
+                    k.attribs && k.attribs.class ? `.${k.attribs.class.split(/\s+/).join('.')}` : ''
                 }>`
             : `#${k.type}`
     ).join(' ')}`);

@@ -11,6 +11,7 @@ import * as etym from './commands/etym.js';
 import * as latest from './commands/latest.js';
 import * as thai from './commands/thai.js';
 import * as isaword from './commands/isaword.js';
+import * as ddg from './commands/ddg.js';
 
 config();
 
@@ -95,6 +96,10 @@ async function handleInteraction(interaction) {
 
         case 'isaword2':
             await isaword.execute(interaction);
+            break;
+
+        case 'ddg':
+            await ddg.execute(interaction);
             break;
 
         default:
