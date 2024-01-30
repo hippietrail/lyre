@@ -42,6 +42,7 @@ const ownerRepos = [
     /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
     ['rust-lang/rust', xformRepoCapTag],
     ['vlang/v', xformRepoCapTag],
+    ['zed-industries/zed', xformRepoTag],
     ['ziglang/zig', xformRepoCapTag],
 ];
 

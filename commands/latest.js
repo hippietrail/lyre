@@ -5,6 +5,7 @@ import { callGithubTags } from './latest/githubtags.js';
 import { callWikiDump } from './latest/wikidump.js';
 import { callGo, callRvm, callAS, callElixir, callRuby, callIdea } from './latest/htmlsources.js';
 import { callNodejs, callGimp, callXcode, callMame, callDart, callPhp } from './latest/jsonsources.js';
+
 export const data = new SlashCommandBuilder()
     .setName('latest')
     .setDescription('Latest releases of various projects')
@@ -95,7 +96,7 @@ async function latest(interaction) {
             //callNodejs(),
             callGimp(),
             callXcode(),
-            callMame(),
+            //callMame(),
             callDart(),
             callPhp(),            
         ]).then(async arr => await updateReply(arr, 'JSON'));
