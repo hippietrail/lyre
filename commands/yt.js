@@ -49,7 +49,7 @@ export async function autocomplete(interaction) {
     const foc = interaction.options.getFocused().toLowerCase();
     
     interaction.respond(
-        ['all', '*', ...Object.keys(config)]
+        ['all', ...Object.keys(config)]
         .filter(name => name
             .toLowerCase()
             .startsWith(foc))
