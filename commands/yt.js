@@ -25,6 +25,7 @@ export const data = new SlashCommandBuilder()
         .setName('group')
         .setDescription('The name of the group')
         .setRequired(true)
+        .setAutocomplete(true)
     );
 
 export async function execute(interaction) {
@@ -42,6 +43,19 @@ export async function execute(interaction) {
         await interaction.reply(`No channels in group '${groupName}'`);
     else
         await yt(interaction, groupName, chanList);
+}
+
+export async function autocomplete(interaction) {
+    const foc = interaction.options.getFocused().toLowerCase();
+    
+    interaction.respond(
+        ['all', '*', ...Object.keys(config)]
+        .filter(name => name
+            .toLowerCase()
+            .startsWith(foc))
+        .sort()
+        .map(name => ({ name, value: name }))
+    );
 }
 
 async function yt(interaction, chanGroupName, chanList) {

@@ -53,8 +53,15 @@ function readyDiscord() {
 }
 
 async function handleInteraction(interaction) {
-    if (!interaction.isCommand()) return;
+    if (interaction.isAutocomplete()) {
+        await interactionAutocomplete(interaction);
+    }
+    else if (interaction.isCommand()) {
+        await interactionCommand(interaction);
+    }
+}
 
+async function interactionCommand(interaction) {
     switch (interaction.commandName) {
         case 'wikt':
             await wikt.execute(interaction);
@@ -77,7 +84,7 @@ async function handleInteraction(interaction) {
         case 'yt':
             await yt.execute(interaction);
             break;
-        
+
         case 'tsoding':
             await tsoding.execute(interaction);
             break;
@@ -103,7 +110,18 @@ async function handleInteraction(interaction) {
             break;
 
         default:
-            console.error(`Unknown command ${interaction.commandName}`);
+            console.error(`Interaction Command: Unknown command ${interaction.commandName}`);
+    }
+}
+
+async function interactionAutocomplete(interaction) {
+    switch (interaction.commandName) {
+        case 'yt':
+            await yt.autocomplete(interaction);
+            break;
+
+        default:
+            console.error(`Interaction Autocomplete: Unknown command ${interaction.commandName}`);
     }
 }
 
