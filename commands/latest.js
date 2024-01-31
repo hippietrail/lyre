@@ -3,7 +3,7 @@ import { ago } from '../ute/ago.js';
 import { callGithubReleases } from './latest/githubreleases.js';
 import { callGithubTags } from './latest/githubtags.js';
 import { callWikiDump } from './latest/wikidump.js';
-import { callGo, callRvm, callAS, callElixir, callRuby, callIdea } from './latest/htmlsources.js';
+import { callGo, callRvm, callAS, callElixir, callRuby, callIdea, callSdlMame } from './latest/htmlsources.js';
 import { callNodejs, callGimp, callXcode, callMame, callDart, callPhp } from './latest/jsonsources.js';
 
 export const data = new SlashCommandBuilder()
@@ -27,7 +27,6 @@ export const execute = latest;
 // Haskell
 // Java/JDK/JVM?
 // Objective C? on GitHub tags only apple-oss-distributions/objc4
-// Scala
 // Unicode
 //  CLDR
 //  ICU
@@ -109,6 +108,7 @@ async function latest(interaction) {
             callRuby(),
             callIdea(),
             callWikiDump(), // actually HTML first then JSON
+            callSdlMame(),
         ]).then(async arr => await updateReply(arr, 'HTML'));
 
         await Promise.all([githubRelPromises, githubTagPromises, jsonPromises, htmlPromises]);

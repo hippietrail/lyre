@@ -344,3 +344,44 @@ export async function callIdea() {
 
     return [];
 }
+
+export async function callSdlMame() {
+    const sdlMameEarl = new Earl('https://sdlmame.lngn.net', '/stable/');
+
+    try {
+        const table = domStroll('sdl', false, await sdlMameEarl.fetchDom(), [
+            [2, 'html'],
+            [3, 'body'],
+            [3, 'table'],
+        ]);
+
+        const tr = table.children[table.children.length - 6];
+
+        const [linkAnchor, dateTimeTD] = [
+            domStroll('sdl', false, tr.children, [
+                [1, 'td'],
+                [0, 'a'],
+            ]),
+            domStroll('sdl', false, tr.children, [
+                [2, 'td'],
+            ]),
+        ];
+
+        const matty = linkAnchor.attribs.href.match(/^mame(\d)(\d+)-arm64.zip$/);
+        if (matty) {
+            const [maj, min] = [matty[1], matty[2]];
+
+            return [{
+                name: 'SDL MAME',
+                ver: `${maj}.${min}`,
+                link: `https://sdlmame.lngn.net/whatsnew/whatsnew_${maj}${min}.txt`,
+                timestamp: new Date(dateTimeTD.children[0].data.trim()),
+                src: 'sdlmame.lngn.net',
+            }];
+        }
+    } catch (error) {
+        console.error(`[SdlMame]`, error);
+    }
+
+    return [];
+}

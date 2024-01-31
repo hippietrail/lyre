@@ -28,11 +28,11 @@ export function domStroll(site, debug, kids, data) {
                 throw new Error(`[domStroll] ${site}#${i} not ${name}`);
             }
             if (opts && opts.id && node.attribs.id !== opts.id) {
-                if (opts && opts.optional) return null;
+                if (opts.optional) return null;
                 throw new Error(`[domStroll] ${site}#${i} node id is not ${opts.id}`);
             }
             if (opts && opts.cls && !node.attribs?.class?.includes(opts.cls)) {
-                if (opts && opts.optional) return null;
+                if (opts.optional) return null;
                 throw new Error(`<${name}> has no .${opts.cls} class`);
             }
             throw new Error(`not <${name}${opts && opts.cls ? `.${opts.cls}` : ''}>`);
