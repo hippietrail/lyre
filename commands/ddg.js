@@ -1,6 +1,7 @@
 import { SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
 import { domStroll } from '../ute/dom.js';
+import parse from 'html-dom-parser';
 
 export const data = new SlashCommandBuilder()
     .setName('ddg')
@@ -38,35 +39,30 @@ async function ddg(interaction) {
 
         console.log(`html index: ${htmlIndex} list: '${list}' feed index: ${feedIndex}`);
 
-        const content = domStroll('ddg', false, dom, [
+        const img = domStroll('ddg', false, dom, [
             [htmlIndex, 'html'],
-            [3, 'body', { cls: 'inner-page' }],         // .not-logged-in.inner-page 6
-            [9, 'div', { cls: 'pageContent' }],         // .pageContent 6.3
-            [1, 'div', { cls: 'pageWrap' }],            // .pageWrap 6.3.9
-            [1, 'div', { cls: 'container' }],           // .container 6.3.9.1
-            [feedIndex, 'div', { cls: 'feed' }],        // .feed.light-gallery.ddg-load-later 6.3.9.1.1
-            [1, 'div', { cls: 'feed-object' }],         // .row.feed-object 6.3.9.1.1.11.1
-            [1, 'div', { cls: 'col-lg-12' }],           // .col-lg-12 6.3.9.1.1.11.1.1
-            [1, 'div', { cls: 'content' }],             // .content.full-format. 6.3.9.1.1.11.1.1.1
+            [3, 'body', { cls: 'inner-page' }],     // .not-logged-in.inner-page 6
+            [9, 'div', { cls: 'pageContent' }],     // .pageContent 6.3
+            [1, 'div', { cls: 'pageWrap' }],        // .pageWrap 6.3.9
+            [1, 'div', { cls: 'container' }],       // .container 6.3.9.1
+            [feedIndex, 'div', { cls: 'feed' }],    // .feed.light-gallery.ddg-load-later 6.3.9.1.1
+            [1, 'div', { cls: 'feed-object' }],     // .row.feed-object 6.3.9.1.1.11.1
+            [1, 'div', { cls: 'col-lg-12' }],       // .col-lg-12 6.3.9.1.1.11.1.1
+            [1, 'div', { cls: 'content' }],         // .content.full-format. 6.3.9.1.1.11.1.1.1
+            [1, 'div', { cls: 'image-wrapper' }],   // .image-wrapper 6.3.9.1.1.11.1.1.1.1
+            [1, 'img'],                             // .light-gallery-item.fi3vw1gottu.thumb.img-responsive 6.3.9.1.1.11.1.1.1.1.1
         ]);
 
-        const [img, promptInfo] = [
-            domStroll('ddg', false, content.children, [
-                [1, 'div', { cls: 'image-wrapper' }],   // .image-wrapper 6.3.9.1.1.11.1.1.1.1
-                [1, 'img'],                             // .light-gallery-item.fi3vw1gottu.thumb.img-responsive 6.3.9.1.1.11.1.1.1.1.1
-            ]),
-            domStroll('ddg', false, content.children, [
-                [3, 'div', { cls: 'prompt-info' }],
-            ]),
-        ];
+        if ('data-sub-html' in img.attribs) {
+            try {
+                const dom = parse(img.attribs['data-sub-html']);
+                const a = dom[0];
 
-        const prompt = promptInfo.children[promptInfo.children.length - 3].data.trim();
-
-        // NOTE discord refuses to show both the text and the image unless there is text outside the markdown, and it can't be whitespace
-        // TODO the image will be displayed if it has ?v=1 or ?v=2 at the end but not otherwise
-        reply = `${list}: [${prompt}](${img.attribs.src}${
-            img.attribs.src.endsWith('?v=1') || img.attribs.src.endsWith('?v=2') ? '' : '?v=0'
-        })`;
+                reply = `[${list}](${a.attribs.href})`
+            } catch (error) {
+                console.error(`[DDG] error parsing data-sub-html`, error);
+            }
+        }
     } catch (error) {
         console.error('[DDG]', error);
     }
