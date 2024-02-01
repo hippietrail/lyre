@@ -20,6 +20,7 @@ export const execute = latest;
 // C standard?
 // C++ standard?
 // C#
+// CC-CEDICT
 // EcmaScript standard?
 // Erlang
 // gcc

@@ -17,19 +17,19 @@ async function isaword(interaction) {
 
     // schema: [name: string, func: (word: string) => boolean | null, anyoneCanContribute: boolean]
     const dictionaries = [
-        // dictionaries that are professionally maintained
+        // dictionaries that are professionally maintained, alphabetical order
         ['American Heritage', ahd, false],
         ['Cambridge', cambridge, false],
         ['Chambers', chambers, false],
         //['Collins', collins, false],
+        ['Dictionary.com', dictCom, false],
         ['Longman', longman, false],
         ['Merriam-Webster', mw, false],
         ['Oxford Learners', oxfordLearners, false],
         //['Scrabble', scrabble, false],
-        ['Dictionary.com', dictCom, false],
         ['Wordnet', wordNet, false],
 
-        // dictionaries that anyone can contribute to
+        // dictionaries that anyone can contribute to, in order of trustworthiness
         ['Wiktionary', wikt, true],
         ['Urban Dictionary', urban, true],
     ];

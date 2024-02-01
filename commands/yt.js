@@ -11,7 +11,7 @@ function maybeLoadOrReloadConfig() {
         console.log(`[YouTube] config ${configTimestamp === undefined ? 'not yet loaded' : 'has changed'}!`);
         try {
             config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
-            console.log(`[YouTube] ${configTimestamp === undefined ? 'L' : 'Re'}oaded config.json`);
+            console.log(`[YouTube] ${configTimestamp === undefined ? 'L' : 'Rel'}oaded config.json`);
             configTimestamp = fs.statSync('./config.json').mtimeMs;
         } catch (err) {
             console.error(`[YouTube] ${err}`);
