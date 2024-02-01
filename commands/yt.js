@@ -3,13 +3,22 @@ import { YoutubeVidsEarl } from '../ute/earl.js';
 import { ago } from '../ute/ago.js';
 import fs from 'node:fs';
 
-let config;
-try {
-    config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
-} catch (err) {
-    console.error(`[YouTube] ${err}`);
-}
+let config = {};
+let configTimestamp;
 
+function maybeLoadOrReloadConfig() {
+    if (fs.statSync('./config.json').mtimeMs !== configTimestamp) {
+        console.log(`[YouTube] config ${configTimestamp === undefined ? 'not yet loaded' : 'has changed'}!`);
+        try {
+            config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
+            console.log(`[YouTube] ${configTimestamp === undefined ? 'L' : 'Re'}oaded config.json`);
+            configTimestamp = fs.statSync('./config.json').mtimeMs;
+        } catch (err) {
+            console.error(`[YouTube] ${err}`);
+        }
+    }
+}
+  
 const ytEarl = new YoutubeVidsEarl();
 ytEarl.setMaxResults(10);
 
@@ -46,6 +55,8 @@ export async function execute(interaction) {
 }
 
 export async function autocomplete(interaction) {
+    maybeLoadOrReloadConfig();
+
     const foc = interaction.options.getFocused().toLowerCase();
     
     interaction.respond(
