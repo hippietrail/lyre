@@ -385,3 +385,46 @@ export async function callSdlMame() {
 
     return [];
 }
+
+export async function callSublime() {
+    // https://www.sublimetext.com/download
+    const sublimeEarl = new Earl('https://www.sublimetext.com', '/download');
+
+    try {
+        const current = domStroll('sublime', true, await sublimeEarl.fetchDom(), [
+            [2, 'html'],
+            [3, 'body'],
+            [3, 'main'],
+            [1, 'section'],
+            [3, 'div', { cls: 'primary' }],
+            [3, 'section', { id: 'changelog' }],
+            [3, 'article', { cls: 'current' }],
+        ]);
+
+        const [h3, releaseDate] = [
+            domStroll('sublime2', true, current.children, [
+                [1, 'h3'],      
+            ]),
+            domStroll('sublime3', true, current.children, [
+                [3, 'div', { cls: 'release-date' }],
+            ])
+        ];
+
+        const ver = h3.children[0].data.match(/Build (\d+)/);
+        const date = releaseDate.children[0].data.trim();
+
+        if (ver && date) {
+            return [{
+                name: 'Sublime Text',
+                ver: ver[1],
+                link: 'https://www.sublimetext.com/download',
+                timestamp: new Date(date),
+                src: 'sublimetext.com',
+            }];
+        }
+    } catch (error) {
+        console.error(`[Sublime]`, error);
+    }
+
+    return [];
+}
