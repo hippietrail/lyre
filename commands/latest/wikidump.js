@@ -1,5 +1,6 @@
 import { Earl } from '../../ute/earl.js';
 import { domStroll } from '../../ute/dom.js';
+import parse from 'html-dom-parser';
 
 const wikidumpEarl = new Earl('https://dumps.wikimedia.org');
 
@@ -29,7 +30,7 @@ export async function callWikiDump() {
             if (info && [
                 'enwiktionary',
                 // 'enwiki',
-                // 'thwiktionary'
+                // 'thwiktionary',
                 // 'wikidatawiki',
             ].includes(info.w)) {
                 // do different things depending on the status
@@ -37,19 +38,19 @@ export async function callWikiDump() {
                 switch (info.s) {
                     case 'Dump in progress':
                         // status class is 'in-progress'
-                        //console.log(`[WikiDump] ${info.c} ${info.w}`);
+                        console.log(`[WikiDump] ${info.c} ${info.w}`);
                         sdp = await scrapeThisDumpsPage(info);
                         break;
 
                     case 'Partial dump':
-                        // status class is ??? TODO...
+                        // status class is 'partial-dump'
                         console.log(`[WikiDump] ${info.c} ${info.w}`);
                         sdp = await scrapeThisDumpsPage(info);
                         break;
 
                     case 'Dump complete':
                         // status class is 'done'
-                        //console.log(`[WikiDump] ${info.c} ${info.w}`);
+                        console.log(`[WikiDump] ${info.c} ${info.w}`);
                         sdp = await scrapeThisDumpsPage(info);
                         break;
 
@@ -153,12 +154,18 @@ async function scrapeThisDumpsPage(info) {
     return null;
 }
 
+// NOTE this link will be provided in the page before the JSON is published
+// NOTE in the meantime it will return a tiny HTML '404 Not Found' page
 async function getThisDumpsJson(wiki, jsonRelLink) {
     wikidumpEarl.setBasicPathname(`${wikidumpEarl.url.pathname}/`);
     wikidumpEarl.setLastPathSegment(`${jsonRelLink}`);
 
+    let text
     try {
-        const jobs = (await wikidumpEarl.fetchJson()).jobs;
+        //const jobs = (await wikidumpEarl.fetchJson()).jobs;
+        text = await wikidumpEarl.fetchText();
+        const jobs = JSON.parse(text);
+        console.log(`wikidump ${wiki} JSON has been published`);
 
         const stuffs = {};
 
@@ -171,7 +178,26 @@ async function getThisDumpsJson(wiki, jsonRelLink) {
 
         return stuffs;
     } catch (error) {
-        console.error(`[WikiDump/json] ${wiki}`, error);
+        const dom = parse(text);
+        const [h1, center] = [
+            domStroll('Wikidump.4', false, dom, [
+                [0, 'html'],
+                [3, 'body'],
+                [1, 'center'],
+                [0, 'h1'],
+            ]),
+            domStroll('Wikidump.5', false, dom, [
+                [0, 'html'],
+                [3, 'body'],
+                [4, 'center'],
+            ]),
+        ];
+
+        if (h1.children[0].data === '404 Not Found' && center.children[0].data === 'nginx/1.18.0') {
+            console.log(`wikidump ${wiki} JSON not yet published - 404 Not Found html in expected place`);
+        } else {
+            console.error(`[WikiDump/json] ${wiki}`, error);
+        }
     }
     return null;
 }

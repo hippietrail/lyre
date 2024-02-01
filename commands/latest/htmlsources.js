@@ -391,7 +391,7 @@ export async function callSublime() {
     const sublimeEarl = new Earl('https://www.sublimetext.com', '/download');
 
     try {
-        const current = domStroll('sublime', true, await sublimeEarl.fetchDom(), [
+        const current = domStroll('sublime', false, await sublimeEarl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
             [3, 'main'],
@@ -402,10 +402,10 @@ export async function callSublime() {
         ]);
 
         const [h3, releaseDate] = [
-            domStroll('sublime2', true, current.children, [
+            domStroll('sublime2', false, current.children, [
                 [1, 'h3'],      
             ]),
-            domStroll('sublime3', true, current.children, [
+            domStroll('sublime3', false, current.children, [
                 [3, 'div', { cls: 'release-date' }],
             ])
         ];
