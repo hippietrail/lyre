@@ -25,8 +25,9 @@ async function isaword(interaction) {
         ['Longman', longman, false],
         ['Merriam-Webster', mw, false],
         ['Oxford Learners', oxfordLearners, false],
-        ['Scrabble', scrabble, false],
-        ['Dictionary.com', dictCom, false],                                    
+        //['Scrabble', scrabble, false],
+        ['Dictionary.com', dictCom, false],
+        ['Wordnet', wordNet, false],
 
         // dictionaries that anyone can contribute to
         ['Wiktionary', wikt, true],
@@ -305,61 +306,61 @@ async function longman(word) {
     return null;
 }
 
-async function scrabble(word) {
-    // https://scrabblechecker.collinsdictionary.com/check/api/index.php?key=WORD&isFriendly=1&nocache=1706498554793
-    const earl = new Earl('https://scrabblechecker.collinsdictionary.com', '/check/api/index.php', {
-        'key': word,
-        'isFriendly': '1',
-        'nocache': new Date().getTime()
-    });
-    try {
-        const randomUserAgents = [
-            'Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/19B74 [FBAN/FBIOS;FBAV/343.1.0.53.117;FBBV/330408024;FBDV/iPhone12,5;FBMD/iPhone;FBSN/iOS;FBSV/15.1;FBSS/3;FBID/phone;FBLC/it_IT;FBOP/5;FBRV/331379382]',
-            'Mozilla/5.0 (Linux; Android 10; Infinix X657B Build/QP1A.190711.020; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/80.0.3987.99 Mobile Safari/537.36 trill_2022009030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/20.9.3 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
-            'Mozilla/5.0 (Linux; Android 10; M2006C3LI Build/QP1A.190711.020; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/94.0.4606.71 Mobile Safari/537.36 trill_2022107060 JsSdk/1.0 NetType/4G Channel/googleplay AppName/musical_ly app_version/21.7.6 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/KG BytedanceWebview/d8a21c6',
-            'Mozilla/5.0 (Linux; Android 11; RMX2002 Build/RP1A.200720.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/90.0.4430.210 Mobile Safari/537.36 trill_2022106050 JsSdk/1.0 NetType/MOBILE Channel/googleplay AppName/musical_ly app_version/21.6.5 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
-            'Mozilla/5.0 (Linux; Android 11; SM-A025F Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/91.0.4472.120 Mobile Safari/537.36 trill_2022102050 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/21.2.5 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/KZ BytedanceWebview/d8a21c6',
-            'Mozilla/5.0 (Linux; Android 11; SM-A105F Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/89.0.4389.90 Safari/537.36 trill_2022109040 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/21.9.4 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
-            'Mozilla/5.0 (Linux; Android 11; SM-A505FM Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/95.0.4638.74 Mobile Safari/537.36 trill_220001 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musically_go app_version/22.0.1 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU',
-            'Mozilla/5.0 (Linux; Android 11; vivo 1906 Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/95.0.4638.74 Mobile Safari/537.36 trill_2022106050 JsSdk/1.0 NetType/WIFI Channel/vivoglobal_int AppName/musical_ly app_version/21.6.5 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
-            'Mozilla/5.0 (Linux; Android 6.0.1; VFD 600) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.50 Mobile Safari/537.36',
-            'Mozilla/5.0 (Linux; Android 6.0.1; VFD 600) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.50 Mobile Safari/537.36',
-            'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.50 Mobile Safari/537.36',
-            'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/95.0.4638.74 Mobile Safari/537.36 trill_2022109040 JsSdk/1.0 NetType/4G Channel/googleplay AppName/musical_ly app_version/21.9.4 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/KZ BytedanceWebview/d8a21c6',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        ];
+// async function scrabble(word) {
+//     // https://scrabblechecker.collinsdictionary.com/check/api/index.php?key=WORD&isFriendly=1&nocache=1706498554793
+//     const earl = new Earl('https://scrabblechecker.collinsdictionary.com', '/check/api/index.php', {
+//         'key': word,
+//         'isFriendly': '1',
+//         'nocache': new Date().getTime()
+//     });
+//     try {
+//         const randomUserAgents = [
+//             'Mozilla/5.0 (iPhone; CPU iPhone OS 15_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/19B74 [FBAN/FBIOS;FBAV/343.1.0.53.117;FBBV/330408024;FBDV/iPhone12,5;FBMD/iPhone;FBSN/iOS;FBSV/15.1;FBSS/3;FBID/phone;FBLC/it_IT;FBOP/5;FBRV/331379382]',
+//             'Mozilla/5.0 (Linux; Android 10; Infinix X657B Build/QP1A.190711.020; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/80.0.3987.99 Mobile Safari/537.36 trill_2022009030 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/20.9.3 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
+//             'Mozilla/5.0 (Linux; Android 10; M2006C3LI Build/QP1A.190711.020; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/94.0.4606.71 Mobile Safari/537.36 trill_2022107060 JsSdk/1.0 NetType/4G Channel/googleplay AppName/musical_ly app_version/21.7.6 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/KG BytedanceWebview/d8a21c6',
+//             'Mozilla/5.0 (Linux; Android 11; RMX2002 Build/RP1A.200720.011; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/90.0.4430.210 Mobile Safari/537.36 trill_2022106050 JsSdk/1.0 NetType/MOBILE Channel/googleplay AppName/musical_ly app_version/21.6.5 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
+//             'Mozilla/5.0 (Linux; Android 11; SM-A025F Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/91.0.4472.120 Mobile Safari/537.36 trill_2022102050 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/21.2.5 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/KZ BytedanceWebview/d8a21c6',
+//             'Mozilla/5.0 (Linux; Android 11; SM-A105F Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/89.0.4389.90 Safari/537.36 trill_2022109040 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musical_ly app_version/21.9.4 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
+//             'Mozilla/5.0 (Linux; Android 11; SM-A505FM Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/95.0.4638.74 Mobile Safari/537.36 trill_220001 JsSdk/1.0 NetType/WIFI Channel/googleplay AppName/musically_go app_version/22.0.1 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU',
+//             'Mozilla/5.0 (Linux; Android 11; vivo 1906 Build/RP1A.200720.012; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/95.0.4638.74 Mobile Safari/537.36 trill_2022106050 JsSdk/1.0 NetType/WIFI Channel/vivoglobal_int AppName/musical_ly app_version/21.6.5 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/RU BytedanceWebview/d8a21c6',
+//             'Mozilla/5.0 (Linux; Android 6.0.1; VFD 600) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.50 Mobile Safari/537.36',
+//             'Mozilla/5.0 (Linux; Android 6.0.1; VFD 600) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.50 Mobile Safari/537.36',
+//             'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.50 Mobile Safari/537.36',
+//             'Mozilla/5.0 (Linux; Android 8.1.0; CPH1909 Build/O11019; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/95.0.4638.74 Mobile Safari/537.36 trill_2022109040 JsSdk/1.0 NetType/4G Channel/googleplay AppName/musical_ly app_version/21.9.4 ByteLocale/ru-RU ByteFullLocale/ru-RU Region/KZ BytedanceWebview/d8a21c6',
+//             'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+//             'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+//         ];
 
-        const initOptions = Math.random() > 0.5 ? {
-            headers: new Headers({
-                Accept: 'application/json',
-                'User-Agent': randomUserAgents[Math.floor(Math.random() * randomUserAgents.length)],
-                })
-        } : {};
+//         const initOptions = Math.random() > 0.5 ? {
+//             headers: new Headers({
+//                 Accept: 'application/json',
+//                 'User-Agent': randomUserAgents[Math.floor(Math.random() * randomUserAgents.length)],
+//                 })
+//         } : {};
 
-        const resp = fetch(earl.getUrlString(), initOptions);
-        const text = await (await resp).text();
-        try {
-            const json = JSON.parse(text);
+//         const resp = fetch(earl.getUrlString(), initOptions);
+//         const text = await (await resp).text();
+//         try {
+//             const json = JSON.parse(text);
 
-            console.log(`[ISAWORD/scrabble] '${word}'${
-                word === json.data.word ? '' : ` ≠ '${json.data.word}'`
-            } status: ${json.status} ${json.success}\n  ${json.data.definition}`);
+//             console.log(`[ISAWORD/scrabble] '${word}'${
+//                 word === json.data.word ? '' : ` ≠ '${json.data.word}'`
+//             } status: ${json.status} ${json.success}\n  ${json.data.definition}`);
 
-            if ('success' in json) return json.success;
-        } catch (error) {
-            const dom = parse(text);
-            if (Array.isArray(dom) && dom.length !== 0 && 'type' in dom[0] && 'name' in dom[0] && dom[0].type === 'directive' && dom[0].name === '!doctype') {
-                console.log(`[ISAWORD/scrabble] ${word} doctype: ${dom[0].data}`);
-            } else {
-                throw error;
-            }
-        }
-    } catch (error) {
-        console.error(`[ISAWORD/scrabble]`, error);
-    }
-    return null;
-}
+//             if ('success' in json) return json.success;
+//         } catch (error) {
+//             const dom = parse(text);
+//             if (Array.isArray(dom) && dom.length !== 0 && 'type' in dom[0] && 'name' in dom[0] && dom[0].type === 'directive' && dom[0].name === '!doctype') {
+//                 console.log(`[ISAWORD/scrabble] ${word} doctype: ${dom[0].data}`);
+//             } else {
+//                 throw error;
+//             }
+//         }
+//     } catch (error) {
+//         console.error(`[ISAWORD/scrabble]`, error);
+//     }
+//     return null;
+// }
 
 async function dictCom(word) {
     // https://www.dictionary.com/browse/captsha
@@ -380,6 +381,32 @@ async function dictCom(word) {
         }        
     } catch (error) {
         console.error(`[ISAWORD/dict.com]`, error);
+    }
+    return null;
+}
+
+async function wordNet(word) {
+    // http://wordnetweb.princeton.edu/perl/webwn?s=WORD
+    const earl = new Earl('http://wordnetweb.princeton.edu', '/perl/webwn', {
+        s: word,
+    });
+    try {
+        const body = domStroll('wordnet', false, await earl.fetchDom(), [
+            [2, 'html'],
+            [3, 'body'],
+        ]);
+        const tagNodes = body.children.filter(e => e.type === 'tag');
+        const tagNames = tagNodes.map(e => e.name);
+
+        if (['form', 'form', 'h3'].every((e, i) => tagNames[i] === e))
+            return false;
+
+        const classNames = tagNodes.map(e => e.attribs['class']);
+        if (['div', 'div'].every((e, i) => tagNames[i] === e) && ['header', 'form'].every((e, i) => classNames[i] === e)) {
+            return true;
+        }
+    } catch (error) {
+        console.error(`[ISAWORD/wordnet]`, error);
     }
     return null;
 }
