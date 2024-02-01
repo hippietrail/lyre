@@ -28,6 +28,7 @@ async function isaword(interaction) {
         ['Oxford Learners', oxfordLearners, false],
         //['Scrabble', scrabble, false],
         ['Wordnet', wordNet, false],
+        ['Wordnik', wordnik, false],
 
         // dictionaries that anyone can contribute to, in order of trustworthiness
         ['Wiktionary', wikt, true],
@@ -407,6 +408,38 @@ async function wordNet(word) {
         }
     } catch (error) {
         console.error(`[ISAWORD/wordnet]`, error);
+    }
+    return null;
+}
+
+async function wordnik(word) {
+    // https://www.wordnik.com/words/WORD
+    const earl = new Earl('https://www.wordnik.com', '/words/');
+    earl.setLastPathSegment(word);
+    try {
+        const gutsActive = domStroll('wordnik1', false, await earl.fetchDom(), [
+            [2, 'html'],
+            [3, 'body'], 
+            [3, 'div', { cls: 'word_page' }],
+            [1, 'div', { cls: 'content' }],
+            [7, 'div', { cls: 'module-row' }],
+            [1, 'div', { cls: 'module-2columnLeft' }],
+            [1, 'div', { id: 'define' }],
+            [3, 'div', { cls: 'guts' }],                // <div.guts.active>
+        ]);
+
+        const gutsTags = gutsActive.children.filter(e => e.type === 'tag').map(e => e.name);
+        console.log(`[ISAWORD/wordnik] ${gutsActive.children.length} kids, ${gutsTags.length} are tags`);
+
+        const kid1 = gutsActive.children[1];
+
+        // check whether the children that are tags are any number of pairs of <h3> and <ul>
+        if (gutsTags.every((e, i) => e === ['h3', 'ul'][i % 2]))
+            return true;
+        else if (gutsActive.children.length === 3 && kid1.type === 'tag' && kid1.name === 'p' && kid1.attribs['class'] === 'weak')
+            return false;
+    } catch (error) {
+        console.error(`[ISAWORD/wordnik]`, error);
     }
     return null;
 }
