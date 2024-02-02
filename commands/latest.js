@@ -9,10 +9,28 @@ import { callNodejs, callGimp, callXcode, callMame, callDart, callPhp } from './
 export const data = new SlashCommandBuilder()
     .setName('latest')
     .setDescription('Latest releases of various projects')
-        .addBooleanOption(option => option
-            .setName('sortbyage')
-            .setDescription('Sort by most recent first')
-            .setRequired(true));
+    .addStringOption(option => option
+        .setName('source-choice')
+        .setDescription('Source choice')
+        .setRequired(true)
+        .addChoices(
+            { name: 'GitHub Releases', value: 'githubreleases' },
+            { name: 'GitHub Tags', value: 'githubtags' },
+            { name: 'HTML', value: 'html' },
+            { name: 'JSON', value: 'json' },
+            { name: 'Wiki Dump', value: 'wikidump' },
+            { name: 'All', value: 'all' },
+            { name: 'All except GitHub Releases', value: 'all-but-githubreleases' },
+            { name: 'All except GitHub', value: 'all-but-github' },
+        ))
+    .addStringOption(option => option
+        .setName('sortby')
+        .setDescription('Sort by')
+        .setRequired(true)
+        .addChoices(
+            { name: 'Age', value: 'age' },
+            { name: 'Alphabetical', value: 'alphabetical' },
+        ));
 
 export const execute = latest;
 
@@ -40,10 +58,46 @@ async function latest(interaction) {
     try {
         let responses = [];
 
-        let sortByAge = interaction.options.getBoolean('sortbyage');
-        console.log(`[latest] sortByAge: ${sortByAge}`);
+        const sourceChoice = interaction.options.getString('source-choice');
+        const sortByAge = interaction.options.getString('sortby') === 'age';
+        console.log(`[latest] sources: ${sourceChoice}, sortBy: ${sortByAge}`);
 
-        const sourceNames = ['GitHub Releases', 'GitHub Tags', 'HTML', 'JSON'];
+        let [useGithubReleases, useGithubTags, useHtml, useJson, useWikiDump] = [false, false, false, false, false];
+        switch (sourceChoice) {
+            case 'githubreleases':
+                useGithubReleases = true;
+                break;
+            case 'githubtags':
+                useGithubTags = true;
+                break;
+            case 'html':
+                useHtml = true;
+                break;
+            case 'json':
+                useJson = true;
+                break;
+            case 'wikidump':
+                useWikiDump = true;
+                break;
+            case 'all':
+                [useGithubReleases, useGithubTags, useHtml, useJson, useWikiDump] = [true, true, true, true, true];
+                break;
+            case 'all-but-githubreleases':
+                [useGithubTags, useHtml, useJson, useWikiDump] = [true, true, true, true];
+                break;
+            case 'all-but-github':
+                [useHtml, useJson, useWikiDump] = [true, true, true];
+                break;
+        }
+
+        const sourceNames = [
+            useGithubReleases && 'GitHub Releases',
+            useGithubTags && 'GitHub Tags',
+            (useHtml || useWikiDump) && 'HTML',
+            useJson && 'JSON'
+        ].filter(Boolean);
+
+        console.log(`[latest] sources: ${sourceNames.join(', ')}`);
 
         async function updateReply(these, thisName) {
             console.log(`All ${thisName} have been fetched.`);
@@ -83,37 +137,49 @@ async function latest(interaction) {
             if (initialReplyLength !== reply.length)
                 console.log(`[latest] trimmed ${numRemoved} lines (${initialReplyLength - reply.length} chars) from end of reply`);
 
+            // empty updated replies are now possible due to the way we skip sources
+            // if (reply === '')
+            //     console.log(`[latest] empty reply, not updating.`);
+            // else
             await interaction.editReply(reply);
         }
 
-        const githubRelPromises = callGithubReleases(false)
-            .then(async arr => await updateReply(arr, 'GitHub Releases'));
+        const sourcePromises = [];
 
-        const githubTagPromises = callGithubTags(false)
-            .then(async arr => await updateReply(arr, 'GitHub Tags'));
+        if (useGithubReleases)
+            sourcePromises.push(callGithubReleases(false).then(async arr => await updateReply(arr, 'GitHub Releases')));
+
+        if (useGithubTags)
+            sourcePromises.push(callGithubTags(false).then(async arr => await updateReply(arr, 'GitHub Tags')));
         
-        const jsonPromises = Promise.all([
-            //callNodejs(),
-            callGimp(),
-            callXcode(),
-            //callMame(),
-            callDart(),
-            callPhp(),            
-        ]).then(async arr => await updateReply(arr, 'JSON'));
+        if (useJson) {
+            sourcePromises.push(Promise.all([
+                //callNodejs(),
+                callGimp(),
+                callXcode(),
+                //callMame(),
+                callDart(),
+                callPhp(),
+            ]).then(async arr => await updateReply(arr, 'JSON')));
+        }
 
-        const htmlPromises = Promise.all([
-            callGo(),
-            callRvm(),
-            callAS(),
-            callElixir(),
-            callRuby(),
-            callIdea(),
-            callWikiDump(), // actually HTML first then JSON
-            callSdlMame(),
-            callSublime(),
-        ]).then(async arr => await updateReply(arr, 'HTML'));
+        if (useHtml) {
+            sourcePromises.push(Promise.all([
+                callGo(),
+                callRvm(),
+                callAS(),
+                callElixir(),
+                callRuby(),
+                callIdea(),
+                callWikiDump(), // actually HTML first then JSON
+                callSdlMame(),
+                callSublime(),
+            ]).then(async arr => await updateReply(arr, 'HTML')));
+        } else if (useWikiDump) {
+            sourcePromises.push(callWikiDump().then(async arr => await updateReply(arr, 'HTML')));
+        }
 
-        await Promise.all([githubRelPromises, githubTagPromises, jsonPromises, htmlPromises]);
+        await Promise.all(sourcePromises);
     } catch (error) {
         console.error('[Latest]', error);
     }
