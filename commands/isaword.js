@@ -25,6 +25,7 @@ async function isaword(interaction) {
         ['Dictionary.com', dictCom, false],
         ['Longman', longman, false],
         ['Merriam-Webster', mw, false],
+        ['OED', oed, false],
         ['Oxford Learners', oxfordLearners, false],
         //['Scrabble', scrabble, false],
         ['Wordnet', wordNet, false],
@@ -440,6 +441,31 @@ async function wordnik(word) {
             return false;
     } catch (error) {
         console.error(`[ISAWORD/wordnik]`, error);
+    }
+    return null;
+}
+
+async function oed(word) {
+    // https://www.oed.com/autocomplete/dictionary/?q=WORD
+    const earl = new Earl('https://www.oed.com', '/autocomplete/dictionary/', {
+        q: word
+    });
+    try {
+        const data = await earl.fetchJson();
+        console.log(`[ISAWORD/oed] ${word} length: ${data.length}`);
+
+        return data.some(element => {
+            // print out any wrong assumptions
+            if (element.count > 12) console.log(`[ISAWORD/oed] ${word} count: ${element.count}`);
+            if (element.path !== null) console.log(`[ISAWORD/oed] ${word} path: ${element.path}`);
+            if (element.name !== element.label) console.log(`[ISAWORD/oed] ${word} name: ${element.name}, label: ${element.label}`);
+            // any other keys we didn't expect?
+            if (Object.keys(element).length !== 4) console.log(`[ISAWORD/oed] ${word} unexpected keys: ${Object.keys(element).join(', ')}`);
+            if (element.name === word) return true;
+            if (element.label === word) return true;
+        });
+    } catch (error) {
+        console.error(`[ISAWORD/oed]`, error);
     }
     return null;
 }
