@@ -162,9 +162,8 @@ async function getThisDumpsJson(wiki, jsonRelLink) {
 
     let text
     try {
-        //const jobs = (await wikidumpEarl.fetchJson()).jobs;
         text = await wikidumpEarl.fetchText();
-        const jobs = JSON.parse(text);
+        const jobs = JSON.parse(text).jobs;
         console.log(`wikidump ${wiki} JSON has been published`);
 
         const stuffs = {};
