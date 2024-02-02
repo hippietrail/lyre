@@ -1,3 +1,4 @@
+//@ts-nocheck
 export function ago(t) {
     const s = 1000;
     const m = s * 60;

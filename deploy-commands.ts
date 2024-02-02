@@ -13,32 +13,32 @@ const commands = [];
 const commandFiles = fs.readdirSync('./commands').filter((file) => file.endsWith('.js'));
 
 // Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
-for (const file of commandFiles) {
-  let i = 0; const c = [];
-  const command = await import(`./commands/${file}`); // Using dynamic import
-  let n = 1;
-  while (true) {
-    const [data, execute] = ['data', 'execute'].map(k => `${k}${n > 1 ? n : ''}`);
-    if (data in command && execute in command) {
-      ++i; c.push(command[data].name);
-      commands.push(command[data].toJSON());
-      n++;
-    } else if (data in command || execute in command) {
-      console.log(`[WARNING] The command ${file} is missing a required "${data}" or "${execute}" property.`);
-      break;
-    } else {
-      break;
-    }
-  }
-  // note how many commands in this file
-  console.log(`[INFO] Loaded ${i} commands from ${file}: ${c.join(', ')}`);
-}
-
-// Construct and prepare an instance of the REST module
-const rest = new REST().setToken(process.env.TOKEN);
-
-// and deploy your commands!
 (async () => {
+    for (const file of commandFiles) {
+    let i = 0; const c = [];
+    const command = await import(`./commands/${file}`); // Using dynamic import
+    let n = 1;
+    while (true) {
+      const [data, execute] = ['data', 'execute'].map(k => `${k}${n > 1 ? n : ''}`);
+      if (data in command && execute in command) {
+        ++i; c.push(command[data].name);
+        commands.push(command[data].toJSON());
+        n++;
+      } else if (data in command || execute in command) {
+        console.log(`[WARNING] The command ${file} is missing a required "${data}" or "${execute}" property.`);
+        break;
+      } else {
+        break;
+      }
+    }
+    // note how many commands in this file
+    console.log(`[INFO] Loaded ${i} commands from ${file}: ${c.join(', ')}`);
+  }
+
+  // Construct and prepare an instance of the REST module
+  const rest = new REST().setToken(process.env.TOKEN);
+
+  // and deploy your commands!
   try {
     console.log(`Started refreshing ${commands.length} application (/) commands.`);
 
