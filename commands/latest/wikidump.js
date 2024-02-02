@@ -36,28 +36,25 @@ export async function callWikiDump() {
                 // do different things depending on the status
                 let sdp = null;
                 switch (info.s) {
-                    case 'Dump in progress':
-                        // status class is 'in-progress'
-                        console.log(`[WikiDump] ${info.c} ${info.w}`);
+                    case 'in-progress':
+                        console.log(`[WikiDump] ${info.s} ${info.w}`);
                         sdp = await scrapeThisDumpsPage(info);
                         break;
 
-                    case 'Partial dump':
-                        // status class is 'partial-dump'
-                        console.log(`[WikiDump] ${info.c} ${info.w}`);
+                    case 'partial-dump':
+                        console.log(`[WikiDump] ${info.s} ${info.w}`);
                         sdp = await scrapeThisDumpsPage(info);
                         break;
 
-                    case 'Dump complete':
-                        // status class is 'done'
-                        console.log(`[WikiDump] ${info.c} ${info.w}`);
+                    case  'done':
+                        console.log(`[WikiDump] ${info.s} ${info.w}`);
                         sdp = await scrapeThisDumpsPage(info);
                         break;
 
                     default:
                         // unexpected status
                         // other known statuses classes are 'waiting' and 'skipped'
-                        console.log(`[WikiDump] ${info.c} (${info.s}) ${info.w}`);
+                        console.log(`[WikiDump] ${info.s} ${info.w}`);
                 }
 
                 // for the version we use the date in the form `yyyymmdd`
@@ -109,7 +106,7 @@ export async function callWikiDump() {
                 
                 if (!added) {
                     chosen.push({
-                        name: `${info.w} (${info.c})`,
+                        name: `${info.w} (${info.s})`,
                         ver,
                         link,
                         timestamp: new Date(info.d),
@@ -209,8 +206,7 @@ function getWikiDumpInfo(li) {
         return {
             w: kids[1].children[0].data,
             d: kids[0].data,
-            c: kids[3].attribs.class,
-            s: kids[3].children[0].data,
+            s: kids[3].attribs.class,
             l: kids[1].attribs.href,
         };
     } else {
@@ -220,8 +216,7 @@ function getWikiDumpInfo(li) {
             return {
                 w: matt[2],
                 d: matt[1],
-                c: kids[1].attribs.class,
-                s: kids[1].children[0].data,
+                s: kids[1].attribs.class,
                 l: null,
             }
         } else {
