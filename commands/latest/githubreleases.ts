@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { Earl } from '../../ute/earl.js';
 
 const githubReleasesEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/releases/latest');

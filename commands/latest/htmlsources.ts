@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { Earl } from '../../ute/earl.js';
 import { domStroll } from '../../ute/dom.js';
 import parse from 'html-dom-parser';

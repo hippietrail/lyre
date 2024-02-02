@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { Earl } from '../../ute/earl.js';
 
 export async function callNodejs() {

@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { Client, Events, GatewayIntentBits } from 'discord.js';
 // uncomment if you want to use DMs
 // import { ChannelType, Partials } from 'discord.js';

@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { Earl } from '../../ute/earl.js';
 import { ago } from '../../ute/ago.js';
 

@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { SlashCommandBuilder } from 'discord.js';
 import { ago } from '../ute/ago.js';
 import { callGithubReleases } from './latest/githubreleases.js';

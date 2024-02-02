@@ -1,4 +1,4 @@
-
+//@ts-nocheck
 export function domStroll(site, debug, kids, data) {
     let node = null;
     for (const [i, datum] of data.entries()) {

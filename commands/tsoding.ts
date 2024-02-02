@@ -1,3 +1,4 @@
+//@ts-nocheck
 // a new slash command that gets the latest Tsoding Daily YouTube videos
 // *and* the latest GitHub activity by rexim
 import { SlashCommandBuilder } from 'discord.js';

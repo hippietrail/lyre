@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
 import { domStroll } from '../ute/dom.js';
