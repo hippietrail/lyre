@@ -1,5 +1,6 @@
-//@ts-nocheck
 import { Client, Events, GatewayIntentBits } from 'discord.js';
+import { AutocompleteInteraction, CommandInteraction, Interaction } from "discord.js";
+import { ChannelType, MessageType } from 'discord.js';
 // uncomment if you want to use DMs
 // import { ChannelType, Partials } from 'discord.js';
 import { config } from 'dotenv';
@@ -50,10 +51,10 @@ const client = new Client({
 });
 
 function readyDiscord() {
-    console.log('☮️🤖 ' + client.user.tag);
+    console.log('☮️🤖 ' + client.user?.tag);
 }
 
-async function handleInteraction(interaction) {
+async function handleInteraction(interaction: Interaction) {
     if (interaction.isAutocomplete()) {
         await interactionAutocomplete(interaction);
     }
@@ -62,7 +63,7 @@ async function handleInteraction(interaction) {
     }
 }
 
-async function interactionCommand(interaction) {
+async function interactionCommand(interaction: CommandInteraction) {
     switch (interaction.commandName) {
         case 'wikt':
             await wikt.execute(interaction);
@@ -115,7 +116,7 @@ async function interactionCommand(interaction) {
     }
 }
 
-async function interactionAutocomplete(interaction) {
+async function interactionAutocomplete(interaction: AutocompleteInteraction) {
     switch (interaction.commandName) {
         case 'yt':
             await yt.autocomplete(interaction);
@@ -142,9 +143,7 @@ client.on(Events.Error, e => console.log(`[ERROR] ${JSON.stringify(e, null, 2)}`
 
 // when we receive a DM, including a private slash command
 client.on(Events.MessageCreate, m => {
-    const messageTypeMap = { 0: 'Default', 19: 'Reply', 20: 'ChatInputCommand' };
-
-    console.log(`[MSG] mt ${messageTypeMap[m.type] || `MessageType:${m.type}`}. mct ${m.channel.type}, dm? ${m.channel.type === ChannelType.DM}. mat ${m.author.tag}. mc ${m.content}`);
+    console.log(`[MSG] mt ${MessageType[m.type]}. mct ${m.channel.type}, dm? ${m.channel.type === ChannelType.DM}. mat ${m.author.tag}. mc ${m.content}`);
 
     // HIPP experiment looking for replies
     // won't do anything without the extra intents etc in comment up above
