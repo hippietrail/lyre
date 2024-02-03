@@ -6,7 +6,7 @@ import parse from 'html-dom-parser';
 // TODO add .fetch() that stores the redirected URL?
 
 export class Earl {
-    constructor(origin, optionalBasicPathname, optionalSearchParams) {
+    constructor(origin, optionalBasicPathname?: string, optionalSearchParams?: Record<string, string>) {
         this.basicPathname = optionalBasicPathname || '/';
 
         this.url = new URL(origin);
@@ -20,6 +20,9 @@ export class Earl {
     }
     setPathname(pathname) {
         this.url.pathname = pathname;
+    }
+    getPathname() {
+        return this.url.pathname;
     }
     setLastPathSegment(segment) {
         this.url.pathname = this.basicPathname + segment;
