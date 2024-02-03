@@ -1,7 +1,6 @@
-//@ts-nocheck
 // a new slash command that gets the latest Tsoding Daily YouTube videos
 // *and* the latest GitHub activity by rexim
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { GithubEarl, YoutubeVidsEarl } from '../ute/earl.js';
 import { ago } from '../ute/ago.js';
 import { config } from 'dotenv';
@@ -14,7 +13,24 @@ export const data = new SlashCommandBuilder()
 
 export const execute = tsoding;
 
-async function tsoding(interaction) {
+interface YtJsonData {
+    items: {
+        snippet: {
+            resourceId: { videoId: string; };
+            publishedAt: string;
+            title: string;
+        };
+    }[];
+}
+
+interface GhJsonData {
+    created_at: string;
+    type: string;
+    payload: { action: string };
+    repo: { name: string }
+}
+
+async function tsoding(interaction: ChatInputCommandInteraction) {
     const NUM_TO_FETCH = 10;
     await interaction.deferReply();
     try {
@@ -26,7 +42,10 @@ async function tsoding(interaction) {
         earlGH.setUserName('rexim');
         earlGH.setPerPage(NUM_TO_FETCH);
 
-        const [jsonYT, jsonGH] = await Promise.all([earlYT.fetchJson(), earlGH.fetchJson()]);
+        const [jsonYT, jsonGH] = await Promise.all([
+            earlYT.fetchJson() as Promise<YtJsonData>,
+            earlGH.fetchJson() as Promise<GhJsonData []>,
+        ]);
 
         const ytObArr = jsonYT.items.map(v => ({
             type: 'YouTube',
@@ -46,7 +65,7 @@ async function tsoding(interaction) {
             } [${e.repo.name}](<https://github.com/${e.repo.name}>)`,
         }))
 
-        const sorted = [...ytObArr, ...ghObArr].sort((a, b) => b.ts - a.ts);
+        const sorted = [...ytObArr, ...ghObArr].toSorted((a, b) => +b.ts - +a.ts);
 
         const now = new Date();
         const reply = sorted.slice(0, NUM_TO_FETCH).map(v => `${
@@ -54,7 +73,7 @@ async function tsoding(interaction) {
         }: ${
             v.info
         } - ${
-            ago(now - new Date(v.ts))
+            ago(now.getTime() - new Date(v.ts).getTime())
         }`).join('\n');
         await interaction.editReply({ content: reply });
     } catch (error) {

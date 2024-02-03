@@ -80,7 +80,7 @@ async function interactionCommand(interaction: CommandInteraction) {
             break;
 
         case 'github':
-            await github.execute(interaction);
+            await github.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'yt':
@@ -88,7 +88,7 @@ async function interactionCommand(interaction: CommandInteraction) {
             break;
 
         case 'tsoding':
-            await tsoding.execute(interaction);
+            await tsoding.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'etym':
