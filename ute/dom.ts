@@ -1,4 +1,14 @@
 //@ts-nocheck
+
+export interface DomNode {
+    type: string,
+    name?: string,
+    children?: DomNode[],
+    attribs?: {
+        class?: string,
+    },
+}
+
 export function domStroll(site, debug, kids, data) {
     let node = null;
     for (const [i, datum] of data.entries()) {

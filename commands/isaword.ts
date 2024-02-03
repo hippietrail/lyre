@@ -1,8 +1,6 @@
-//@ts-nocheck
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
-import { domStroll } from '../ute/dom.js';
-import parse from 'html-dom-parser';
+import { DomNode, domStroll } from '../ute/dom.js';
 
 export const data = new SlashCommandBuilder()
     .setName('isaword2')
@@ -11,13 +9,19 @@ export const data = new SlashCommandBuilder()
 
 export const execute = isaword;
 
-async function isaword(interaction) {
+async function isaword(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
 
     const word = interaction.options.getString('word');
 
+    interface Dict {
+        0: string;
+        1: (word: string) => Promise<boolean | null>;
+        2: boolean;
+    }
+
     // schema: [name: string, func: (word: string) => boolean | null, anyoneCanContribute: boolean]
-    const dictionaries = [
+    const dictionaries: Dict[] = [
         // dictionaries that are professionally maintained, alphabetical order
         ['American Heritage', ahd, false],
         ['Cambridge', cambridge, false],
@@ -37,7 +41,7 @@ async function isaword(interaction) {
         ['Urban Dictionary', urban, true],
     ];
 
-    const results = await Promise.all(dictionaries.map(d => d[1](word)));
+    const results = await Promise.all(dictionaries.map(d => d[1](word!)));
 
     try {
         const ins = dictionaries.filter((d, i) => results[i] === true).map((d, i) => d[0]);
@@ -74,7 +78,7 @@ async function isaword(interaction) {
 }
 
 // TODO sometimes returns 502 (bad gateway)
-async function cambridge(word) {
+async function cambridge(word: string) {
     // https://dictionary.cambridge.org/dictionary/english/WORD
     const earl = new Earl('https://dictionary.cambridge.org', '/dictionary/english/');
     earl.setLastPathSegment(word);
@@ -89,7 +93,7 @@ async function cambridge(word) {
     return null;
 }
 
-async function chambers(word) {
+async function chambers(word: string) {
     // https://chambers.co.uk/search/?query=WORD&title=21st
     const earl = new Earl('https://chambers.co.uk', '/search/', {
         query: word,
@@ -117,8 +121,14 @@ async function chambers(word) {
     return null;
 }
 
+interface WikiApiJson {
+    query: {
+        pages: [],
+    },
+}
+
 // we should probably use the new definition API since this returns true for stubs, redirects, common misspellings, foreign words
-async function wikt(word) {
+async function wikt(word: string) {
     // https://en.wiktionary.org/w/api.php?action=query&format=json&titles=WORD
     const wiktEarl = new Earl(`https://en.wiktionary.org`, '/w/api.php', {
         'action': 'query',
@@ -126,7 +136,7 @@ async function wikt(word) {
         'titles': word
     });
     try {
-        const data = await wiktEarl.fetchJson();
+        const data: WikiApiJson = await wiktEarl.fetchJson() as WikiApiJson;
 
         if (Object.keys(data.query.pages).length === 1) {
             const page = Object.values(data.query.pages)[0];
@@ -140,14 +150,18 @@ async function wikt(word) {
     return null;
 }
 
-async function urban(word) {
+interface UrbanDictApiJson {
+    list: [],
+};
+
+async function urban(word: string) {
     // https://api.urbandictionary.com/v0/define?term=WORD
     const earl = new Earl('https://api.urbandictionary.com', '/v0/define', {
         'term': word
     }
     );
     try {
-        const data = await earl.fetchJson();
+        const data: UrbanDictApiJson = await earl.fetchJson() as UrbanDictApiJson;
         console.log(`[ISAWORD/urban] ${word} status: ${data.list.length}`);
         if (data.list.length === 0) return false;
         else if (data.list.length > 0) return true;
@@ -157,7 +171,7 @@ async function urban(word) {
     return null;
 }
 
-async function ahd(word) {
+async function ahd(word: string) {
     // https://ahdictionary.com/word/search.html?q=WORD
     const earl = new Earl('https://ahdictionary.com', '/word/search.html', {
         'q': word
@@ -189,7 +203,7 @@ async function ahd(word) {
     return null;
 }
 
-async function oxfordLearners(word) {
+async function oxfordLearners(word: string) {
     // https://www.oxfordlearnersdictionaries.com/definition/english/WORD
     const earl = new Earl('https://www.oxfordlearnersdictionaries.com', '/definition/english/' + word);
     try {
@@ -232,17 +246,11 @@ async function oxfordLearners(word) {
 }
 
 // TODO Collins seem to be entirely built by JavaScript
-// async function collins(word) {
+// async function collins(word: string) {
 //     // https://www.collinsdictionary.com/dictionary/english/WORD
 //     const earl = new Earl('https://www.collinsdictionary.com', '/dictionary/english/');
 //     earl.setLastPathSegment(word);
 //     try {
-//         // html
-//         // body.definition
-//         // main
-//         // div#main_content
-//         // div.res_cell_center
-//         // div.dc res_cell_center_content
 //         const resCellCenterContent = domStroll('coll', true, await earl.fetchDom(), [
 //             [1, 'html'],
 //             [1, 'body', { cls: 'definition' }],
@@ -257,7 +265,7 @@ async function oxfordLearners(word) {
 //     return null;
 // }
 
-async function mw(word) {
+async function mw(word: string) {
     // https://www.merriam-webster.com/dictionary/WORD
     const earl = new Earl('https://www.merriam-webster.com', '/dictionary/');
     earl.setLastPathSegment(word);
@@ -267,7 +275,7 @@ async function mw(word) {
             [3, 'body'],
         ]);
 
-        const bodyClasses = body.attribs.class.trim().split(/ +/);
+        const bodyClasses: string[] = body.attribs.class.trim().split(/ +/);
         console.log(`[ISAWORD/mw] ${word} body class: ${bodyClasses.map(x => `'.${x}'`).join(', ')}`);
 
         if (bodyClasses.includes('definitions-page')) {
@@ -290,7 +298,7 @@ async function mw(word) {
     return null;
 }
 
-async function longman(word) {
+async function longman(word: string) {
     // https://www.ldoceonline.com/dictionary/definition
     const earl = new Earl('https://www.ldoceonline.com', '/dictionary/');
     earl.setLastPathSegment(word);
@@ -309,12 +317,12 @@ async function longman(word) {
     return null;
 }
 
-// async function scrabble(word) {
+// async function scrabble(word: string) {
 //     // https://scrabblechecker.collinsdictionary.com/check/api/index.php?key=WORD&isFriendly=1&nocache=1706498554793
 //     const earl = new Earl('https://scrabblechecker.collinsdictionary.com', '/check/api/index.php', {
 //         'key': word,
 //         'isFriendly': '1',
-//         'nocache': new Date().getTime()
+//         'nocache': new Date().getTime().toString()
 //     });
 //     try {
 //         const randomUserAgents = [
@@ -365,7 +373,7 @@ async function longman(word) {
 //     return null;
 // }
 
-async function dictCom(word) {
+async function dictCom(word: string) {
     // https://www.dictionary.com/browse/captsha
     const earl = new Earl('https://www.dictionary.com', '/browse/');
     earl.setLastPathSegment(word);
@@ -388,23 +396,23 @@ async function dictCom(word) {
     return null;
 }
 
-async function wordNet(word) {
+async function wordNet(word: string) {
     // http://wordnetweb.princeton.edu/perl/webwn?s=WORD
     const earl = new Earl('http://wordnetweb.princeton.edu', '/perl/webwn', {
         s: word,
     });
     try {
-        const body = domStroll('wordnet', false, await earl.fetchDom(), [
+        const body: DomNode = domStroll('wordnet', false, await earl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
         ]);
-        const tagNodes = body.children.filter(e => e.type === 'tag');
+        const tagNodes = body.children!.filter(e => e.type === 'tag');
         const tagNames = tagNodes.map(e => e.name);
 
         if (['form', 'form', 'h3'].every((e, i) => tagNames[i] === e))
             return false;
 
-        const classNames = tagNodes.map(e => e.attribs['class']);
+        const classNames = tagNodes.map(e => e.attribs!['class']);
         if (['div', 'div'].every((e, i) => tagNames[i] === e) && ['header', 'form'].every((e, i) => classNames[i] === e)) {
             return true;
         }
@@ -414,7 +422,7 @@ async function wordNet(word) {
     return null;
 }
 
-async function wordnik(word) {
+async function wordnik(word: string) {
     // https://www.wordnik.com/words/WORD
     const earl = new Earl('https://www.wordnik.com', '/words/');
     earl.setLastPathSegment(word);
@@ -430,13 +438,13 @@ async function wordnik(word) {
             [3, 'div', { cls: 'guts' }],                // <div.guts.active>
         ]);
 
-        const gutsTags = gutsActive.children.filter(e => e.type === 'tag').map(e => e.name);
+        const gutsTags: string[] = gutsActive.children.filter((e: DomNode) => e.type === 'tag').map((e: DomNode) => e.name);
         console.log(`[ISAWORD/wordnik] ${gutsActive.children.length} kids, ${gutsTags.length} are tags`);
 
         const kid1 = gutsActive.children[1];
 
         // check whether the children that are tags are any number of pairs of <h3> and <ul>
-        if (gutsTags.every((e, i) => e === ['h3', 'ul'][i % 2]))
+        if (gutsTags.every((e: string, i: number) => e === ['h3', 'ul'][i % 2]))
             return true;
         else if (gutsActive.children.length === 3 && kid1.type === 'tag' && kid1.name === 'p' && kid1.attribs['class'] === 'weak')
             return false;
@@ -446,13 +454,19 @@ async function wordnik(word) {
     return null;
 }
 
-async function oed(word) {
+interface OedJsonData {
+    count: number;
+    path: string;
+    name: string;
+    label: string;
+}
+async function oed(word: string) {
     // https://www.oed.com/autocomplete/dictionary/?q=WORD
     const earl = new Earl('https://www.oed.com', '/autocomplete/dictionary/', {
         q: word
     });
     try {
-        const data = await earl.fetchJson();
+        const data: OedJsonData[] = await earl.fetchJson() as OedJsonData[];
         console.log(`[ISAWORD/oed] ${word} length: ${data.length}`);
 
         return data.some(element => {
@@ -471,7 +485,7 @@ async function oed(word) {
     return null;
 }
 
-function humanFriendlyListFormatter(arrayOfStrings, conj = 'and') {
+function humanFriendlyListFormatter(arrayOfStrings: string[], conj: string = 'and') {
     if (arrayOfStrings.length === 0) return '';
     else if (arrayOfStrings.length === 1) return arrayOfStrings[0];
     else if (arrayOfStrings.length === 2) return `${arrayOfStrings[0]} ${conj} ${arrayOfStrings[1]}`;
