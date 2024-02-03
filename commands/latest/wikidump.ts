@@ -136,7 +136,7 @@ export async function callWikiDump() {
 
 async function scrapeThisDumpsPage(info: Info): Promise<DumpPageInfo | null> {
     try {
-        wikidumpEarl.setPathname(info.link);
+        wikidumpEarl.setPathname(info.link!);
         console.log(`[WikiDump/dump] ${wikidumpEarl.getUrlString()}`);
 
         // NOTE the url we got from the page has the form `wikidatawiki/20240120`
