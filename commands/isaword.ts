@@ -109,12 +109,12 @@ async function chambers(word: string) {
             [1, 'div', { id: 'search-results' }],
             [8, 'div', { id: 'fullsearchresults' }],
             [0, 'p', { cls: 'message' }],
-        ])
+        ])!;
 
-        console.log(`[ISAWORD/chambers] ${word} status: p.message has ${message.children.length} children`);
+        console.log(`[ISAWORD/chambers] ${word} status: p.message has ${message.children!.length} children`);
 
-        if (message.children.length === 1) return true;
-        else if (message.children.length === 3) return false;
+        if (message.children!.length === 1) return true;
+        else if (message.children!.length === 3) return false;
     } catch (error) {
         console.error(`[ISAWORD/chambers]`, error);
     }
@@ -183,19 +183,19 @@ async function ahd(word: string) {
             [3, 'div', { id: 'content' }],
             [2, 'div', { cls: 'container3' }],
             [1, 'div', { id: 'results' }],
-        ]);
+        ])!;
 
         // false:
         // [domStroll] ahd#5 #text
         // true:
         // [domStroll] ahd#5 <table> <hr> <span.copyright> #comment
         // [domStroll] ahd#5 <table> <hr> <span.copyright> #comment <table> <hr> <span.copyright> #comment
-        if (results.children.length === 1 && results.children[0].type === 'text') return false;
-        else if (results.children.length % 4 === 0 && results.children[0].type === 'tag' && results.children[0].name === 'table') return true;
+        if (results.children!.length === 1 && results.children![0].type === 'text') return false;
+        else if (results.children!.length % 4 === 0 && results.children![0].type === 'tag' && results.children![0].name === 'table') return true;
         else {
-            console.log(`[ISAWORD/ahd] ${word} div#results.children.length: ${results.children.length}`);
-            console.log(`[ISAWORD/ahd] ${word} div#results.children[0].type: ${results.children[0].type}`);
-            console.log(`[ISAWORD/ahd] ${word} div#results.children[0].name: ${results.children[0].name}`);
+            console.log(`[ISAWORD/ahd] ${word} div#results.children.length: ${results.children!.length}`);
+            console.log(`[ISAWORD/ahd] ${word} div#results.children[0].type: ${results.children![0].type}`);
+            console.log(`[ISAWORD/ahd] ${word} div#results.children[0].name: ${results.children![0].name}`);
         }
     } catch (error) {
         console.error(`[ISAWORD/ahd]`, error);
@@ -211,9 +211,9 @@ async function oxfordLearners(word: string) {
             [2, 'html'],
             [3, 'body'],
             [1, 'div', { id: 'ox-container' }],
-        ]);
+        ])!;
 
-        const xEnglish = domStroll('ox', false, oxContainer.children, [
+        const xEnglish = domStroll('ox', false, oxContainer.children!, [
             [5, 'div', { cls: 'xenglish', optional: true }],
         ]);
 
@@ -222,7 +222,7 @@ async function oxfordLearners(word: string) {
             return false;
         }
 
-        const webtop = domStroll('ox', false, xEnglish.children, [
+        const webtop = domStroll('ox', false, xEnglish.children!, [
             [3, 'div', { cls: 'responsive_row' }],
             [3, 'div', { cls: 'responsive_entry_center' }],
             [1, 'div', { cls: 'responsive_entry_center_wrap' }],
@@ -234,9 +234,9 @@ async function oxfordLearners(word: string) {
             [0, 'div', { cls: 'top-container' }],
             [0, 'div'], // id will be 'WORD_topg_N' }],
             [0, 'div', { cls: 'webtop' }],
-        ]);
+        ])!;
 
-        const [pid, pppid] = [webtop.parent.attribs.id, webtop.parent.parent.parent.attribs.id];
+        const [pid, pppid] = [webtop.parent.attribs!.id, webtop.parent.parent.parent.attribs!.id];
         console.log(`[ISAWORD/oxlearn] ${word} pid: '${pid}', pppid: '${pppid}'`);
         return true;
     } catch (error) {
@@ -273,14 +273,14 @@ async function mw(word: string) {
         const body = domStroll('mw', false, await earl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
-        ]);
+        ])!;
 
-        const bodyClasses: string[] = body.attribs.class.trim().split(/ +/);
+        const bodyClasses: string[] = body.attribs!.class!.trim().split(/ +/);
         console.log(`[ISAWORD/mw] ${word} body class: ${bodyClasses.map(x => `'.${x}'`).join(', ')}`);
 
         if (bodyClasses.includes('definitions-page')) {
             // check for partial matches, they lack the 'redesign-container' div
-            const maybeRedesignContainer = domStroll('mw', false, body.children, [
+            const maybeRedesignContainer = domStroll('mw', false, body.children!, [
                 [17, 'div', { cls: 'outer-container' }],
                 [1, 'div', { cls: 'main-container' }],
                 [3, 'div', { cls: 'redesign-container', optional: true }],
@@ -384,11 +384,11 @@ async function dictCom(word: string) {
             [1, 'div', { id: 'root' }],
             [0, 'div', { cls: 'dictionary-site' }],
             [1, 'main'],
-        ]);
+        ])!;
 
         if ('children' in main) {
-            if (main.children.length === 3) return false;
-            else if (main.children.length === 4) return true;
+            if (main.children!.length === 3) return false;
+            else if (main.children!.length === 4) return true;
         }        
     } catch (error) {
         console.error(`[ISAWORD/dict.com]`, error);
@@ -402,10 +402,10 @@ async function wordNet(word: string) {
         s: word,
     });
     try {
-        const body: DomNode = domStroll('wordnet', false, await earl.fetchDom(), [
+        const body = domStroll('wordnet', false, await earl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
-        ]);
+        ])!;
         const tagNodes = body.children!.filter(e => e.type === 'tag');
         const tagNames = tagNodes.map(e => e.name);
 
@@ -436,17 +436,17 @@ async function wordnik(word: string) {
             [1, 'div', { cls: 'module-2columnLeft' }],
             [1, 'div', { id: 'define' }],
             [3, 'div', { cls: 'guts' }],                // <div.guts.active>
-        ]);
+        ])!;
 
-        const gutsTags: string[] = gutsActive.children.filter((e: DomNode) => e.type === 'tag').map((e: DomNode) => e.name);
-        console.log(`[ISAWORD/wordnik] ${gutsActive.children.length} kids, ${gutsTags.length} are tags`);
+        const gutsTags: string[] = gutsActive.children!.filter((e: DomNode) => e.type === 'tag').map((e: DomNode) => e.name!);
+        console.log(`[ISAWORD/wordnik] ${gutsActive.children!.length} kids, ${gutsTags.length} are tags`);
 
-        const kid1 = gutsActive.children[1];
+        const kid1 = gutsActive.children![1];
 
         // check whether the children that are tags are any number of pairs of <h3> and <ul>
         if (gutsTags.every((e: string, i: number) => e === ['h3', 'ul'][i % 2]))
             return true;
-        else if (gutsActive.children.length === 3 && kid1.type === 'tag' && kid1.name === 'p' && kid1.attribs['class'] === 'weak')
+        else if (gutsActive.children!.length === 3 && kid1.type === 'tag' && kid1.name === 'p' && kid1.attribs!['class'] === 'weak')
             return false;
     } catch (error) {
         console.error(`[ISAWORD/wordnik]`, error);

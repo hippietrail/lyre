@@ -1,4 +1,5 @@
 import { config } from 'dotenv';
+import type { DomNode } from './dom.js';
 import parse from 'html-dom-parser';
 
 // TODO a way to handle redirects?
@@ -43,7 +44,7 @@ export class Earl {
         return (await fetch(this.url)).json();
     }
     async fetchDom() {
-        return parse(await this.fetchText());
+        return parse(await this.fetchText()) as DomNode[];
     }
     // sometimes we want the HTML (scraping, debugging when JSON is broken)
     async fetchText() {

@@ -1,5 +1,5 @@
 import { Earl } from '../../ute/earl.js';
-import { domStroll } from '../../ute/dom.js';
+import { domStroll, DomNode } from '../../ute/dom.js';
 import parse from 'html-dom-parser';
 
 const wikidumpEarl = new Earl('https://dumps.wikimedia.org');
@@ -33,12 +33,12 @@ export async function callWikiDump() {
 
         const chosen = [];
 
-        for (const [i, li] of ul.children.entries()) {
+        for (const [i, li] of ul!.children!.entries()) {
             if (i % 2 === 0) continue;
             // a ul instead of a li is a continuation of the previous li
             if (li.name === 'ul') continue;
 
-            const info = getWikiDumpInfo(li);
+            const info = getWikiDumpInfo(li!);
 
             // NOTE `info.l` contains a relative link that if followed
             // NOTE will redirect to add a slash to the end
@@ -145,15 +145,15 @@ async function scrapeThisDumpsPage(info: Info): Promise<DumpPageInfo | null> {
         const body = domStroll('Wikidump.2', false, await wikidumpEarl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
-        ])
+        ])!;
 
-        const jsonA = domStroll('Wikidump.3', false, body.children, [
+        const jsonA = domStroll('Wikidump.3', false, body.children!, [
             [15, 'p'],
             [1, 'a'],
-        ]);
+        ])!;
 
         // TODO this link is relative to the *redirected* URL
-        return await getThisDumpsJson(info.wiki, jsonA.attribs.href);
+        return await getThisDumpsJson(info.wiki, jsonA.attribs!.href!);
     } catch (error) {
         console.error(`[WikiDump]`, error);
     }
@@ -188,22 +188,22 @@ async function getThisDumpsJson(wiki: string, jsonRelLink: string): Promise<Dump
 
         return archives;
     } catch (error) {
-        const dom = parse(text);
+        const dom = parse(text) as DomNode[];
         const [h1, center] = [
             domStroll('Wikidump.4', false, dom, [
                 [0, 'html'],
                 [3, 'body'],
                 [1, 'center'],
                 [0, 'h1'],
-            ]),
+            ])!,
             domStroll('Wikidump.5', false, dom, [
                 [0, 'html'],
                 [3, 'body'],
                 [4, 'center'],
-            ]),
+            ])!,
         ];
 
-        if (h1.children[0].data === '404 Not Found' && center.children[0].data === 'nginx/1.18.0') {
+        if (h1.children![0].data === '404 Not Found' && center.children![0].data === 'nginx/1.18.0') {
             console.log(`wikidump ${wiki} JSON not yet published - 404 Not Found html in expected place`);
         } else {
             console.error(`[WikiDump/json] ${wiki}`, error);
@@ -218,23 +218,23 @@ interface ListItem {
 
 // NOTE `l` will contain a relative link that looks like a file, no trailing slash
 // NOTE but that link will redirect to one like a dir, with a trailing slash
-function getWikiDumpInfo(li: ListItem): Info | null {
-    const kids = li.children;
+function getWikiDumpInfo(li: DomNode): Info | null {
+    const kids = li.children!;
     if (kids.length === 4) {
         return {
-            wiki: kids[1].children[0].data,
-            date: kids[0].data,
-            stat: kids[3].attribs.class,
-            link: kids[1].attribs.href,
+            wiki: kids[1].children![0].data!,
+            date: kids[0].data!,
+            stat: kids[3].attribs!.class!,
+            link: kids[1].attribs!.href,
         };
     } else {
         const dateAndName = kids[0].data;
         if (dateAndName) {
             const matt = dateAndName.match(/^(\d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d) (.*) \(private data\): $/);
-            return {
+            if (matt) return {
                 wiki: matt[2],
                 date: matt[1],
-                stat: kids[1].attribs.class,
+                stat: kids[1].attribs!.class!,
             }
         } else {
             console.log(`[WikiDump] couldn't parse info from '${kids[0].data}'`);
