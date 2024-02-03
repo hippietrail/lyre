@@ -108,7 +108,7 @@ async function interactionCommand(interaction: CommandInteraction) {
             break;
 
         case 'ddg':
-            await ddg.execute(interaction);
+            await ddg.execute(interaction as ChatInputCommandInteraction);
             break;
 
         default:
