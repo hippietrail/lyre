@@ -92,7 +92,7 @@ async function interactionCommand(interaction: CommandInteraction) {
             break;
 
         case 'etym':
-            await etym.execute(interaction);
+            await etym.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'latest':
