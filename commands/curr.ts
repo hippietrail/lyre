@@ -1,20 +1,38 @@
-//@ts-nocheck
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
 import { config } from 'dotenv';
 
 config();
 
+if (!process.env.APILAYER_TOKEN) {
+    throw new Error(`[Curr] missing APILAYER_TOKEN`);
+}
+
 const currEarl = new Earl('https://api.apilayer.com', '/fixer/latest', {
     apikey: process.env.APILAYER_TOKEN,
 });
 
-let globalCachedApilayerData = null;
+interface ApiLayerData {
+    success: boolean;
+    timestamp: number;
+    base: string;
+    date: string;
+    rates: Record<string, number>;
+}
+
+let globalCachedApilayerData: ApiLayerData | null = null;
 let globalFormattedDate = '';
 
 // a map of ISO currency codes to various information
 // TODO what about narrow vs wide won and yuan/yen symbols?
-const globalCodeToInfo = {
+interface CurrencyCodeInfo {
+    sym: string;
+    defAmt: number;
+    name: string;
+    isAmbiguous?: boolean;
+}
+
+const globalCodeToInfo: Record<string, CurrencyCodeInfo> = {
     'AUD': { sym: '$', defAmt: 1, name: 'Aussie dollar' },          // TODO narrow/wide symbol and variants? 💲$﹩＄
     'BTC': { sym: '₿', defAmt: 1, name: 'Bitcoin' },
     'CAD': { sym: '$', defAmt: 1, name: 'Canadian dollar' },        // TODO narrow/wide symbol and variants? 💲$﹩＄
@@ -40,8 +58,13 @@ const globalCodeToInfo = {
     'VND': { sym: '₫', defAmt: 10_000, name: 'Vietnamese dong' },
 }
 
+interface CurrencySymInfo {
+    iso: string;
+    isAmbiguous?: boolean;
+}
+
 // a map of currency symbols to ISO currency codes
-const globalSymToInfo = {
+const globalSymToInfo: Record<string, CurrencySymInfo> = {
     // non-alphabetic
     '$': { iso: 'AUD', isAmbiguous: true }, // symbol also used by: USD, CAD, MXN, NZD, SGD, TWD
     '₿': { iso: 'BTC', isAmbiguous: false},
@@ -65,10 +88,12 @@ const globalSymToInfo = {
 
 // could be configurable via .env but per-user would be better...
 const get1stCurrency = () => 'AUD';
-const get2ndCurrency = cur1 => cur1 === 'AUD' ? 'THB' : 'AUD';
+const get2ndCurrency = (cur1: string) => cur1 === 'AUD' ? 'THB' : 'AUD';
 
 class Token {
-    constructor(value, isNumber = false) {
+    value: string;
+    isNum: boolean;
+    constructor(value: string, isNumber = false) {
         this.value = value;
         this.isNum = isNumber;
     }
@@ -78,7 +103,7 @@ class Token {
 
     // checks if this token is actually a valid ISO currency code supported by apilayer
     // TODO isIsoCode might need to fetch the apilayer exchange rate data
-    isSupportedCode = () => globalCachedApilayerData.rates[this.value.toUpperCase()] !== undefined;
+    isSupportedCode = () => globalCachedApilayerData?.rates[this.value.toUpperCase()] !== undefined;
     
     // checks if this token is one of our hard-coded currency symbols
     isCurrSym = () => globalSymToInfo[this.value.toUpperCase()] !== undefined;
@@ -114,7 +139,7 @@ class Token {
     }
 }
 
-function getCodeInfoForSym(sym) {
+function getCodeInfoForSym(sym: string) {
     const entry = globalSymToInfo[sym];
     if (entry) {
         if (typeof entry === 'object') {
@@ -126,7 +151,7 @@ function getCodeInfoForSym(sym) {
     return null;
 }
 
-function getDefaultCodeForSym(sym) {
+function getDefaultCodeForSym(sym: string) {
     const entry = globalSymToInfo[sym];
     if (entry) {
         if (typeof entry === 'object') {
@@ -146,11 +171,11 @@ function getDefaultCodeForSym(sym) {
  * @param {boolean} isDataStale - Returned from a prior call to needToRefreshApiLayerData().
  * @return {Object} The apilayer data.
  */
-async function getApilayerData(isDataStale) {
+async function getApilayerData(isDataStale: boolean) {
     if (isDataStale) {
         try {
             console.log('Fetching apilayer data...');
-            globalCachedApilayerData = await currEarl.fetchJsonWithError();
+            globalCachedApilayerData = await currEarl.fetchJsonWithError() as ApiLayerData;
             console.log('Got apilayer data.');
             //console.log(`Got apilayer data:\n  ${Object.keys(globalCachedApilayerData)}\n  ${Object.keys(globalCachedApilayerData.rates)}`);
             globalFormattedDate = (new Date(globalCachedApilayerData.timestamp * 1000)).toLocaleString();
@@ -192,7 +217,7 @@ export const data = new SlashCommandBuilder()
 export const execute = curr;
 
 // Converts `amount` from `cur1` to `cur2`
-function calculateCur1ToCur2Result(apilayerData, cur1, cur2, amount) {
+function calculateCur1ToCur2Result(apilayerData: ApiLayerData, cur1: string, cur2: string, amount: number) {
     const cur1Amount = amount * (apilayerData.rates[cur2] / apilayerData.rates[cur1]);
     return `${
         (+amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -203,7 +228,7 @@ function calculateCur1ToCur2Result(apilayerData, cur1, cur2, amount) {
 
 // Converts `amount1` from `cur1` to `cur2` and `amount2` from `cur2` to `cur1`
 // Useful for getting two-way exchange rates
-function calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2, amount1, amount2) {
+function calculateDefaultCur1ToCur2Results(apilayerData: ApiLayerData, cur1: string, cur2: string, amount1: number, amount2: number) {
     //console.log(`[HIPP] calculateDefaultCur1ToCur2Results: ${cur1}, ${cur2}, ${amount1}, ${amount2}`);
     return `${
         calculateCur1ToCur2Result(apilayerData, cur1, cur2, amount1)
@@ -220,14 +245,14 @@ function calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2, amount1, am
  * @param {string} reply - The reply message to be sent or edited.
  * @return {Promise<void>} - A promise that resolves when the reply or edit operation is complete.
  */
-async function replyOrEdit(interaction, isEdit, reply) {
+async function replyOrEdit(interaction: ChatInputCommandInteraction, isEdit: boolean, reply: string) {
     console.log(`[HIPP] replyOrEdit: ${isEdit ? 'edit' : 'reply'}: ${reply}`);
     await (isEdit ? interaction.editReply(reply) : interaction.reply(reply));
 }
 
 // Currency converter
 // This does different things depending on its parameters
-async function curr(interaction) {
+async function curr(interaction: ChatInputCommandInteraction) {
     const needDeferEdit = needToRefreshApiLayerData();
     console.log(`[HIPP] curr: ${needDeferEdit ? 'edit' : 'reply'}`);
     if (needDeferEdit) await interaction.deferReply();
@@ -242,7 +267,18 @@ async function curr(interaction) {
             return;
         }
 
-        const parsley = [
+        interface CurrencyFunc {
+            (apilayerData: ApiLayerData, match: string[]): string;
+        }
+
+        interface Parsley {
+            0: RegExp;
+            1: number;
+            2: CurrencyFunc;
+            [Symbol.iterator](): IterableIterator<RegExp | number | CurrencyFunc>;
+        }
+
+        const parsley: Parsley[] = [
             [/^(.*?)((?:[0-9]+)(?:\.[0-9][0-9])?)(.*?)$/, 3, currAmountWithCodeAndOrSym],
             [/^([A-Za-z]{3})\s?([A-Za-z]{3})$/, 2, currTwoCodes],
             [/^([A-Za-z]{3})$/, 1, currOneCode]
@@ -252,7 +288,7 @@ async function curr(interaction) {
         for (const [reg, num, fun] of parsley) {
             const match = freeform.match(reg);
             if (match && match.length === num + 1) {
-                await replyOrEdit(interaction, needDeferEdit, fun(apilayerData, match));
+                await replyOrEdit(interaction, needDeferEdit, fun(apilayerData!, match));
                 matched = true;
                 break;
             }
@@ -267,7 +303,7 @@ async function curr(interaction) {
     }
 }
 
-function currOneCode(apilayerData, matches) {
+function currOneCode(apilayerData: ApiLayerData, matches: string[]) {
     const cur1 = matches[1].toUpperCase();
     const cur2 = get2ndCurrency(cur1);
     const results = calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2,
@@ -275,7 +311,7 @@ function currOneCode(apilayerData, matches) {
     return results;
 }
 
-function currTwoCodes(apilayerData, matches) {
+function currTwoCodes(apilayerData: ApiLayerData, matches: string[]) {
     const cur1 = matches[1].toUpperCase();
     const cur2 = matches[2].toUpperCase();
     const results = calculateDefaultCur1ToCur2Results(apilayerData, cur1, cur2,
@@ -283,7 +319,7 @@ function currTwoCodes(apilayerData, matches) {
     return results;
 }
 
-function currAmountWithCodeAndOrSym(apilayerData, matches) {
+function currAmountWithCodeAndOrSym(apilayerData : ApiLayerData, matches: string[]) {
     console.log(`[HIPP] amountWithCodeAndOrSym: ${matches[1]}, ${matches[2]}, ${matches[3]}`);
     const pre = matches[1].trim(); // Text before the number
     const amt = matches[2].trim(); // The actual number
@@ -302,9 +338,9 @@ function currAmountWithCodeAndOrSym(apilayerData, matches) {
         const amount = toks[0].isNumber() ? toks[0].value : toks[1].value;
         const symOrCode = toks[0].isNumber() ? toks[1] : toks[0];
         if (symOrCode.isCurrSym()) {
-            return currSymOnly(apilayerData, amount, symOrCode);
+            return currSymOnly(apilayerData, +amount, symOrCode);
         } else if (symOrCode.isMaybeCode()) {
-            return currCodeOnly(apilayerData, amount, symOrCode);
+            return currCodeOnly(apilayerData, +amount, symOrCode);
         } else {
             // TODO stuff like "100 JPY to LAK" ends up here expecting "JPY to LAK" to be either a code or a symbol...
             console.log(`[HIPP] ${symOrCode.value} is neither a symbol nor a code.`);
@@ -335,7 +371,7 @@ function currAmountWithCodeAndOrSym(apilayerData, matches) {
     }
 }
 
-function currThreeOrMoreTokens(apilayerData, toks) {
+function currThreeOrMoreTokens(apilayerData: ApiLayerData, toks: Token[]) {
     console.log(`[3TOKS] ${toks.map(t => `${t.value} [${t.getType()}]`).join(', ')}`);
     const types = toks.map(t => t.getType());
     // look for any combination of A followed by B where
@@ -372,13 +408,13 @@ function currThreeOrMoreTokens(apilayerData, toks) {
     return 'looks like more than 3 tokens actually. coming soon...';
 }
 
-function currSymAndCode(apilayerData, toks) {
+function currSymAndCode(apilayerData: ApiLayerData, toks: Token[]) {
     const sym = toks[0].isCurrSym() ? toks[0].value : toks[2].value;
     const code = (toks[0].isCurrSym() ? toks[2].value : toks[0].value).toUpperCase();
     const symForCode = globalCodeToInfo[code].sym;
     if (sym === symForCode) {
         const code2 = get2ndCurrency(code);
-        const result = calculateCur1ToCur2Result(apilayerData, code, code2, toks[1].value);
+        const result = calculateCur1ToCur2Result(apilayerData, code, code2, +toks[1].value);
         return `${result} (as of ${globalFormattedDate})`;
     } else {
         var reply = `Umm ${code} is ${symForCode}, not ${sym}, which is ${getDefaultCodeForSym(sym)}`;
@@ -392,7 +428,7 @@ function currSymAndCode(apilayerData, toks) {
 
 // like currSymAndCode but only has three-letter code so doesn't have to check if it matches the currency symbol
 // but does have to consider whether it's a code supported by apilayer
-function currCodeOnly(apilayerData, amount, codeTok) {
+function currCodeOnly(apilayerData: ApiLayerData, amount: number, codeTok: Token) {
     const code = codeTok.value.toUpperCase();
     if (!(code in apilayerData.rates)) {
         return `${code} isn't a known currency code.`;
@@ -404,9 +440,9 @@ function currCodeOnly(apilayerData, amount, codeTok) {
 
 // like currSymAndCode but only has currency symbol so doesn't have to check if it matches the ISO currency code
 // but does have to consider whether the symbol is ambiguous
-function currSymOnly(apilayerData, amount, symTok) {
+function currSymOnly(apilayerData: ApiLayerData, amount: number, symTok: Token) {
     const sym = symTok.value.toUpperCase();
-    const code = getCodeInfoForSym(sym).iso;
+    const code = getCodeInfoForSym(sym)!.iso;
     const code2 = get2ndCurrency(code);
     const result = calculateCur1ToCur2Result(apilayerData, code, code2, amount);
     const reply = [result];
