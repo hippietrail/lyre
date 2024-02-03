@@ -66,13 +66,13 @@ async function handleInteraction(interaction: Interaction) {
 async function interactionCommand(interaction: CommandInteraction) {
     switch (interaction.commandName) {
         case 'wikt':
-            await wikt.execute(interaction);
+            await wikt.execute(interaction as ChatInputCommandInteraction);
             break;
         case 'isaword':
-            await wikt.execute2(interaction);
+            await wikt.execute2(interaction as ChatInputCommandInteraction);
             break;
         case 'define':
-            await wikt.execute3(interaction);
+            await wikt.execute3(interaction as ChatInputCommandInteraction);
             break;
 
         case 'curr':
