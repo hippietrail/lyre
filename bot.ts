@@ -100,7 +100,7 @@ async function interactionCommand(interaction: CommandInteraction) {
             break;
 
         case 'thai':
-            await thai.execute(interaction);
+            await thai.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'isaword2':
