@@ -1,5 +1,5 @@
 import { Client, Events, GatewayIntentBits } from 'discord.js';
-import { AutocompleteInteraction, CommandInteraction, Interaction } from "discord.js";
+import { AutocompleteInteraction, ChatInputCommandInteraction, CommandInteraction, Interaction } from "discord.js";
 import { ChannelType, MessageType } from 'discord.js';
 // uncomment if you want to use DMs
 // import { ChannelType, Partials } from 'discord.js';
@@ -84,7 +84,7 @@ async function interactionCommand(interaction: CommandInteraction) {
             break;
 
         case 'yt':
-            await yt.execute(interaction);
+            await yt.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'tsoding':
