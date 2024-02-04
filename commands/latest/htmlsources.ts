@@ -1,10 +1,9 @@
-//@ts-nocheck
 import { Earl } from '../../ute/earl.js';
-import { domStroll } from '../../ute/dom.js';
+import { domStroll, DomNode } from '../../ute/dom.js';
 import parse from 'html-dom-parser';
 
 export async function callGo() {
-    const verCmp = (a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+    const verCmp = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 
     const goEarl = new Earl('https://go.dev', '/doc/devel/release');
     try {
@@ -13,15 +12,15 @@ export async function callGo() {
             [3, 'body', { cls: 'Site' }],
             [9, 'main', { id: 'main-content' }],
             [1, 'article', { cls: 'Doc' }],
-        ]);
+        ])!;
 
-        const paras = article.children.filter(e => e.type === 'tag' && e.name === 'p');
+        const paras = article.children!.filter(e => e.type === 'tag' && e.name === 'p');
 
-        let biggestVer = null;
-        let dateOfBiggestVer = null;
+        let biggestVer: string | null = null;
+        let dateOfBiggestVer: string | null = null;
 
         for (const para of paras) {
-            const mat = para.children[0].data.trim().match(/^go(\d+(?:\.\d+)*)\s+\(released (\d+-\d+-\d+)\)/m);
+            const mat = para.children![0].data!.trim().match(/^go(\d+(?:\.\d+)*)\s+\(released (\d+-\d+-\d+)\)/m);
             if (mat && (biggestVer === null || verCmp(mat[1], biggestVer) > 0)) {
                 biggestVer = mat[1];
                 dateOfBiggestVer = mat[2];
@@ -33,7 +32,7 @@ export async function callGo() {
                 name: 'Go',
                 ver: biggestVer,
                 link: `https://go.dev/doc/devel/release#go${biggestVer}`,
-                timestamp: new Date(dateOfBiggestVer),
+                timestamp: new Date(dateOfBiggestVer!),
                 src: 'go.dev',
             }];
         }
@@ -51,12 +50,12 @@ export async function callRvm() {
             [1, 'body'],
             [2, 'div', { cls: 'mainContent' }],
             [3, 'article', { cls: 'content' }],
-        ]);
+        ])!;
 
-        const h2s = article.children.filter(e => e.type === 'tag' && e.name === 'h2');
+        const h2s = article.children!.filter(e => e.type === 'tag' && e.name === 'h2');
 
         for (const h2 of h2s) {
-            const mat = h2.children[0]?.data?.trim().match(/^RetroVM v(\d+(?:\.\d+)*)\s+\((\d+\/\d+\/\d+)\)/m);
+            const mat = h2.children![0]?.data?.trim().match(/^RetroVM v(\d+(?:\.\d+)*)\s+\((\d+\/\d+\/\d+)\)/m);
             if (mat) {
                 const date = mat[2]?.split('/')?.reverse()?.join('-');
 
@@ -92,45 +91,45 @@ export async function callAS() {
            [3, 'div', { cls: 'col-main' }],
            [3, 'div', { id: 'main' }],
            [0, 'div', { id: 'Blog1' }],
-        ]);
+        ])!;
 
-        const posts = blog1.children.filter(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('post'));
+        const posts = blog1.children!.filter(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('post'));
 
         const chosenPostPerChannel = new Map();
 
         for (const post of posts) {
-            const linkAnchor = domStroll('AS2b', false, post.children, [
+            const linkAnchor = domStroll('AS2b', false, post.children!, [
                 [1, 'h2', { cls: 'title' }],
                 [1, 'a'],
-            ]);
+            ])!;
 
-            const link = linkAnchor.attribs.href;
+            const link = linkAnchor.attribs!.href;
 
-            const publishDate = domStroll('AS2c', false, post.children, [
+            const publishDate = domStroll('AS2c', false, post.children!, [
                 [3, 'div', { cls: 'post-header' }],
                 [1, 'div', { cls: 'published' }],
                 [1, 'span', { cls: 'publishdate' }],
-            ]);
+            ])!;
 
-            const dmat = publishDate.children[0].data.trim().match(/(\w+), (\w+) (\d+), (\d+)/);
+            const dmat = publishDate.children![0].data!.trim().match(/(\w+), (\w+) (\d+), (\d+)/);
 
             const timestamp = dmat ? new Date(`${dmat[2]} ${dmat[3]}, ${dmat[4]}`) : null;
 
-            const postContent = domStroll('AS2d', false, post.children, [
+            const postContent = domStroll('AS2d', false, post.children!, [
                 [5, 'div', { cls: 'post-body' }],
                 [1, 'div', { cls: 'post-content' }],
-            ]);
+            ])!;
 
-            const script = postContent.children[1];
+            const script = postContent.children![1];
 
-            if (script && script.children[0]) {
-                const scriptDom = parse(script.children[0].data);
+            if (script && script.children![0]) {
+                const scriptDom = parse(script.children![0].data!) as DomNode[];
 
                 const para = domStroll('AS2e', false, scriptDom, [
                     [1, 'p'],
-                ]);
+                ])!;
 
-                const releaseString = para.children[0].data.trim();
+                const releaseString = para.children![0].data!.trim();
 
                 const mack = releaseString.match(/^Android Studio (\w+) \| (\d\d\d\d\.\d\.\d) (?:(\w+) (\d+) )?is now available in the (\w+) channel\.$/);
                 if (mack) {
@@ -146,7 +145,7 @@ export async function callAS() {
                         });
                     }
                 } else {
-                    console.log(`[AS] couldn't parse title/codename/version/channel from '${codenameVerChan}'`);
+                    console.log(`[AS] couldn't parse title/codename/version/channel from '${releaseString}'`);
                 }
             }
         }
@@ -177,36 +176,36 @@ export async function callElixir() {
             [1, 'div', { cls: 'hcat' }],
             [3, 'ul'],
             [7, 'li'],
-        ]);
+        ])!;
 
-        domStroll('Elixir2', false, releasesLI.children, [
+        domStroll('Elixir2', false, releasesLI.children!, [
             [1, 'h5', { id: 'Releases' }],
         ]);
 
-        const releasesUL = domStroll('Elixir3', false, releasesLI.children, [
+        const releasesUL = domStroll('Elixir3', false, releasesLI.children!, [
             [3, 'ul']
-        ]);
+        ])!;
 
-        const releaseLIs = releasesUL.children.filter(e => e.type === 'tag' && e.name === 'li');
+        const releaseLIs = releasesUL.children!.filter(e => e.type === 'tag' && e.name === 'li');
 
         for (const rli of releaseLIs) {
-            const a = domStroll('Elixir4', false, rli.children, [
+            const a = domStroll('Elixir4', false, rli.children!, [
                 [0, 'a']
-            ]);
+            ])!;
 
-            const byline = domStroll('Elixir5', false, rli.children, [
+            const byline = domStroll('Elixir5', false, rli.children!, [
                 [2, 'span', { cls: 'byline' }],
-            ]);
+            ])!;
 
             // raw version text is like: `Elixir v1.13 released`
             // but also possible: `Elixir v0.13.0 released, hex.pm and ElixirConf announced`
-            const version = a.children[0].data.match(/^Elixir (v\d+\.\d+) released\b/)[1];
+            const version = a.children![0].data!.match(/^Elixir (v\d+\.\d+) released\b/)![1];
 
             return [{
                 name: 'Elixir',
                 ver: version,
-                link: `${elixirEarl.getOrigin()}${a.attribs.href}`,
-                timestamp: new Date(byline.children[0].data),
+                link: `${elixirEarl.getOrigin()}${a.attribs!.href}`,
+                timestamp: new Date(byline.children![0].data!),
                 src: 'elixir-lang.org',
             }];
         }
@@ -229,17 +228,19 @@ export async function callRuby() {
             [1, 'div', { id: 'content-wrapper' }],
             [3, 'div', { id: 'content' }],
             [9, 'table', { cls: 'release-list' }],
-        ]);
+        ])!;
 
-        const releases = [];
+        type Release = [number, number, string, string, string];
 
-        relList.children.forEach(ch => {
-            if (ch.type === 'tag' && ch.name === 'tr' && ch.children.filter((_c, i) => i % 2).every(c => c.type === 'tag' && c.name === 'td')) {
-                const [v, d, , l] = ch.children.filter((_c, i) => i % 2);
+        const releases: Release[] = [];
 
-                const rawVer = v.children[0].data;
-                const rawDate = d.children[0].data;
-                const relativeLink = l.children[0].attribs.href;
+        relList.children!.forEach(ch => {
+            if (ch.type === 'tag' && ch.name === 'tr' && ch.children!.filter((_c, i) => i % 2).every(c => c.type === 'tag' && c.name === 'td')) {
+                const [v, d, , l] = ch.children!.filter((_c, i) => i % 2);
+
+                const rawVer = v.children![0].data!;
+                const rawDate = d.children![0].data!;
+                const relativeLink = l.children![0].attribs!.href!;
 
                 // ignore release candidates and previews
                 const ver = rawVer.includes('-') ? null : rawVer.replace(/^Ruby /, '');
@@ -255,15 +256,15 @@ export async function callRuby() {
         const currMaj = Math.max(...releases.map(r => r[0]));
 
         // let's just get the two latest minor versions
-        const minsForMaj = [...new Set(releases.filter(r => r[0] === currMaj).map(r => r[1]))]
+        const minsForMaj: number[] = [...new Set(releases.filter(r => r[0] === currMaj).map(r => r[1]))]
             .sort((a, b) => b - a)
             .slice(0, 2);
 
         const latestOfEach = minsForMaj
-            .map(min => releases.find(r => r[0] === currMaj && r[1] === min));
+            .map(min => releases.find(r => r[0] === currMaj && r[1] === min)) as Release[];
 
         return latestOfEach.map(([maj, min, ver, date, relLink]) => {
-            const url = new URL(rubyEarl.url);
+            const url = new URL(rubyEarl.url.href);
             url.pathname = relLink;
 
             return {
@@ -293,48 +294,52 @@ export async function callIdea() {
             [3, 'section', { cls: 'tax-archive' }],
             [1, 'div', { cls: 'container' }],
             [3, 'div', { cls: 'row' }],
-        ]);
+        ])!;
 
-        const cols = row.children.filter(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('col'));
+        const cols = row.children!.filter(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('col'));
 
         for (const col of cols) {
-            const aLink = domStroll('IdeaB', false, col.children, [
+            const aLink = domStroll('IdeaB', false, col.children!, [
                 [1, 'a', { cls: 'card' }],
-            ]);
+            ])!;
 
-            const headerIndex = aLink.children.findIndex(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('card__header'));
+            const headerIndex = aLink.children!.findIndex(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('card__header'));
 
             if (headerIndex) {
-                const header = aLink.children[headerIndex];
-                const footer = aLink.children[headerIndex + 4];
+                const header = aLink.children![headerIndex];
+                const footer = aLink.children![headerIndex + 4];
                 // card header and footer are normally children #3 and #7
                 // but sometimes an image is missing so the header and footer are #1 and #5
 
                 // if header and footer were wrong (1 and 5 instead of 3 and 7) then h4 will be at 3 instead of 1
                 const h4index = 4 - headerIndex;
 
-                const h4 = domStroll('IdeaC', false, header.children, [
+                const h4 = domStroll('IdeaC', false, header.children!, [
                     [h4index, 'h4'],
-                ]);
+                ])!;
 
-                const publishDate = domStroll('IdeaD', false, footer.children, [
+                const publishDate = domStroll('IdeaD', false, footer.children!, [
                     [1, 'div', { cls: 'author' }],
                     [3, 'div', { cls: 'author__info' }],
                     [3, 'time', { cls: 'publish-date' }],
-                ]);
+                ])!;
 
                 // title will be this form: IntelliJ IDEA 2023.1.4 Is Here!
-                const matt = h4.children[0].data.match(/IntelliJ IDEA (\d+\.\d+(?:\.\d+)?) Is (?:Here|Out)!/);
+                const title = h4.children![0].data!;
+                const matt = title.match(/IntelliJ IDEA (\d+\.\d+(?:\.\d+)?) Is (?:Here|Out)!/);
                 if (matt) {
+                    const pubDateAttribs = publishDate.attribs as { datetime?: string };
+
                     return [{
                         name: 'IntelliJ IDEA',
                         ver: matt[1],
-                        link: aLink.attribs.href,
-                        timestamp: new Date(publishDate.attribs.datetime),
+                        link: aLink.attribs!.href,
+                        timestamp: new Date(pubDateAttribs.datetime!),
                         src: 'jetbrains.com',
                     }];
                 } else {
-                    console.log(`[Idea] ${col.attribs.post_id} :couldn't parse version from '${title}'`);
+                    const colAttribs = col.attribs as { post_id?: string };
+                    console.log(`[Idea] ${colAttribs.post_id!} :couldn't parse version from '${title}'`);
                 }
             }
         }
@@ -354,21 +359,21 @@ export async function callSdlMame() {
             [2, 'html'],
             [3, 'body'],
             [3, 'table'],
-        ]);
+        ])!;
 
-        const tr = table.children[table.children.length - 6];
+        const tr = table.children![table.children!.length - 6];
 
         const [linkAnchor, dateTimeTD] = [
-            domStroll('sdl', false, tr.children, [
+            domStroll('sdl', false, tr.children!, [
                 [1, 'td'],
                 [0, 'a'],
-            ]),
-            domStroll('sdl', false, tr.children, [
+            ])!,
+            domStroll('sdl', false, tr.children!, [
                 [2, 'td'],
-            ]),
+            ])!,
         ];
 
-        const matty = linkAnchor.attribs.href.match(/^mame(\d)(\d+)-arm64.zip$/);
+        const matty = linkAnchor.attribs!.href!.match(/^mame(\d)(\d+)-arm64.zip$/);
         if (matty) {
             const [maj, min] = [matty[1], matty[2]];
 
@@ -376,7 +381,7 @@ export async function callSdlMame() {
                 name: 'SDL MAME',
                 ver: `${maj}.${min}`,
                 link: `https://sdlmame.lngn.net/whatsnew/whatsnew_${maj}${min}.txt`,
-                timestamp: new Date(dateTimeTD.children[0].data.trim()),
+                timestamp: new Date(dateTimeTD.children![0].data!.trim()),
                 src: 'sdlmame.lngn.net',
             }];
         }
@@ -400,19 +405,19 @@ export async function callSublime() {
             [3, 'div', { cls: 'primary' }],
             [3, 'section', { id: 'changelog' }],
             [3, 'article', { cls: 'current' }],
-        ]);
+        ])!;
 
         const [h3, releaseDate] = [
-            domStroll('sublime2', false, current.children, [
+            domStroll('sublime2', false, current.children!, [
                 [1, 'h3'],      
-            ]),
-            domStroll('sublime3', false, current.children, [
+            ])!,
+            domStroll('sublime3', false, current.children!, [
                 [3, 'div', { cls: 'release-date' }],
-            ])
+            ])!
         ];
 
-        const ver = h3.children[0].data.match(/Build (\d+)/);
-        const date = releaseDate.children[0].data.trim();
+        const ver = h3.children![0].data!.match(/Build (\d+)/);
+        const date = releaseDate.children![0].data!.trim();
 
         if (ver && date) {
             return [{

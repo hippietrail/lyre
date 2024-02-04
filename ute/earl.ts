@@ -8,14 +8,14 @@ import parse from 'html-dom-parser';
 export class Earl {
     url: import("url").URL;
     basicPathname?: string;
-    constructor(origin: string, optionalBasicPathname?: string, optionalSearchParams?: Record<string, string>) {
+    constructor(origin: string, optionalBasicPathname?: string, optionalSearchParams?: Record<string, string | number>) {
         this.basicPathname = optionalBasicPathname || '/';
 
         this.url = new URL(origin);
         this.url.pathname = this.basicPathname;
         if (optionalSearchParams)
             for (const [key, value] of Object.entries(optionalSearchParams))
-                this.url.searchParams.set(key, value);
+                this.url.searchParams.set(key, value.toString());
     }
     setBasicPathname(basicPathname: string) {
         this.basicPathname = basicPathname;
