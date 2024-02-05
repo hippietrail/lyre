@@ -113,11 +113,13 @@ async function latest(interaction: ChatInputCommandInteraction) {
 
         console.log(`[latest] sources: ${sourceNames.join(', ')}`);
 
+        const responses: VersionInfoTight[] = [];
+
         async function updateReply(these: VersionInfoLoose[][], thisName: string) {
             console.log(`All ${thisName} have been fetched.`);
             sourceNames.splice(sourceNames.indexOf(thisName), 1);
 
-            let reply = these.flat()
+            const tightenedUp: VersionInfoTight[] = these.flat()
                 .filter(vi => vi.name && vi.ver)
                 .map(vi => ({
                     name: vi.name!,
@@ -125,7 +127,11 @@ async function latest(interaction: ChatInputCommandInteraction) {
                     link: vi.link as string | undefined,
                     timestamp: vi.timestamp as Date | undefined,
                     src: vi.src!
-                }))
+                }));
+
+            responses.push(...tightenedUp);
+
+            let reply = responses
                 .toSorted((a, b) => {
                     const ageDiff = !a.timestamp
                         ? !b.timestamp ? 0 : 2
