@@ -1,4 +1,3 @@
-////@ts-nocheck
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { ago } from '../ute/ago.js';
 import { callGithubReleases } from './latest/githubreleases.js';
@@ -53,12 +52,26 @@ export const execute = latest;
 //  ICU4X
 // Vim
 
+interface VersionInfoLoose {
+    name?: string | null;
+    ver?: string | null;
+    link?: string | null;
+    timestamp?: Date | null;
+    src?: string | null;
+}
+
+interface VersionInfoTight {
+    name: string;
+    ver: string;
+    link?: string;
+    timestamp?: Date;
+    src: string;
+}
+
 async function latest(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
 
     try {
-        let responses: any[] = []; // TODO fix 'any' type
-
         const sourceChoice = interaction.options.getString('source-choice');
         const sortByAge = interaction.options.getString('sortby') === 'age';
         console.log(`[latest] sources: ${sourceChoice}, sortBy: ${sortByAge}`);
@@ -100,18 +113,23 @@ async function latest(interaction: ChatInputCommandInteraction) {
 
         console.log(`[latest] sources: ${sourceNames.join(', ')}`);
 
-        // TODO fix 'any' type
-        async function updateReply(these: any[], thisName: string) {
+        async function updateReply(these: VersionInfoLoose[][], thisName: string) {
             console.log(`All ${thisName} have been fetched.`);
             sourceNames.splice(sourceNames.indexOf(thisName), 1);
 
-            responses.push(these.flat());
-
-            let reply = responses.flat()
+            let reply = these.flat()
+                .filter(vi => vi.name && vi.ver)
+                .map(vi => ({
+                    name: vi.name!,
+                    ver: vi.ver!,
+                    link: vi.link as string | undefined,
+                    timestamp: vi.timestamp as Date | undefined,
+                    src: vi.src!
+                }))
                 .toSorted((a, b) => {
                     const ageDiff = !a.timestamp
                         ? !b.timestamp ? 0 : 2
-                        : !b.timestamp ? -2 : b.timestamp - a.timestamp;
+                        : !b.timestamp ? -2 : b.timestamp.getTime() - a.timestamp.getTime();
 
                     return sortByAge && ageDiff
                         ? ageDiff
@@ -139,20 +157,18 @@ async function latest(interaction: ChatInputCommandInteraction) {
             if (initialReplyLength !== reply.length)
                 console.log(`[latest] trimmed ${numRemoved} lines (${initialReplyLength - reply.length} chars) from end of reply`);
 
-            // empty updated replies are now possible due to the way we skip sources
-            // if (reply === '')
-            //     console.log(`[latest] empty reply, not updating.`);
-            // else
+            if (reply === '') reply = 'Odd. Nothing found.';
+            
             await interaction.editReply(reply);
         }
 
         const sourcePromises = [];
 
         if (useGithubReleases)
-            sourcePromises.push(callGithubReleases(false).then(async arr => await updateReply(arr, 'GitHub Releases')));
+            sourcePromises.push(callGithubReleases(false).then(async arr => await updateReply([arr], 'GitHub Releases')));
 
         if (useGithubTags)
-            sourcePromises.push(callGithubTags(false).then(async arr => await updateReply(arr, 'GitHub Tags')));
+            sourcePromises.push(callGithubTags(false).then(async arr => await updateReply([arr], 'GitHub Tags')));
         
         if (useJson) {
             sourcePromises.push(Promise.all([
@@ -178,7 +194,7 @@ async function latest(interaction: ChatInputCommandInteraction) {
                 callSublime(),
             ]).then(async arr => await updateReply(arr, 'HTML')));
         } else if (useWikiDump) {
-            sourcePromises.push(callWikiDump().then(async arr => await updateReply(arr, 'HTML')));
+            sourcePromises.push(callWikiDump().then(async arr => await updateReply([arr], 'HTML')));
         }
 
         await Promise.all(sourcePromises);
@@ -202,14 +218,15 @@ function versionInfoToString(vi: {
     name: string;
     ver: string;
     link?: string;
-    timestamp?: number;
-    src: string;}): string {
+    timestamp?: Date;
+    src: string;
+}): string {
     const parts = [
         `${vi.name}:`,
         vi.link ? `[${vi.ver}](<${vi.link}>)` : vi.ver
     ];
 
-    if (vi.timestamp) parts.push(`- ${ago(new Date().getTime() - vi.timestamp)}`);
+    if (vi.timestamp) parts.push(`- ${ago(new Date().getTime() - vi.timestamp.getTime())}`);
     parts.push(`(${vi.src})`);
     return parts.join(' ');
 }

@@ -104,7 +104,7 @@ async function callGithubTagsRepo(name: string, ownerRepo: string, regex: RegExp
         name,
         ver,
         link,
-        timestamp,
+        timestamp: timestamp ? new Date(timestamp) : null,
         src,
     };
 }
