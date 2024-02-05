@@ -50,7 +50,8 @@ async function ddg(interaction: ChatInputCommandInteraction) {
             [1, 'div', { cls: 'col-lg-12' }],       // .col-lg-12 6.3.9.1.1.11.1.1
             [1, 'div', { cls: 'content' }],         // .content.full-format. 6.3.9.1.1.11.1.1.1
             [1, 'div', { cls: 'image-wrapper' }],   // .image-wrapper 6.3.9.1.1.11.1.1.1.1
-            [1, 'img'],                             // .light-gallery-item.fi3vw1gottu.thumb.img-responsive 6.3.9.1.1.11.1.1.1.1.1
+            [1, 'div', { cls: 'feed-dream-image-wrapper' }],
+            [1, 'img'],                             // .light-gallery-item.thumb.img-responsive
         ])!;
 
         if ('data-sub-html' in img.attribs!) {
