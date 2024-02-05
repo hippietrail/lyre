@@ -79,7 +79,7 @@ async function callGithubTagsRepo(name: string, ownerRepo: string, regex: RegExp
                 } else {
                     const jRel = json as unknown as GitHubRel;
                     // there is commit.author.date and commit.committer.date...
-                    const [authorDate, committerDate] = ["author", "committer"].map(k => +jRel.commit[k].date);
+                    const [authorDate, committerDate] = ["author", "committer"].map(k => jRel.commit[k].date);
                     // print which is newer, and by how many seconds/minutes
                     // in the one I checked, the committer is newer by about 15 minutes
                     const [newer, older, diff, date] = committerDate > authorDate
