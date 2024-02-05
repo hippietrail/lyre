@@ -48,7 +48,7 @@ interface GitHubRel {
     commit: {
         author: { date: string; };
         committer: { date: string; };
-        [key: string]: any;
+        [key: string]: any; // TODO fix 'any' type
     };
     html_url: string;
 }
@@ -67,6 +67,7 @@ async function callGithubTagsRepo(name: string, ownerRepo: string, regex: RegExp
                 ver = 'GitHub API error T1';
             }
         } else {
+            // TODO fix 'any' type
             const rel = ght.find((e: any) => new RegExp(regex).test(e.name)) as GitHubTags | undefined;
             
             if (rel) {

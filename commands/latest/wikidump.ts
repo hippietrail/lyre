@@ -213,7 +213,7 @@ async function getThisDumpsJson(wiki: string, jsonRelLink: string): Promise<Dump
 }
 
 interface ListItem {
-    children: any[]
+    children: any[] // TODO fix 'any' type
 }
 
 // NOTE `l` will contain a relative link that looks like a file, no trailing slash
