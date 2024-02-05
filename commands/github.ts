@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { GithubEarl } from '../ute/earl.js';
 import { ago } from '../ute/ago.js';
 import { config } from 'dotenv';
@@ -18,7 +18,16 @@ export const data = new SlashCommandBuilder()
             .setDescription('GitHub username')
             .setRequired(false));
 
-export const execute = async interaction => {
+interface JsonData {
+    actor: { login: string };
+    type: string;
+    payload: { action: string };
+    repo: { name: string };
+    created_at: string;
+    url: string;
+}
+
+export const execute = async (interaction: ChatInputCommandInteraction) => {
     await interaction.deferReply();
     try {
         const username = interaction.options.getString('username');
@@ -34,8 +43,8 @@ export const execute = async interaction => {
             const reply = (await Promise.all(usernames.map(async user => {
                 githubEarl.setUserName(user);
 
-                const json = await githubEarl.fetchJson();
-                if (json.message && json.documentation_url) {
+                const json = await githubEarl.fetchJson() as JsonData[];
+                if ('message' in json && 'documentation_url' in json) {
                     console.log(`[GitHub] GitHub API error: '${user}' ${json.message} ${githubEarl.getUrlString()}`);
                     return [];
                 }
@@ -47,7 +56,7 @@ export const execute = async interaction => {
                         payloadAction: e.payload.action,
                         repo: e.repo.name,
                         created_at: e.created_at,
-                        elapsed_time: now - new Date(e.created_at),
+                        elapsed_time: now.getTime() - new Date(e.created_at).getTime(),
                     }));
             })))
                 .flat()

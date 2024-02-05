@@ -1,29 +1,35 @@
 import { config } from 'dotenv';
+import type { DomNode } from './dom.js';
 import parse from 'html-dom-parser';
 
 // TODO a way to handle redirects?
 // TODO add .fetch() that stores the redirected URL?
 
 export class Earl {
-    constructor(origin, optionalBasicPathname, optionalSearchParams) {
+    url: import("url").URL;
+    basicPathname?: string;
+    constructor(origin: string, optionalBasicPathname?: string, optionalSearchParams?: Record<string, string | number>) {
         this.basicPathname = optionalBasicPathname || '/';
 
         this.url = new URL(origin);
         this.url.pathname = this.basicPathname;
         if (optionalSearchParams)
             for (const [key, value] of Object.entries(optionalSearchParams))
-                this.url.searchParams.set(key, value);
+                this.url.searchParams.set(key, value.toString());
     }
-    setBasicPathname(basicPathname) {
+    setBasicPathname(basicPathname: string) {
         this.basicPathname = basicPathname;
     }
-    setPathname(pathname) {
+    setPathname(pathname: string) {
         this.url.pathname = pathname;
     }
-    setLastPathSegment(segment) {
+    getPathname() {
+        return this.url.pathname;
+    }
+    setLastPathSegment(segment: string) {
         this.url.pathname = this.basicPathname + segment;
     }
-    setSearchParam(key, value) {
+    setSearchParam(key: string, value: string) {
         this.url.searchParams.set(key, value);
     }
     // handy for relative hrefs
@@ -38,7 +44,7 @@ export class Earl {
         return (await fetch(this.url)).json();
     }
     async fetchDom() {
-        return parse(await this.fetchText());
+        return parse(await this.fetchText()) as DomNode[];
     }
     // sometimes we want the HTML (scraping, debugging when JSON is broken)
     async fetchText() {
@@ -66,11 +72,11 @@ export class GithubEarl extends Earl {
     constructor() {
         super('https://api.github.com', '/users/USER/events/public');
     }
-    setUserName(username) {
+    setUserName(username: string) {
         this.setPathname(`/users/${username}/events/public`)
     }
-    setPerPage(perPage) {
-        this.setSearchParam('per_page', perPage);
+    setPerPage(perPage: number) {
+        this.setSearchParam('per_page', perPage.toString());
     }
 }
 
@@ -79,16 +85,20 @@ export class YoutubeVidsEarl extends Earl {
     constructor() {
         config();
 
+        if (!process.env.YT_API_KEY) {
+            throw new Error(`[YouTubeVidsEarl] missing YT_API_KEY`);
+        }
+
         super('https://www.googleapis.com', '/youtube/v3/playlistItems', {
             part: 'snippet',
             order: 'date',
             key: process.env.YT_API_KEY,
         });
     }
-    setMaxResults(maxResults) {
-        this.url.searchParams.set('maxResults', maxResults);
+    setMaxResults(maxResults: number) {
+        this.url.searchParams.set('maxResults', maxResults.toString());
     }
-    setPlaylistId(playlistId) {
+    setPlaylistId(playlistId: string) {
         this.url.searchParams.set('playlistId', playlistId);
     }
 }

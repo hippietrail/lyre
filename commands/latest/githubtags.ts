@@ -6,7 +6,7 @@ const githubTagsEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/tag
 const regexMajMinPatch = /^(\d+)\.(\d+)\.(\d+)$/
 const regexVmajMinPatch = /^v(\d+)\.(\d+)\.(\d+)$/
 
-const ownerRepos = [
+const ownerRepos: [string, string, RegExp][] = [
     ['Nim', 'nim-lang/Nim', regexVmajMinPatch],
     ['Perl', 'Perl/perl5', regexVmajMinPatch],
     ['Python', 'python/cpython', regexVmajMinPatch],
@@ -31,29 +31,55 @@ export async function callGithubTags(debug = false) {
     return result;
 }
 
-async function callGithubTagsRepo(name, ownerRepo, regex) {
+type GitHubJval = string | GitHubJobj | GitHubJarr;
+
+interface GitHubJobj {
+  [x: string]: GitHubJval;
+}
+
+interface GitHubJarr extends Array<GitHubJval> {}
+
+interface GitHubTags {
+  name: string;
+  commit: { url: string; };
+}
+
+interface GitHubRel {
+    commit: {
+        author: { date: string; };
+        committer: { date: string; };
+        [key: string]: any; // TODO fix 'any' type
+    };
+    html_url: string;
+}
+
+async function callGithubTagsRepo(name: string, ownerRepo: string, regex: RegExp) {
     githubTagsEarl.setPathname(`/repos/${ownerRepo}/tags`);
 
-    let [ver, link, timestamp, src] = [null, null, null, 'github'];
+    let [ver, link, timestamp, src]: [string | null, string | null, number | null, string | null] = [null, null, null, 'github'];
 
     try {
-        const ght = await githubTagsEarl.fetchJson();
+        const ght = await githubTagsEarl.fetchJson() as GitHubJarr | GitHubJobj;
 
-        if (ght.message && ght.documentation_url) {
-            console.log(`[${name}] GitHub tags API error: '${name}' ${ght.message} ${githubTagsEarl.getUrlString()}`);
-            ver = 'GitHub API error T1';
+        if (!Array.isArray(ght)) {
+            if (ght.message && ght.documentation_url) {
+                console.log(`[${name}] GitHub tags API error: '${name}' ${ght.message} ${githubTagsEarl.getUrlString()}`);
+                ver = 'GitHub API error T1';
+            }
         } else {
-            const rel = ght.find(obj => obj.name.match(regex));
+            // TODO fix 'any' type
+            const rel = ght.find((e: any) => new RegExp(regex).test(e.name)) as GitHubTags | undefined;
             
             if (rel) {
-                const json = await (await fetch(rel.commit.url)).json();
+                const json = await (await fetch(rel.commit.url)).json() as GitHubJobj;
 
                 if (json.message && json.documentation_url) {
                     console.log(`[${name}] GitHub tags API error: '${name}' ${json.message} ${rel.commit.url}`);
                     ver = 'GitHub API error T2';
                 } else {
+                    const jRel = json as unknown as GitHubRel;
                     // there is commit.author.date and commit.committer.date...
-                    const [authorDate, committerDate] = ["author", "committer"].map(k => new Date(json.commit[k].date));
+                    const [authorDate, committerDate] = ["author", "committer"].map(k => jRel.commit[k].date);
                     // print which is newer, and by how many seconds/minutes
                     // in the one I checked, the committer is newer by about 15 minutes
                     const [newer, older, diff, date] = committerDate > authorDate
@@ -63,7 +89,7 @@ async function callGithubTagsRepo(name, ownerRepo, regex) {
                     if (diff)
                         console.log(`[${name}] ${newer} is newer than ${older} by ${ago(diff).replace(' ago', '')} (diff: ${diff})`);
 
-                    [ver, link, timestamp] = [rel.name, json.html_url, date];
+                    [ver, link, timestamp] = [rel.name, jRel.html_url, date];
                 }
             } else {
                 // TODO no tags found?
@@ -78,7 +104,7 @@ async function callGithubTagsRepo(name, ownerRepo, regex) {
         name,
         ver,
         link,
-        timestamp,
+        timestamp: timestamp ? new Date(timestamp) : null,
         src,
     };
 }

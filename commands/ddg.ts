@@ -1,6 +1,6 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
-import { domStroll } from '../ute/dom.js';
+import { domStroll, DomNode } from '../ute/dom.js';
 import parse from 'html-dom-parser';
 
 export const data = new SlashCommandBuilder()
@@ -23,10 +23,10 @@ export const data = new SlashCommandBuilder()
 
 export const execute = ddg;
 
-async function ddg(interaction) {
+async function ddg(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
     const ddgEarl = new Earl('https://deepdreamgenerator.com/');
-    const list = interaction.options.getString('list');
+    const list = interaction.options.getString('list')!;
 
     if (list !== 'trending')
         ddgEarl.setLastPathSegment(list);
@@ -51,14 +51,14 @@ async function ddg(interaction) {
             [1, 'div', { cls: 'content' }],         // .content.full-format. 6.3.9.1.1.11.1.1.1
             [1, 'div', { cls: 'image-wrapper' }],   // .image-wrapper 6.3.9.1.1.11.1.1.1.1
             [1, 'img'],                             // .light-gallery-item.fi3vw1gottu.thumb.img-responsive 6.3.9.1.1.11.1.1.1.1.1
-        ]);
+        ])!;
 
-        if ('data-sub-html' in img.attribs) {
+        if ('data-sub-html' in img.attribs!) {
             try {
-                const dom = parse(img.attribs['data-sub-html']);
+                const dom = parse(img.attribs!['data-sub-html'] as string) as DomNode[];
                 const a = dom[0];
 
-                reply = `[${list}](${a.attribs.href})`
+                reply = `[${list}](${a.attribs!.href})`
             } catch (error) {
                 console.error(`[DDG] error parsing data-sub-html`, error);
             }

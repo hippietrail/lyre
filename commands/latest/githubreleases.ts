@@ -3,26 +3,36 @@ import { Earl } from '../../ute/earl.js';
 const githubReleasesEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/releases/latest');
 
 // GitHub JSON name field is 'name version'
-const xformNameSplit = (_, jn, __) => jn.split(' ');
+const xformNameSplit = (_: string, jn: string, __: string) => jn.split(' ');
 
 // Repo name is name, version is GitHub JSON tag
-const xformRepoTag = (gor, _, jt) => [gor.split('/')[1], jt];
+const xformRepoTag = (gor: string, _: string, jt: string) => [gor.split('/')[1], jt];
 
 // Repo name capitalized is name, version is GitHub JSON tag
-function xformRepoCapTag(gor, _, jt) {
+function xformRepoCapTag(gor: string, _: string, jt: string) {
     // console.log(`[xformRepoCapTag]`, gor, jt);
     const rn = gor.split('/')[1];
     return [rn.charAt(0).toUpperCase() + rn.slice(1), jt];
 }
 
 // Repo name capitalized is name, version is GitHub JSON tag with _ converted to .
-function xformRepoCapTagVersionUnderscore(gor, _, jt) {
+function xformRepoCapTagVersionUnderscore(gor: string, _: string, jt: string) {
     // console.log(`[xformRepoCapTagVersionUnderscore]`, gor, jt);
     const rn = gor.split('/')[1];
     return [rn.charAt(0).toUpperCase() + rn.slice(1), jt.replace(/_/g, '.')];
 }
 
-const ownerRepos = [
+interface GithubJson {
+    name: string;
+    tag_name: string;
+    published_at: string;
+    html_url: string;
+}
+
+// do we need a Record or a type or an interface for these string/function tuples?
+type StringFunctionTuple = [string, (gor: string, jn: string, jt: string) => string[]];
+
+const ownerRepos: StringFunctionTuple[] = [
     ['apple/swift', xformNameSplit],
     ['audacity/audacity', xformNameSplit],
     ['discordjs/discord.js', xformRepoCapTag],
@@ -30,18 +40,18 @@ const ownerRepos = [
     ['exiftool/exiftool', xformNameSplit],
     ['JetBrains/kotlin', xformNameSplit],
     ['JuliaLang/julia', xformRepoCapTag],
-    ['lampepfl/dotty', (_, __, jt) => ['Scala 3', jt]],     // "tag_name": "3.3.1", "name": "3.3.1",
+    ['lampepfl/dotty', (_: string, __: string, jt: string) => ['Scala 3', jt]],     // "tag_name": "3.3.1", "name": "3.3.1",
     ['llvm/llvm-project', xformNameSplit],
     ['lua/lua', xformNameSplit],
     ['mamedev/mame', xformNameSplit],
     ['microsoft/TypeScript', xformRepoTag],
     ['NationalSecurityAgency/ghidra', xformNameSplit],
-    ['nodejs/node', (_, __, jt) => ['Node (Current)', jt]],
-    ['odin-lang/Odin', (_, __, jt) => ['Odin', jt]],
+    ['nodejs/node', (_: string, __: string, jt: string) => ['Node (Current)', jt]],
+    ['odin-lang/Odin', (_: string, __: string, jt: string) => ['Odin', jt]],
     ['oven-sh/bun', xformNameSplit],
     ['rakudo/rakudo', xformRepoCapTag],
     /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
-    ['scala/scala', (_, __, jt) => ['Scala 2', jt]],        // "tag_name": "v2.13.12", "name": "Scala 2.13.12",
+    ['scala/scala', (_: string, __: string, jt: string) => ['Scala 2', jt]],        // "tag_name": "v2.13.12", "name": "Scala 2.13.12",
     ['rust-lang/rust', xformRepoCapTag],
     ['vlang/v', xformRepoCapTag],
     ['zed-industries/zed', xformRepoTag],
@@ -57,7 +67,7 @@ export async function callGithubReleases(debug = false) {
     for (const [i, repoEntry] of chosenOwnerRepos.entries()) {
         // console.log(`[callGithub] i: ${i}, owner/repo: ${repoEntry[0]}`);
         githubReleasesEarl.setPathname(`/repos/${repoEntry[0]}/releases/latest`);
-        const ob = await githubReleasesEarl.fetchJson();
+        const ob = await githubReleasesEarl.fetchJson() as GithubJson;
         console.log(`GitHub Rels [${i + 1}/${chosenOwnerRepos.length}] ${repoEntry[0]}`);
         const vi = githubJsonToVersionInfo(repoEntry, ob);
         result.push(vi);
@@ -68,10 +78,16 @@ export async function callGithubReleases(debug = false) {
     return result;
 }
 
-function githubJsonToVersionInfo(repoEntry, jsonObj) {
+function githubJsonToVersionInfo(repoEntry: StringFunctionTuple, jsonObj: GithubJson) {
     // if ob has just the two keys "message" and "documentation_url"
     // we've hit the API limit or some other error
-    let [name, ver, link, timestamp, src] = [null, null, null, null, 'github'];
+    let [name, ver, link, timestamp, src]: [
+        string | null,
+        string | null,
+        string | null,
+        Date | null,
+        string
+    ] = [null, null, null, null, 'github'];
 
     if ('message' in jsonObj && 'documentation_url' in jsonObj) {
         console.log(`GitHub releases API error: ${jsonObj.message} ${jsonObj.documentation_url}`);
@@ -99,7 +115,7 @@ function githubJsonToVersionInfo(repoEntry, jsonObj) {
 // derive either field from the GitHub owner and repo names
 // or from the name and tag fields in the JSON.
 // Will call one of: xformNameSplit, xformRepoTag, xformRepoCapTag, etc
-function xformRepoNameTagVer(repo, jsonOb) {
+function xformRepoNameTagVer(repo: StringFunctionTuple, jsonOb: GithubJson) {
     const [githubOwnerRepo, xform] = repo;
     const [jsonName, jsonTag] = [jsonOb.name, jsonOb.tag_name];
 

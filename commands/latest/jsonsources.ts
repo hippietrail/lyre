@@ -1,18 +1,24 @@
 import { Earl } from '../../ute/earl.js';
 
+interface Rel {
+    lts: false | string;
+    version: string;
+    date: string;
+}
+
 export async function callNodejs() {
     const nodejsEarl = new Earl('https://nodejs.org', '/dist/index.json');
     try {
-        const rels = await nodejsEarl.fetchJson();
+        const rels = await nodejsEarl.fetchJson() as Rel[];
 
         return [
             rels.find(rel => rel.lts === false),
             rels.find(rel => typeof rel.lts === 'string')
         ].map(obj => ({
-            name: `Node ${obj.lts === false ? '(Current)' : `'${obj.lts}' (LTS)`}`,
-            ver: obj.version,
+            name: `Node ${obj!.lts === false ? '(Current)' : `'${obj!.lts}' (LTS)`}`,
+            ver: obj!.version,
             link: undefined,
-            timestamp: new Date(obj.date),
+            timestamp: new Date(obj!.date),
             src: 'nodejs.org',
         }));
     } catch (error) {
@@ -21,13 +27,20 @@ export async function callNodejs() {
     return [];
 }
 
+interface GimpJson {
+    STABLE: {
+        version: string;
+        date: string;
+    }[];
+}
+
 export async function callGimp() {
     const gimpEarl = new Earl('https://gitlab.gnome.org',
         '/Infrastructure/gimp-web/-/raw/testing/content/gimp_versions.json', {
-        'inline': false
+        'inline': 'false'
     });
     try {
-        const gj = await gimpEarl.fetchJson();
+        const gj = await gimpEarl.fetchJson() as GimpJson;
 
         if ('STABLE' in gj && gj.STABLE.length > 0 && 'version' in gj.STABLE[0]) {
             const ver = gj.STABLE[0].version;
@@ -54,10 +67,24 @@ export async function callGimp() {
     return [];
 }
 
+interface XcodeJson {
+    name: string;
+    version: {
+        release: { release: boolean; };
+        number: string;
+    };
+    date: {
+        year: number;
+        month: number;
+        day: number;
+    };
+    links: { notes: { url: string; }; };
+}
+
 export async function callXcode() {
     const xcodeEarl = new Earl('https://xcodereleases.com', '/data.json');
     try {
-        const xcj = await xcodeEarl.fetchJson();
+        const xcj = await xcodeEarl.fetchJson() as XcodeJson[];
 
         const rel = xcj.find(obj => obj.name === 'Xcode' && obj.version.release.release === true);
 
@@ -83,10 +110,12 @@ export async function callXcode() {
     return [];
 }
 
+interface MameJson { version: string; }
+
 export async function callMame() {
     const mameEarl = new Earl('https://raw.githubusercontent.com', '/Calinou/scoop-games/master/bucket/mame.json');
     try {
-        const mamej = await mameEarl.fetchJson();
+        const mamej = await mameEarl.fetchJson() as MameJson;
 
         return [{
             name: 'MAME',
@@ -101,10 +130,15 @@ export async function callMame() {
     return [];
 }
 
+interface DartJson {
+    version: string;
+    date: string;
+}
+
 export async function callDart() {
     const dartEarl = new Earl('https://storage.googleapis.com', '/dart-archive/channels/stable/release/latest/VERSION');
     try {
-        const dartj = await dartEarl.fetchJson();
+        const dartj = await dartEarl.fetchJson() as DartJson;
 
         return [{
             name: 'Dart',
@@ -119,14 +153,19 @@ export async function callDart() {
     return [];
 }
 
+interface PhpJson {
+    version: string;
+    date: string;
+}
+
 export async function callPhp() {
     const phpEarl = new Earl('https://www.php.net', '/releases/index.php');
     phpEarl.setSearchParam('json', '');
     try {
-        const phpj = await phpEarl.fetchJson();
+        const phpj = await phpEarl.fetchJson() as PhpJson[];
         // we get an object with a key for each major version number, in ascending order
-        const latest = Object.values(phpj).pop();
-        const maj = latest.version.match(/^(\d+)\.\d+\.\d+$/)[1];
+        const latest = Object.values(phpj).pop()!;
+        const maj = latest.version.match(/^(\d+)\.\d+\.\d+$/)![1];
         return [{
             name: 'PHP',
             ver: latest.version,

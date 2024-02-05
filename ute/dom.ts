@@ -1,5 +1,27 @@
 
-export function domStroll(site, debug, kids, data) {
+export interface DomNode {
+    type: string,
+    name?: string,
+    children?: DomNode[],
+    attribs?: {
+        id?: string,
+        class?: string,
+        href?: string,
+    },
+    data?: string,
+    parent: DomNode,
+}
+
+interface DatumOpts {
+    id?: string,
+    cls?: string,
+    optional?: boolean,
+    debug?: boolean,
+}
+
+type Datum = [number, string, DatumOpts?];
+
+export function domStroll(site: string, debug: boolean, kids: DomNode[], data: Datum[]) {
     let node = null;
     for (const [i, datum] of data.entries()) {
         const [n, name, opts] = datum;
@@ -12,7 +34,7 @@ export function domStroll(site, debug, kids, data) {
         node = kids[n];
 
         if (!node || node.type !== 'tag' || node.name !== name ||
-            (opts && opts.id && node.attribs.id !== opts.id) ||
+            (opts && opts.id && node.attribs!.id !== opts.id) ||
             (opts && opts.cls && !node.attribs?.class?.includes(opts.cls))
         ) {
             if (!node) {
@@ -27,7 +49,7 @@ export function domStroll(site, debug, kids, data) {
                 if (opts && opts.optional) return null;
                 throw new Error(`[domStroll] ${site}#${i} not ${name}`);
             }
-            if (opts && opts.id && node.attribs.id !== opts.id) {
+            if (opts && opts.id && node.attribs!.id !== opts.id) {
                 if (opts.optional) return null;
                 throw new Error(`[domStroll] ${site}#${i} node id is not ${opts.id}`);
             }
@@ -41,25 +63,25 @@ export function domStroll(site, debug, kids, data) {
         if (opts && opts.debug) {
             let warn;
             const unsupportedOpts = Object.keys(opts).filter(opt => !['id', 'cls'].includes(opt));
-            const uncheckedAtts = Object.keys(node.attribs).filter(attr => !['id', 'class'].includes(attr));
+            const uncheckedAtts = Object.keys(node.attribs!).filter(attr => !['id', 'class'].includes(attr));
             if (unsupportedOpts.length > 0)
                 warn = ['option(s)', '', unsupportedOpts.join(', ')];
             else if (uncheckedAtts.length > 0)
                 warn = ['attribute(s)', '', uncheckedAtts.join(', ')];
-            else if ('id' in node.attribs)
+            else if ('id' in node.attribs!)
                 if (!opts.id) warn = ['id', '#', node.attribs.id];
             else if ('class' in node.attribs)
                 if (!opts.cls) warn = ['class', '.', node.attribs.class];
             if (warn) console.warn(`[domStroll] ${site}#${i}: ${node.name} ${warn[0]} ${warn[1]}${warn[2]} ignored?`);
         }
 
-        kids = node.children;
+        kids = node.children!;
     }
 
     return node;
 }
 
-function kidsForStep(site, st, kids) {
+function kidsForStep(site: string, st: number, kids: DomNode[]) {
     console.log(`[domStroll] ${site}#${st} ${kids.map(
         k => k.type === 'tag'
             ? `<${k.name}${

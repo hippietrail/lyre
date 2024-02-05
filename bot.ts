@@ -1,4 +1,6 @@
 import { Client, Events, GatewayIntentBits } from 'discord.js';
+import { AutocompleteInteraction, ChatInputCommandInteraction, CommandInteraction, Interaction } from "discord.js";
+import { ChannelType, MessageType } from 'discord.js';
 // uncomment if you want to use DMs
 // import { ChannelType, Partials } from 'discord.js';
 import { config } from 'dotenv';
@@ -49,10 +51,10 @@ const client = new Client({
 });
 
 function readyDiscord() {
-    console.log('☮️🤖 ' + client.user.tag);
+    console.log('☮️🤖 ' + client.user?.tag);
 }
 
-async function handleInteraction(interaction) {
+async function handleInteraction(interaction: Interaction) {
     if (interaction.isAutocomplete()) {
         await interactionAutocomplete(interaction);
     }
@@ -61,52 +63,52 @@ async function handleInteraction(interaction) {
     }
 }
 
-async function interactionCommand(interaction) {
+async function interactionCommand(interaction: CommandInteraction) {
     switch (interaction.commandName) {
         case 'wikt':
-            await wikt.execute(interaction);
+            await wikt.execute(interaction as ChatInputCommandInteraction);
             break;
         case 'isaword':
-            await wikt.execute2(interaction);
+            await wikt.execute2(interaction as ChatInputCommandInteraction);
             break;
         case 'define':
-            await wikt.execute3(interaction);
+            await wikt.execute3(interaction as ChatInputCommandInteraction);
             break;
 
         case 'curr':
-            await curr.execute(interaction);
+            await curr.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'github':
-            await github.execute(interaction);
+            await github.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'yt':
-            await yt.execute(interaction);
+            await yt.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'tsoding':
-            await tsoding.execute(interaction);
+            await tsoding.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'etym':
-            await etym.execute(interaction);
+            await etym.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'latest':
-            await latest.execute(interaction);
+            await latest.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'thai':
-            await thai.execute(interaction);
+            await thai.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'isaword2':
-            await isaword.execute(interaction);
+            await isaword.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'ddg':
-            await ddg.execute(interaction);
+            await ddg.execute(interaction as ChatInputCommandInteraction);
             break;
 
         default:
@@ -114,7 +116,7 @@ async function interactionCommand(interaction) {
     }
 }
 
-async function interactionAutocomplete(interaction) {
+async function interactionAutocomplete(interaction: AutocompleteInteraction) {
     switch (interaction.commandName) {
         case 'yt':
             await yt.autocomplete(interaction);
@@ -141,9 +143,7 @@ client.on(Events.Error, e => console.log(`[ERROR] ${JSON.stringify(e, null, 2)}`
 
 // when we receive a DM, including a private slash command
 client.on(Events.MessageCreate, m => {
-    const messageTypeMap = { 0: 'Default', 19: 'Reply', 20: 'ChatInputCommand' };
-
-    console.log(`[MSG] mt ${messageTypeMap[m.type] || `MessageType:${m.type}`}. mct ${m.channel.type}, dm? ${m.channel.type === ChannelType.DM}. mat ${m.author.tag}. mc ${m.content}`);
+    console.log(`[MSG] mt ${MessageType[m.type]}. mct ${m.channel.type}, dm? ${m.channel.type === ChannelType.DM}. mat ${m.author.tag}. mc ${m.content}`);
 
     // HIPP experiment looking for replies
     // won't do anything without the extra intents etc in comment up above

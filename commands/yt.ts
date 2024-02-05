@@ -1,10 +1,23 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { AutocompleteInteraction, ChatInputCommandInteraction, CommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { YoutubeVidsEarl } from '../ute/earl.js';
 import { ago } from '../ute/ago.js';
 import fs from 'node:fs';
 
-let config = {};
-let configTimestamp;
+interface ChannelVids {
+    items: {
+        snippet: {
+            title: string;
+            resourceId: {
+                videoId: string
+            },
+            publishedAt: string
+            channelTitle: string
+        }
+    }[]
+};
+
+let config: { [key: string]: string[] } = {};
+let configTimestamp: number;
 
 function maybeLoadOrReloadConfig() {
     if (fs.statSync('./config.json').mtimeMs !== configTimestamp) {
@@ -22,9 +35,9 @@ function maybeLoadOrReloadConfig() {
 const ytEarl = new YoutubeVidsEarl();
 ytEarl.setMaxResults(10);
 
-function fetchVideos(playlistId) {
+function fetchVideos(playlistId: string): Promise<ChannelVids> {
     ytEarl.setPlaylistId(playlistId);
-    return ytEarl.fetchJson();
+    return ytEarl.fetchJson() as Promise<ChannelVids>;
 }
 
 export const data = new SlashCommandBuilder()
@@ -37,8 +50,8 @@ export const data = new SlashCommandBuilder()
         .setAutocomplete(true)
     );
 
-export async function execute(interaction) {
-    const groupName = interaction.options.getString('group');
+export async function execute(interaction: ChatInputCommandInteraction) {
+    const groupName: string = interaction.options.getString('group')!;
 
     const chanList = groupName in config
         ? config[groupName]
@@ -54,7 +67,7 @@ export async function execute(interaction) {
         await yt(interaction, groupName, chanList);
 }
 
-export async function autocomplete(interaction) {
+export async function autocomplete(interaction: AutocompleteInteraction) {
     maybeLoadOrReloadConfig();
 
     const foc = interaction.options.getFocused().toLowerCase();
@@ -69,15 +82,15 @@ export async function autocomplete(interaction) {
     );
 }
 
-async function yt(interaction, chanGroupName, chanList) {
+async function yt(interaction: CommandInteraction, chanGroupName: string, chanList: Record<string, string>) {
     await interaction.deferReply();
     try {
         const now = new Date();
 
-        const videoIdToHeadPromise = {};
+        const videoIdToHeadPromise: Record<string, Promise<Response>> = {};
 
         const allVids = (await Promise.all(Object.values(chanList).map(
-            async plid => await fetchVideos(plid)
+            async (plid): Promise<ChannelVids> => await fetchVideos(plid)
         ))).map(chanVids => {
             chanVids.items.forEach(v => {
                 videoIdToHeadPromise[v.snippet.resourceId.videoId] = fetch(
@@ -104,7 +117,7 @@ async function yt(interaction, chanGroupName, chanList) {
             }](<https://www.youtube.com/watch?v=${
                 v.snippet.resourceId.videoId
             }>) - ${
-                ago(now - new Date(v.snippet.publishedAt))
+                ago(now.getTime() - new Date(v.snippet.publishedAt).getTime())
             }`)
             .join('\n')
         }`;

@@ -1,0 +1,13 @@
+{
+    "type": "commonjs",
+    "compilerOptions": {
+      "target": "ES2022",
+      "lib": ["ES2022", "ESNext.Array"],
+      "module": "NodeNext",
+      "strict": true,
+      "esModuleInterop": true,
+      "moduleResolution": "nodenext",
+    },
+    "exclude": ["node_modules"]
+}
+  

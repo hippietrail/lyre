@@ -1,4 +1,4 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
 import { htmlToText } from 'html-to-text';
 
@@ -19,8 +19,19 @@ class ListRandomEarl extends ActionQueryEarl {
             rnnamespace: '0',
         });
     }
-    setLimit(limit) {
-        this.setSearchParam('rnlimit', limit);
+    setLimit(limit: number) {
+        this.setSearchParam('rnlimit', limit.toString());
+    }
+}
+// we modify the global URLs each time rather than constructing new ones
+const wiktRandomlEarl = new ListRandomEarl();       // setLimit()
+interface RandomJson {
+    query: {
+        random: [
+            {
+                title: string
+            }
+        ]
     }
 }
 
@@ -28,24 +39,56 @@ class IsAWordEarl extends ActionQueryEarl {
     constructor() {
         super()
     }
-    setTitles(titles) {
+    setTitles(titles: string[]) {
         this.setSearchParam('titles', titles.join('|'));
     }
 }
-
-class RestDefinitionsEarl extends Earl {
-    constructor() {
-        super('https://en.wiktionary.org', '/api/rest_v1/page/definition/');
-    }
-    setTerm(term) {
-        this.setLastPathSegment(term);
+const wiktIsAWordEarl = new IsAWordEarl();          // setTitles()
+interface PagesJson {
+    query: {
+        pages: [
+            {
+                pageid?: unknown,
+                missing?: unknown,
+                title: string,
+            }
+        ]
     }
 }
 
-// we modify the global URLs each time rather than constructing new ones
-const wiktRandomlEarl = new ListRandomEarl();       // setLimit()
-const wiktIsAWordEarl = new IsAWordEarl();          // setTitles()
-const wiktDefineEarl = new RestDefinitionsEarl();   // setTerm()
+const wleEarl = new Earl('https://en.wiktionary.org', '/w/api.php', {
+    action: 'query',
+    format: 'json',
+    list: 'backlinks',
+});
+interface BackLinksJson {
+    query: {
+        backlinks: [
+            {
+                title: string
+            }
+        ]
+    }
+}
+
+class DefineEarl extends Earl {
+    constructor() {
+        super('https://en.wiktionary.org', '/api/rest_v1/page/definition/');
+    }
+    setTerm(term: string) {
+        this.setLastPathSegment(term);
+    }
+}
+const wiktDefineEarl = new DefineEarl();   // setTerm()
+interface DefineJson {
+    [key: string]: {
+        partOfSpeech: string,
+        language: string,
+        definitions: {
+            definition: string
+        }[]
+    }[]
+}
 
 export const data = new SlashCommandBuilder()
     .setName('wikt')
@@ -68,14 +111,14 @@ export const data3 = new SlashCommandBuilder()
 
 export const execute3 = define;
 
-async function random(interaction) {
+async function random(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
     try {
         const number = interaction.options.getInteger('number') ?? 1;
         console.log(`wikt number: '${number}'`);
         if (number > 0) {
             wiktRandomlEarl.setLimit(number);
-            const rando = (await wiktRandomlEarl.fetchJson()).query.random;
+            const rando = (await wiktRandomlEarl.fetchJson() as RandomJson).query.random;
             await interaction.editReply(`${rando.map(r => r.title).join(', ')}`);
         } else {
             await interaction.editReply('technically, that would not be very random');
@@ -86,19 +129,19 @@ async function random(interaction) {
     }
 }
 
-async function isaword(interaction) {
+async function isaword(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
     try {
-        const word = interaction.options.getString('word');
+        const word = interaction.options.getString('word')!;
         console.log(`isaword: '${word}'`);
         
         const variants = makeVariants(word);
 
         wiktIsAWordEarl.setTitles(variants);
-        const data = await wiktIsAWordEarl.fetchJson();
+        const data = await wiktIsAWordEarl.fetchJson() as PagesJson;
 
-        const present = [];
-        const absent = [];
+        const present: string[] = [];
+        const absent: string[] = [];
 
         for (const [key, dqp] of Object.entries(data.query.pages))
             (parseInt(key) < 0 ? absent : present).push(dqp.title);
@@ -110,13 +153,8 @@ async function isaword(interaction) {
 
         let reply;
         if (present.length === 0) {
-            const wleEarl = new Earl('https://en.wiktionary.org', '/w/api.php', {
-                action: 'query',
-                format: 'json',
-                list: 'backlinks',
-                bltitle: word,
-            });
-            const wleData = await wleEarl.fetchJson();
+            wleEarl.setSearchParam('bltitle', word);
+            const wleData = await wleEarl.fetchJson() as BackLinksJson;
             console.log(`wleData: ${JSON.stringify(wleData)}`);
             if (wleData.query.backlinks.length === 1)
                 reply = `'${word}' isn't in Wiktionary but it is linked to from '${wleData.query.backlinks[0].title}'.`;
@@ -147,7 +185,7 @@ async function isaword(interaction) {
     }
 }
 
-function makeVariants(word) {
+function makeVariants(word: string): string[] {
     const lower = word.toLowerCase();
 
     const uniqVariants = Array.from(new Set([
@@ -203,15 +241,15 @@ function makeVariants(word) {
 }
 
 // return the defintion of a word from Wiktionary using the new API I only just found out about
-async function define(interaction) {
+async function define(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
     try {
         // get term to look up either from interation option getstring or a random one via wiktRandomEarl if not provided...
         wiktRandomlEarl.setLimit(1);
-        const term = interaction.options.getString('term') || (await wiktRandomlEarl.fetchJson()).query.random[0].title;
+        const term = interaction.options.getString('term') || (await wiktRandomlEarl.fetchJson() as RandomJson).query.random[0].title;
 
         wiktDefineEarl.setTerm(term);
-        const daddo = await wiktDefineEarl.fetchJson();
+        const daddo = await wiktDefineEarl.fetchJson() as DefineJson;
 
         // if it has exactly these keys then it's an error: type, title, method, detail, uri
         if (daddo['type'] && daddo['title'] && daddo['method'] && daddo['detail'] && daddo['uri']) {
@@ -229,7 +267,7 @@ async function define(interaction) {
             if (en) {
                 console.log(`English definition: ${JSON.stringify(en, null, 2)}`);
                 
-                const pos = {
+                const pos = ({
                     "Adjective": "adj",
                     "Adverb": "adv",
                     "Conjunction": "conj",
@@ -238,7 +276,7 @@ async function define(interaction) {
                     "Preposition": "prep",
                     "Pronoun": "pron",
                     "Verb": "v",
-                }[en[0].partOfSpeech];
+                } as Record<string, string>)[en[0].partOfSpeech];
                 if (!pos) {
                     console.log(`[WIKT]: partOfSpeech: ${en[0].partOfSpeech}`);
                 }
