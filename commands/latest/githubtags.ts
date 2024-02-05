@@ -71,13 +71,11 @@ async function callGithubTagsRepo(name: string, ownerRepo: string, regex: RegExp
             const rel = ght.find((e: any) => new RegExp(regex).test(e.name)) as GitHubTags | undefined;
             
             if (rel) {
-                const json = await (await fetch(rel.commit.url)).json() as GitHubJarr | GitHubJobj;
+                const json = await (await fetch(rel.commit.url)).json() as GitHubJobj;
 
-                if (!Array.isArray(json)) {
-                    if (json.message && json.documentation_url) {
-                        console.log(`[${name}] GitHub tags API error: '${name}' ${json.message} ${rel.commit.url}`);
-                        ver = 'GitHub API error T2';
-                    }
+                if (json.message && json.documentation_url) {
+                    console.log(`[${name}] GitHub tags API error: '${name}' ${json.message} ${rel.commit.url}`);
+                    ver = 'GitHub API error T2';
                 } else {
                     const jRel = json as unknown as GitHubRel;
                     // there is commit.author.date and commit.committer.date...
