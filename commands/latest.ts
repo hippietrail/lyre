@@ -1,5 +1,5 @@
-//@ts-nocheck
-import { SlashCommandBuilder } from 'discord.js';
+////@ts-nocheck
+import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { ago } from '../ute/ago.js';
 import { callGithubReleases } from './latest/githubreleases.js';
 import { callGithubTags } from './latest/githubtags.js';
@@ -53,11 +53,11 @@ export const execute = latest;
 //  ICU4X
 // Vim
 
-async function latest(interaction) {
+async function latest(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
 
     try {
-        let responses = [];
+        let responses: any[] = []; // TODO fix 'any' type
 
         const sourceChoice = interaction.options.getString('source-choice');
         const sortByAge = interaction.options.getString('sortby') === 'age';
@@ -100,7 +100,8 @@ async function latest(interaction) {
 
         console.log(`[latest] sources: ${sourceNames.join(', ')}`);
 
-        async function updateReply(these, thisName) {
+        // TODO fix 'any' type
+        async function updateReply(these: any[], thisName: string) {
             console.log(`All ${thisName} have been fetched.`);
             sourceNames.splice(sourceNames.indexOf(thisName), 1);
 
@@ -197,13 +198,18 @@ async function latest(interaction) {
  * @param {string} vi.src - The source.
  * @return {string} A string representation of the name, version, link, timestamp, and source.
  */
-function versionInfoToString(vi) {
+function versionInfoToString(vi: {
+    name: string;
+    ver: string;
+    link?: string;
+    timestamp?: number;
+    src: string;}): string {
     const parts = [
         `${vi.name}:`,
         vi.link ? `[${vi.ver}](<${vi.link}>)` : vi.ver
     ];
 
-    if (vi.timestamp) parts.push(`- ${ago(new Date() - vi.timestamp)}`);
+    if (vi.timestamp) parts.push(`- ${ago(new Date().getTime() - vi.timestamp)}`);
     parts.push(`(${vi.src})`);
     return parts.join(' ');
 }

@@ -96,7 +96,7 @@ async function interactionCommand(interaction: CommandInteraction) {
             break;
 
         case 'latest':
-            await latest.execute(interaction);
+            await latest.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'thai':
