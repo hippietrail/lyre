@@ -14,14 +14,14 @@ export const data = new SlashCommandBuilder()
         .setDescription('Source choice')
         .setRequired(true)
         .addChoices(
+            { name: 'All', value: 'all' },
+            { name: 'All except GitHub', value: 'all-but-github' },
+            { name: 'All except GitHub Releases', value: 'all-but-githubreleases' },
             { name: 'GitHub Releases', value: 'githubreleases' },
             { name: 'GitHub Tags', value: 'githubtags' },
             { name: 'HTML', value: 'html' },
             { name: 'JSON', value: 'json' },
             { name: 'Wiki Dump', value: 'wikidump' },
-            { name: 'All', value: 'all' },
-            { name: 'All except GitHub Releases', value: 'all-but-githubreleases' },
-            { name: 'All except GitHub', value: 'all-but-github' },
         ))
     .addStringOption(option => option
         .setName('sortby')
