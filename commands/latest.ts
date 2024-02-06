@@ -1,10 +1,10 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { ago } from '../ute/ago.js';
-import { callGithubReleases } from './latest/githubreleases.js';
-import { callGithubTags } from './latest/githubtags.js';
-import { callWikiDump } from './latest/wikidump.js';
-import { callGo, callRvm, callAS, callElixir, callRuby, callIdea, callSdlMame, callSublime } from './latest/htmlsources.js';
-import { callNodejs, callGimp, callXcode, callMame, callDart, callPhp } from './latest/jsonsources.js';
+import { ago } from '../ute/ago';
+import { callGithubReleases } from './latest/githubreleases';
+import { callGithubTags } from './latest/githubtags';
+import { callWikiDump } from './latest/wikidump';
+import { callGo, callRvm, callAS, callElixir, callRuby, callIdea, callSdlMame, callSublime } from './latest/htmlsources';
+import { callNodejs, callGimp, callXcode, callMame, callDart, callPhp } from './latest/jsonsources';
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -35,7 +35,7 @@ export const data = new SlashCommandBuilder()
 export const execute = latest;
 
 // TODO
-// C standard?
+// C standard?              - https://www.open-std.org/jtc1/sc22/wg14/www/projects#9899
 // C++ standard?
 // C#
 // CC-CEDICT

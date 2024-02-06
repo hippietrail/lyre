@@ -1,6 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { Earl } from '../ute/earl.js';
-import { DomNode, domStroll } from '../ute/dom.js';
+import { Earl } from '../ute/earl';
+import { DomNode, domStroll } from '../ute/dom';
 
 export const data = new SlashCommandBuilder()
     .setName('isaword2')

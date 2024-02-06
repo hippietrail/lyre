@@ -1,5 +1,5 @@
-import { Earl } from '../../ute/earl.js';
-import { ago } from '../../ute/ago.js';
+import { Earl } from '../../ute/earl';
+import { ago } from '../../ute/ago';
 
 const githubTagsEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/tags');
 

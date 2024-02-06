@@ -1,5 +1,5 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { Earl } from '../ute/earl.js';
+import { Earl } from '../ute/earl';
 import { config } from 'dotenv';
 
 config();

@@ -1,8 +1,8 @@
 // a new slash command that gets the latest Tsoding Daily YouTube videos
 // *and* the latest GitHub activity by rexim
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { GithubEarl, YoutubeVidsEarl } from '../ute/earl.js';
-import { ago } from '../ute/ago.js';
+import { GithubEarl, YoutubeVidsEarl } from '../ute/earl';
+import { ago } from '../ute/ago';
 import { config } from 'dotenv';
 
 config();

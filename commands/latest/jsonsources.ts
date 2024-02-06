@@ -1,4 +1,4 @@
-import { Earl } from '../../ute/earl.js';
+import { Earl } from '../../ute/earl';
 
 interface Rel {
     lts: false | string;

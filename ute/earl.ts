@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-import type { DomNode } from './dom.js';
+import type { DomNode } from './dom';
 import parse from 'html-dom-parser';
 
 // TODO a way to handle redirects?

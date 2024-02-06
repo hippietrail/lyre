@@ -1,6 +1,6 @@
 import { AutocompleteInteraction, ChatInputCommandInteraction, CommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { YoutubeVidsEarl } from '../ute/earl.js';
-import { ago } from '../ute/ago.js';
+import { YoutubeVidsEarl } from '../ute/earl';
+import { ago } from '../ute/ago';
 import fs from 'node:fs';
 
 interface ChannelVids {

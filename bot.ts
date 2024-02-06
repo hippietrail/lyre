@@ -4,17 +4,17 @@ import { ChannelType, MessageType } from 'discord.js';
 // uncomment if you want to use DMs
 // import { ChannelType, Partials } from 'discord.js';
 import { config } from 'dotenv';
-import * as wikt from './commands/wikt.js';
-import * as curr from './commands/curr.js';
-import * as github from './commands/github.js';
-import * as yt from './commands/yt.js';
-import * as tsoding from './commands/tsoding.js';
-import * as etym from './commands/etym.js';
-import * as latest from './commands/latest.js';
-import * as thai from './commands/thai.js';
-import * as isaword from './commands/isaword.js';
-import * as ddg from './commands/ddg.js';
-import * as es from './commands/es.js';
+import * as wikt from './commands/wikt';
+import * as curr from './commands/curr';
+import * as github from './commands/github';
+import * as yt from './commands/yt';
+import * as tsoding from './commands/tsoding';
+import * as etym from './commands/etym';
+import * as latest from './commands/latest';
+import * as thai from './commands/thai';
+import * as isaword from './commands/isaword';
+import * as ddg from './commands/ddg';
+import * as es from './commands/es';
 
 config();
 

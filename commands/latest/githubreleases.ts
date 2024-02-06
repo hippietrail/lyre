@@ -1,4 +1,4 @@
-import { Earl } from '../../ute/earl.js';
+import { Earl } from '../../ute/earl';
 
 const githubReleasesEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/releases/latest');
 
