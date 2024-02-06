@@ -1,7 +1,6 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl.js';
-import { domStroll, DomNode } from '../ute/dom.js';
-import parse from 'html-dom-parser';
+import { domStroll } from '../ute/dom.js';
 
 export const data = new SlashCommandBuilder()
     .setName('ddg')
@@ -64,59 +63,15 @@ async function ddg(interaction: ChatInputCommandInteraction) {
             return;
         }
 
-        const imageWrapper = domStroll('ddg', false, feed.children!, [
+        const feedDreamTitle = domStroll('ddg', false, feed.children!, [
             [indexOpt * 2 + 1, 'div', { cls: 'feed-object' }],  // .row.feed-object 6.3.9.1.1.11.1
             [1, 'div', { cls: 'col-lg-12' }],                   // .col-lg-12 6.3.9.1.1.11.1.1
             [1, 'div', { cls: 'content' }],                     // .content.full-format. 6.3.9.1.1.11.1.1.1
-            [1, 'div', { cls: 'image-wrapper' }],               // .image-wrapper 6.3.9.1.1.11.1.1.1.1
+            [3, 'div', { cls: 'prompt-info'}],
+            [3, 'a', { cls: 'feed-dream-title'}],
         ])!;
 
-        const feedDreamImageWrapper = domStroll('ddg', false, imageWrapper.children!, [
-            [1, 'div', { cls: 'feed-dream-image-wrapper', optional: true }],
-        ])!;
-
-        if (!feedDreamImageWrapper) {
-            console.log(`[DDG] no feed-dream-image-wrapper`);
-
-            const iframe = domStroll('ddg', true, imageWrapper.children!, [
-                [1, 'div', { cls: 'dream-video-iframe-wrapper' }],
-                [1, 'iframe', { cls: 'dream-video-iframe' }],
-            ])!;
-
-            const inframeSrc = iframe.attribs!.src!;
-            await interaction.editReply(`[I think that index is a video rather than an image](${inframeSrc})`);
-            return;
-        }
-
-        const feedDreamImageWrapperChildrenLength = feedDreamImageWrapper.children!.length;
-        console.log(`[DDG] feedDreamImageWrapper contains ${feedDreamImageWrapperChildrenLength} children`);
-
-        let imgIndex = null;
-        if (feedDreamImageWrapperChildrenLength === 3) {
-            // first and only image is the source image
-            imgIndex = 1;
-        } else if (feedDreamImageWrapperChildrenLength === 5) {
-            // first image is the source image, second is the generated image
-            imgIndex = 3;
-        }else {
-            console.log(`[DDG] feedDreamImageWrapper has ${feedDreamImageWrapperChildrenLength} children, I don't know what to do with that...`);
-            // TODO does this ever happen?
-        }
-
-        const img = domStroll('ddg', true, feedDreamImageWrapper.children!, [
-            [imgIndex!, 'img', { optional: true }],         // .light-gallery-item.thumb.img-responsive
-        ])!;
-
-        if ('data-sub-html' in img.attribs!) {
-            try {
-                const dom = parse(img.attribs!['data-sub-html'] as string) as DomNode[];
-                const a = dom[0];
-
-                reply = `[${listOpt}](${a.attribs!.href})`
-            } catch (error) {
-                console.error(`[DDG] error parsing data-sub-html`, error);
-            }
-        } else console.log(`[DDG] no data-sub-html`);
+        reply = `[${listOpt}](${feedDreamTitle.attribs!.href})`;
     } catch (error) {
         console.error('[DDG]', error);
     }
