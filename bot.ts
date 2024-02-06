@@ -14,6 +14,7 @@ import * as latest from './commands/latest.js';
 import * as thai from './commands/thai.js';
 import * as isaword from './commands/isaword.js';
 import * as ddg from './commands/ddg.js';
+import * as es from './commands/es.js';
 
 config();
 
@@ -109,6 +110,10 @@ async function interactionCommand(interaction: CommandInteraction) {
 
         case 'ddg':
             await ddg.execute(interaction as ChatInputCommandInteraction);
+            break;
+
+        case 'es':
+            await es.execute(interaction as ChatInputCommandInteraction);
             break;
 
         default:
