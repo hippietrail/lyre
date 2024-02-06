@@ -18,6 +18,7 @@ export const data = new SlashCommandBuilder()
             { name: 'best/month', value: 'best/month' },
             { name: 'best/year', value: 'best/year' },
             { name: 'best/editor-choice', value: 'best/editor-choice' },
+            { name: 'videos', value: 'videos' },
         )
     )
     .addIntegerOption(option => option
@@ -30,12 +31,11 @@ export const data = new SlashCommandBuilder()
 
 export const execute = ddg;
 
-// import { wonda } from '../ute/riða.js'
 async function ddg(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
     const ddgEarl = new Earl('https://deepdreamgenerator.com/');
     const listOpt = interaction.options.getString('list')!;
-    const indexOpt = interaction.options.getInteger('index')!;
+    const indexOpt = interaction.options.getInteger('index') ?? 0;
 
     if (listOpt !== 'trending')
         ddgEarl.setLastPathSegment(listOpt);
@@ -65,10 +65,10 @@ async function ddg(interaction: ChatInputCommandInteraction) {
         }
 
         const imageWrapper = domStroll('ddg', false, feed.children!, [
-            [indexOpt * 2 + 1, 'div', { cls: 'feed-object' }],     // .row.feed-object 6.3.9.1.1.11.1
-            [1, 'div', { cls: 'col-lg-12' }],       // .col-lg-12 6.3.9.1.1.11.1.1
-            [1, 'div', { cls: 'content' }],         // .content.full-format. 6.3.9.1.1.11.1.1.1
-            [1, 'div', { cls: 'image-wrapper' }],   // .image-wrapper 6.3.9.1.1.11.1.1.1.1
+            [indexOpt * 2 + 1, 'div', { cls: 'feed-object' }],  // .row.feed-object 6.3.9.1.1.11.1
+            [1, 'div', { cls: 'col-lg-12' }],                   // .col-lg-12 6.3.9.1.1.11.1.1
+            [1, 'div', { cls: 'content' }],                     // .content.full-format. 6.3.9.1.1.11.1.1.1
+            [1, 'div', { cls: 'image-wrapper' }],               // .image-wrapper 6.3.9.1.1.11.1.1.1.1
         ])!;
 
         const feedDreamImageWrapper = domStroll('ddg', false, imageWrapper.children!, [
@@ -77,8 +77,14 @@ async function ddg(interaction: ChatInputCommandInteraction) {
 
         if (!feedDreamImageWrapper) {
             console.log(`[DDG] no feed-dream-image-wrapper`);
-            // wonda(imageWrapper.children!, 'ddg-v', 0, 6, [], false);
-            await interaction.editReply(`I think that index is a video rather than an image`);
+
+            const iframe = domStroll('ddg', true, imageWrapper.children!, [
+                [1, 'div', { cls: 'dream-video-iframe-wrapper' }],
+                [1, 'iframe', { cls: 'dream-video-iframe' }],
+            ])!;
+
+            const inframeSrc = iframe.attribs!.src!;
+            await interaction.editReply(`[I think that index is a video rather than an image](${inframeSrc})`);
             return;
         }
 

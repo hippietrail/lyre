@@ -7,6 +7,7 @@ export interface DomNode {
         id?: string,
         class?: string,
         href?: string,
+        src?: string,
     },
     data?: string,
     parent: DomNode,
