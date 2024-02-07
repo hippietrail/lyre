@@ -48,7 +48,6 @@ export const execute = latest;
 // Objective C? on GitHub tags only apple-oss-distributions/objc4
 // Unicode
 //  CLDR
-//  ICU
 //  ICU4X
 // Vim
 

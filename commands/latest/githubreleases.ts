@@ -53,6 +53,7 @@ const ownerRepos: StringFunctionTuple[] = [
     /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
     ['scala/scala', (_: string, __: string, jt: string) => ['Scala 2', jt]],        // "tag_name": "v2.13.12", "name": "Scala 2.13.12",
     ['rust-lang/rust', xformRepoCapTag],
+    ['unicode-org/icu', xformNameSplit],
     ['vlang/v', xformRepoCapTag],
     ['zed-industries/zed', xformRepoTag],
     ['ziglang/zig', xformRepoCapTag],
