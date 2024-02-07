@@ -7,6 +7,7 @@
       "strict": true,
       "esModuleInterop": true,
       "moduleResolution": "nodenext",
+      "sourceMap": true
     },
     "exclude": ["node_modules"]
 }
