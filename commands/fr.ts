@@ -1,27 +1,29 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl';
 import { humanFriendlyListFormatter } from '../ute/amis';
+import { wikt } from '../ute/wikt';
 
 export const data = new SlashCommandBuilder()
     .setName('fr')
     .setDescription('Check for a French word in a couple of dictionaries')
     .addStringOption(option => option.setName('word').setDescription('word to check').setRequired(true));
 
-export const execute = es;
+export const execute = fr;
 
-async function es(interaction: ChatInputCommandInteraction) {
+async function fr(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
     try {
         const word = interaction.options.getString('word')!;
-        console.log(`es: ${word}`);
+        console.log(`fr: ${word}`);
 
-        const robertProm = robert(word);
-        const larousseProm = larousse(word);
-        const wiktProm = wikt('fr', word);
-
-        const tout = await Promise.all([robertProm, larousseProm, wiktProm]);
+        const tout = await Promise.all([
+            robert(word),
+            larousse(word),
+            wikt('fr', word).then(w => w === 0 ? false : w === 1 ? true : null),
+        ]);
         const [robertRes, larousseRes, wiktRes] = tout;
-        console.log(`[ISAWORD] ${word} robertRes: ${robertRes} larousseRes: ${larousseRes}`);
+
+        console.log(`[fr] ${word} robertRes: ${robertRes} larousseRes: ${larousseRes} wiktRes: ${wiktRes}`);
 
         let resultText = 'aucune idée'
         const dictNames = ['le petit robert', 'larousse', 'wiktionary français'];
@@ -29,12 +31,12 @@ async function es(interaction: ChatInputCommandInteraction) {
         const notIns = tout.map((res, i) => res === false ? dictNames[i] : undefined).filter(Boolean).map(e => e!);
 
         if (ins.length && notIns.length)
-            resultText = `in ${humanFriendlyListFormatter(ins, 'and')} not in ${humanFriendlyListFormatter(notIns, 'or')}`;
+            resultText = `'${word}' is in ${humanFriendlyListFormatter(ins, 'and')}; but not in ${humanFriendlyListFormatter(notIns, 'or')}`;
         else if (ins.length)
-            resultText = `in ${humanFriendlyListFormatter(ins, 'and')}`;
+            resultText = `${word} is in ${humanFriendlyListFormatter(ins, 'and')}`;
         else if (notIns.length)
-            resultText = `not in ${humanFriendlyListFormatter(notIns, 'or')}`;
-        // any other combination means one or both lookups failed
+            resultText = `${word} is not in ${humanFriendlyListFormatter(notIns, 'or')}`;
+        // any other combination means one or more lookups failed
         await interaction.editReply(resultText);
 
     } catch (e) {
@@ -60,13 +62,13 @@ async function robert(word: string): Promise<boolean | null> {
     });
     try {
         const data = await robertEarl.fetchJson() as RobertJson[];
-        console.log(`[ISAWORD/robert] ${word} length: ${data.length}`);
+        console.log(`[fr/robert] ${word} length: ${data.length}`);
         const filtr = data.filter(e => e.type === 'def' && e.term === word);
-        console.log(`[ISAWORD/robert] ${word} filtr: ${filtr.length} after filtering`);
+        console.log(`[fr/robert] ${word} filtr: ${filtr.length} after filtering`);
         if (filtr.length === 0) return false;
         else if (filtr.length > 0) return true;
     } catch (error) {
-        console.error(`[ISAWORD/robert]`, error);
+        console.error(`[fr/robert]`, error);
     }
     return null;
 }
@@ -77,41 +79,11 @@ async function larousse(word: string): Promise<boolean | null> {
     larousseEarl.setLastPathSegment(word);
     try {
         const status = (await fetch(larousseEarl.getUrlString(), { method: 'HEAD', redirect: 'manual' })).status;
-        console.log(`[ISAWORD/larousse] ${word} status: ${status}`);
+        console.log(`[fr/larousse] ${word} status: ${status}`);
         if (status === 301) return true;
         else if (status === 200) return false;
     } catch (error) {
-        console.error(`[ISAWORD/larousse]`, error);
+        console.error(`[fr/larousse]`, error);
     }
-    return null;
-}
-
-interface WikiApiJson {
-    query: {
-        pages: [
-            {
-                pageid?: unknown,
-                missing?: unknown,
-            }
-        ]
-    }
-}
-
-// TODO this is duplicated from thai.ts
-async function wikt(wikiLang: string, word: string) {
-    const wiktEarl = new Earl(`https://${wikiLang}.wiktionary.org`, '/w/api.php', {
-        'action': 'query',
-        'format': 'json',
-        'titles': word
-    });
-    const data = await wiktEarl.fetchJson() as WikiApiJson;
-
-    if (Object.keys(data.query.pages).length === 1) {
-        const page = Object.values(data.query.pages)[0];
-        
-        if ('pageid' in page) return true;
-        else if ('missing' in page) return false;
-    }
-    
     return null;
 }

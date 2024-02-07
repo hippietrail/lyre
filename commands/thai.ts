@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl';
 import { domStroll } from '../ute/dom';
+import { wikt } from '../ute/wikt';
 
 export const data = new SlashCommandBuilder()
     .setName('thai')
@@ -117,35 +118,5 @@ async function seaLang(word: string) {
             }
         }
     }
-    return null;
-}
-
-interface WikiApiJson {
-    query: {
-        pages: [
-            {
-                pageid?: unknown,
-                missing?: unknown,
-            }
-        ]
-    }
-}
-
-// wikt uses the old MediaWiki API
-async function wikt(wikiLang: string, word: string) {
-    const wiktEarl = new Earl(`https://${wikiLang}.wiktionary.org`, '/w/api.php', {
-        'action': 'query',
-        'format': 'json',
-        'titles': word
-    });
-    const data = await wiktEarl.fetchJson() as WikiApiJson;
-
-    if (Object.keys(data.query.pages).length === 1) {
-        const page = Object.values(data.query.pages)[0];
-        
-        if ('pageid' in page) return 1;
-        else if ('missing' in page) return 0;
-    }
-    
     return null;
 }
