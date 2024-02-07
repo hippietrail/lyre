@@ -15,6 +15,7 @@ import * as thai from './commands/thai';
 import * as isaword from './commands/isaword';
 import * as ddg from './commands/ddg';
 import * as es from './commands/es';
+import * as fr from './commands/fr';
 
 config();
 
@@ -114,6 +115,10 @@ async function interactionCommand(interaction: CommandInteraction) {
 
         case 'es':
             await es.execute(interaction as ChatInputCommandInteraction);
+            break;
+
+        case 'fr':
+            await fr.execute(interaction as ChatInputCommandInteraction);
             break;
 
         default:
