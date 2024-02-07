@@ -434,3 +434,47 @@ export async function callSublime() {
 
     return [];
 }
+
+export async function callPython() {
+    // https://www.python.org/
+    const pyEarl = new Earl('https://www.python.org');
+    try {
+        const latestA = domStroll('python', false, await pyEarl.fetchDom(), [
+            [9, 'html', { cls: 'no-js' }],
+            [5, 'body', { id: 'homepage' }],
+            [1, 'div', { id: 'touchnav-wrapper' }],
+            [13, 'div', { id: 'content' }],
+            [3, 'div', { cls: 'container' }],
+            [1, 'section', { cls: 'main-content' }],
+            [1, 'div', { cls: 'row' }],
+            [3, 'div', { cls: 'download-widget'} ], // also .small-widget
+            [5, 'p' ],
+            [1, 'a' ],
+        ])!;
+
+        const [aVerText, aHref] = [latestA.children![0].data!.trim(), latestA.attribs!.href!.trim()];
+
+        pyEarl.setPathname(aHref);
+        const releaseDateP = domStroll('python', false, await pyEarl.fetchDom(), [
+            [9, 'html', { cls: 'no-js' }],
+            [5, 'body'],
+            [1, 'div', { id: 'touchnav-wrapper' }],
+            [13, 'div', { id: 'content' }],
+            [3, 'div', { cls: 'container' }],
+            [1, 'section', { cls: 'main-content' }],
+			[3, 'article', { cls: 'text' }],
+			[3, 'p'],
+        ])!;
+
+        return [{
+            name: 'Python',
+            ver: aVerText,
+            link: pyEarl.getUrlString(),
+            timestamp: new Date(releaseDateP.children![1].data!.trim()),
+            src: 'python.org',
+        }];
+    } catch (error) {
+        console.error(`[Python]`, error);
+    }
+    return [];
+}

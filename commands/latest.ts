@@ -3,7 +3,7 @@ import { ago } from '../ute/ago';
 import { callGithubReleases } from './latest/githubreleases';
 import { callGithubTags } from './latest/githubtags';
 import { callWikiDump } from './latest/wikidump';
-import { callGo, callRvm, callAS, callElixir, callRuby, callIdea, callSdlMame, callSublime } from './latest/htmlsources';
+import { callGo, callRvm, callAS, callElixir, callRuby, callIdea, callSdlMame, callSublime, callPython } from './latest/htmlsources';
 import { callNodejs, callGimp, callXcode, callMame, callDart, callPhp } from './latest/jsonsources';
 
 export const data = new SlashCommandBuilder()
@@ -197,6 +197,7 @@ async function latest(interaction: ChatInputCommandInteraction) {
                 callWikiDump(), // actually HTML first then JSON
                 callSdlMame(),
                 callSublime(),
+                callPython(),
             ]).then(async arr => await updateReply(arr, 'HTML')));
         } else if (useWikiDump) {
             sourcePromises.push(callWikiDump().then(async arr => await updateReply([arr], 'HTML')));
