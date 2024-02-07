@@ -17,25 +17,23 @@ async function es(interaction: ChatInputCommandInteraction) {
 
         const robertProm = robert(word);
         const larousseProm = larousse(word);
+        const wiktProm = wikt('fr', word);
 
-        const tout = await Promise.all([robertProm, larousseProm]);
-        const [robertRes, larousseRes] = tout;
+        const tout = await Promise.all([robertProm, larousseProm, wiktProm]);
+        const [robertRes, larousseRes, wiktRes] = tout;
         console.log(`[ISAWORD] ${word} robertRes: ${robertRes} larousseRes: ${larousseRes}`);
 
         let resultText = 'aucune idée'
-        if (robertRes && larousseRes) {
-            resultText = `«  ${word}  » est dans les deux dictionnaires, le petit robert et la larousse.`;
-        } else if (robertRes && larousseRes === false) {
-            resultText = `«  ${word}  » est seulement dans le petit robert.`;
-        } else if (larousseRes && robertRes === false) {
-            resultText = `«  ${word}  » est seulement dans la larousse.`;
-        } else if (robertRes === false && larousseRes === false) {
-            resultText = `«  ${word}  » n'est dans aucun dictionnaire. ni le petit robert, ni la larousse.`;
-        } else if (robertRes) {
-            resultText = `«  ${word}  » est dans le petit robert.`;
-        } else if (larousseRes) {
-            resultText = `«  ${word}  » est dans la larousse.`;
-        }
+        const dictNames = ['le petit robert', 'larousse', 'wiktionary français'];
+        const ins = tout.map((res, i) => res ? dictNames[i] : undefined).filter(Boolean).map(e => e!);
+        const notIns = tout.map((res, i) => res === false ? dictNames[i] : undefined).filter(Boolean).map(e => e!);
+
+        if (ins.length && notIns.length)
+            resultText = `in ${humanFriendlyListFormatter(ins, 'and')} not in ${humanFriendlyListFormatter(notIns, 'or')}`;
+        else if (ins.length)
+            resultText = `in ${humanFriendlyListFormatter(ins, 'and')}`;
+        else if (notIns.length)
+            resultText = `not in ${humanFriendlyListFormatter(notIns, 'or')}`;
         // any other combination means one or both lookups failed
         await interaction.editReply(resultText);
 
@@ -75,9 +73,6 @@ async function robert(word: string): Promise<boolean | null> {
 
 async function larousse(word: string): Promise<boolean | null> {
     // https://www.larousse.fr/dictionnaires/francais/WORD
-
-    // just do an HTTP HEAD - if it's moved it's in the dictionary. if 200 OK then it's not
-
     const larousseEarl = new Earl('https://www.larousse.fr', '/dictionnaires/francais/');
     larousseEarl.setLastPathSegment(word);
     try {
@@ -89,4 +84,42 @@ async function larousse(word: string): Promise<boolean | null> {
         console.error(`[ISAWORD/larousse]`, error);
     }
     return null;
+}
+
+interface WikiApiJson {
+    query: {
+        pages: [
+            {
+                pageid?: unknown,
+                missing?: unknown,
+            }
+        ]
+    }
+}
+
+// TODO this is duplicated from thai.ts
+async function wikt(wikiLang: string, word: string) {
+    const wiktEarl = new Earl(`https://${wikiLang}.wiktionary.org`, '/w/api.php', {
+        'action': 'query',
+        'format': 'json',
+        'titles': word
+    });
+    const data = await wiktEarl.fetchJson() as WikiApiJson;
+
+    if (Object.keys(data.query.pages).length === 1) {
+        const page = Object.values(data.query.pages)[0];
+        
+        if ('pageid' in page) return true;
+        else if ('missing' in page) return false;
+    }
+    
+    return null;
+}
+
+// TODO this is duplicated from isaword.ts
+function humanFriendlyListFormatter(arrayOfStrings: string[], conj: string = 'and') {
+    if (arrayOfStrings.length === 0) return '';
+    else if (arrayOfStrings.length === 1) return arrayOfStrings[0];
+    else if (arrayOfStrings.length === 2) return `${arrayOfStrings[0]} ${conj} ${arrayOfStrings[1]}`;
+    else return `${arrayOfStrings.slice(0, -1).join(', ')}, ${conj} ${arrayOfStrings[arrayOfStrings.length - 1]}`;
 }
