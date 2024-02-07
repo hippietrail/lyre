@@ -11,6 +11,7 @@ export const data = new SlashCommandBuilder()
 export const execute = fr;
 
 async function fr(interaction: ChatInputCommandInteraction) {
+    const lang = ['en', 'fr'][Math.floor(Math.random() * 2)];
     await interaction.deferReply();
     try {
         const word = interaction.options.getString('word')!;
@@ -25,23 +26,35 @@ async function fr(interaction: ChatInputCommandInteraction) {
 
         console.log(`[fr] ${word} robertRes: ${robertRes} larousseRes: ${larousseRes} wiktRes: ${wiktRes}`);
 
-        let resultText = 'aucune idée'
-        const dictNames = ['le petit robert', 'larousse', 'wiktionary français'];
+        let resultText = lang === 'fr' ? 'aucune idée' : 'dunno';
+
+        const dictNames = ['le petit robert', 'larousse', lang === 'fr' ? 'wiktionary français' : 'french wiktionary'];
+
         const ins = tout.map((res, i) => res ? dictNames[i] : undefined).filter(Boolean).map(e => e!);
         const notIns = tout.map((res, i) => res === false ? dictNames[i] : undefined).filter(Boolean).map(e => e!);
 
         if (ins.length && notIns.length)
-            resultText = `'${word}' is in ${humanFriendlyListFormatter(ins, 'and')}; but not in ${humanFriendlyListFormatter(notIns, 'or')}`;
+            lang === 'en'
+                ? resultText = `'${word}' is in ${humanFriendlyListFormatter(ins, 'and')}; but not in ${humanFriendlyListFormatter(notIns, 'or')}`
+                : resultText = `'${word}' est dans ${humanFriendlyListFormatter(ins, 'et')}; mais pas dans ${humanFriendlyListFormatter(notIns, 'ou')}`;
         else if (ins.length)
-            resultText = `${word} is in ${humanFriendlyListFormatter(ins, 'and')}`;
+            lang === 'en'
+                ? resultText = `${word} is in ${humanFriendlyListFormatter(ins, 'and')}`
+                : resultText = `${word} est dans ${humanFriendlyListFormatter(ins, 'et')}`;
         else if (notIns.length)
-            resultText = `${word} is not in ${humanFriendlyListFormatter(notIns, 'or')}`;
+            lang === 'en'
+                ? resultText = `${word} is not in ${humanFriendlyListFormatter(notIns, 'or')}`
+                : resultText = `${word} n'est pas dans ${humanFriendlyListFormatter(notIns, 'ou')}`;
         // any other combination means one or more lookups failed
         await interaction.editReply(resultText);
 
     } catch (e) {
         console.error(e);
-        await interaction.editReply('Je n\'arrive pas à trouver cette fréquence.');
+        await interaction.editReply(
+            lang === 'en'
+                ? 'something went wrong, probably the internet'
+                : 'quelque chose s\'est mal passe, probablement internet'
+        );
     }
 }
 
