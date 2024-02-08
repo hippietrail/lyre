@@ -2,6 +2,7 @@ import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl';
 import { DomNode, domStroll } from '../ute/dom';
 import { humanFriendlyListFormatter } from '../ute/amis';
+import { wikt } from '../ute/wikt';
 
 export const data = new SlashCommandBuilder()
     .setName('isaword2')
@@ -38,7 +39,7 @@ async function isaword(interaction: ChatInputCommandInteraction) {
         ['Wordnik', wordnik, false],
 
         // dictionaries that anyone can contribute to, in order of trustworthiness
-        ['Wiktionary', wikt, true],
+        ['Wiktionary', (w) => wikt('en', w).then(w => w === 0 ? false : w === 1 ? true : null), true],
         ['Urban Dictionary', urban, true],
     ];
 
@@ -118,35 +119,6 @@ async function chambers(word: string) {
         else if (message.children!.length === 3) return false;
     } catch (error) {
         console.error(`[ISAWORD/chambers]`, error);
-    }
-    return null;
-}
-
-interface WikiApiJson {
-    query: {
-        pages: [],
-    },
-}
-
-// we should probably use the new definition API since this returns true for stubs, redirects, common misspellings, foreign words
-async function wikt(word: string) {
-    // https://en.wiktionary.org/w/api.php?action=query&format=json&titles=WORD
-    const wiktEarl = new Earl(`https://en.wiktionary.org`, '/w/api.php', {
-        'action': 'query',
-        'format': 'json',
-        'titles': word
-    });
-    try {
-        const data: WikiApiJson = await wiktEarl.fetchJson() as WikiApiJson;
-
-        if (Object.keys(data.query.pages).length === 1) {
-            const page = Object.values(data.query.pages)[0];
-            console.log(`[ISAWORD/enwikt] ${word} status: ${Object.keys(page)}`);
-            if ('pageid' in page) return true;
-            else if ('missing' in page) return false;
-        }
-    } catch (error) {
-        console.error(`[ISAWORD/enwikt]`, error);
     }
     return null;
 }
