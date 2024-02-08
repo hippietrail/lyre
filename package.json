@@ -17,6 +17,7 @@
     "source-map-support": "^0.5.21"
   },
   "devDependencies": {
-    "@types/html-to-text": "^9.0.4"
+    "@types/html-to-text": "^9.0.4",
+    "@types/source-map-support": "^0.5.10"
   }
 }

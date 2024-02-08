@@ -1,3 +1,4 @@
+import 'source-map-support/register'
 import { Client, Events, GatewayIntentBits } from 'discord.js';
 import { AutocompleteInteraction, ChatInputCommandInteraction, CommandInteraction, Interaction } from "discord.js";
 import { ChannelType, MessageType } from 'discord.js';
