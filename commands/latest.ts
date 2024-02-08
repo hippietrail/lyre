@@ -45,10 +45,10 @@ export const execute = latest;
 // Groovy
 // Haskell
 // Java/JDK/JVM?
-// Objective C? on GitHub tags only apple-oss-distributions/objc4
+// Objective C?             - GitHub tags only apple-oss-distributions/objc4
 // Unicode
-//  CLDR
-//  ICU4X
+//  CLDR                    - unicode-org/cldr
+//  ICU4X                   - unicode-org/icu4x
 // Vim
 
 interface VersionInfoLoose {
