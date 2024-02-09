@@ -87,10 +87,7 @@ async function cambridge(word: string) {
     const earl = new Earl('https://dictionary.cambridge.org', '/dictionary/english/');
     earl.setLastPathSegment(word);
     try {
-        const status = (await fetch(earl.getUrlString(), { method: 'HEAD', redirect: 'manual' })).status;
-        console.log(`[ISAWORD/cambridge] ${word} status: ${status}`);
-        if (status === 302) return false;
-        else if (status === 200) return true;
+        return !await earl.checkRedirect();
     } catch (error) {
         console.error(`[ISAWORD/cambridge]`, error);
     }

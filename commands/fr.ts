@@ -91,10 +91,7 @@ async function larousse(word: string): Promise<boolean | null> {
     const larousseEarl = new Earl('https://www.larousse.fr', '/dictionnaires/francais/');
     larousseEarl.setLastPathSegment(word);
     try {
-        const status = (await fetch(larousseEarl.getUrlString(), { method: 'HEAD', redirect: 'manual' })).status;
-        console.log(`[fr/larousse] ${word} status: ${status}`);
-        if (status === 301) return true;
-        else if (status === 200) return false;
+        return (await larousseEarl.checkRedirect())
     } catch (error) {
         console.error(`[fr/larousse]`, error);
     }

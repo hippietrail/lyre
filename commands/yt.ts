@@ -1,5 +1,5 @@
 import { AutocompleteInteraction, ChatInputCommandInteraction, CommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { YoutubeVidsEarl } from '../ute/earl';
+import { YoutubeVidsEarl, Earl } from '../ute/earl';
 import { ago } from '../ute/ago';
 import fs from 'node:fs';
 
@@ -85,32 +85,27 @@ export async function autocomplete(interaction: AutocompleteInteraction) {
 async function yt(interaction: CommandInteraction, chanGroupName: string, chanList: Record<string, string>) {
     await interaction.deferReply();
     try {
+        const earl = new Earl('https://www.youtube.com', '/shorts/');
         const now = new Date();
 
-        const videoIdToHeadPromise: Record<string, Promise<Response>> = {};
+        const videoIdToPair: Record<string, [Promise<boolean>, boolean | null]> = {};
 
         const allVids = (await Promise.all(Object.values(chanList).map(
             async (plid): Promise<ChannelVids> => await fetchVideos(plid)
         ))).map(chanVids => {
             chanVids.items.forEach(v => {
-                videoIdToHeadPromise[v.snippet.resourceId.videoId] = fetch(
-                    `https://www.youtube.com/shorts/${v.snippet.resourceId.videoId}`,
-                    { method: 'HEAD', redirect: 'manual' }
-                );
+                earl.setLastPathSegment(v.snippet.resourceId.videoId);
+                videoIdToPair[v.snippet.resourceId.videoId] = [earl.checkRedirect(), null];
             })
             return chanVids.items
         }).flat();
 
-        const videoIdToHeadStatus = await Promise.all(
-            Object.entries(videoIdToHeadPromise).map(
-                async ([videoId, headPromise]) => [videoId, (await headPromise).status]
-            )
-        ).then(Object.fromEntries);
+        await Promise.all(Object.values(videoIdToPair).map(async pair => pair[1] = await pair[0]))
 
         const reply = `${
             allVids
             .toSorted((a, b) => b.snippet.publishedAt.localeCompare(a.snippet.publishedAt))
-            .filter(v => videoIdToHeadStatus[v.snippet.resourceId.videoId] !== 200)
+            .filter(v => videoIdToPair[v.snippet.resourceId.videoId][1])
             .slice(0, 10)
             .map(v => `${v.snippet.channelTitle}: [${
                 v.snippet.title

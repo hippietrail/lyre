@@ -50,6 +50,9 @@ export class Earl {
     async fetchText() {
         return (await fetch(this.url)).text();
     }
+    async checkRedirect() {
+        return Math.floor((await fetch(this.url, { method: 'HEAD', redirect: 'manual' })).status / 100) === 3;
+    }
 
     // apilayer.com that we use for currency exchange rates is sometimes broken
     async fetchJsonWithError() {
