@@ -3,6 +3,7 @@ import { Earl } from '../ute/earl';
 import { DomNode, domStroll } from '../ute/dom';
 import { humanFriendlyListFormatter } from '../ute/amis';
 import { wikt } from '../ute/wikt';
+import { etym } from '../ute/etym';
 
 export const data = new SlashCommandBuilder()
     .setName('isaword2')
@@ -30,6 +31,7 @@ async function isaword(interaction: ChatInputCommandInteraction) {
         ['Chambers', chambers, false],
         //['Collins', collins, false],
         ['Dictionary.com', dictCom, false],
+        ['Etymonline', etymonline, false],
         ['Longman', longman, false],
         ['Merriam-Webster', mw, false],
         ['OED', oed, false],
@@ -456,4 +458,10 @@ async function oed(word: string) {
         console.error(`[ISAWORD/oed]`, error);
     }
     return null;
+}
+
+async function etymonline(word: string) {
+    const result: boolean | null = (await etym(word))?.[0];
+    console.log(`[ISAWORD/etymonline] ${word} result: ${result}`);
+    return result;
 }
