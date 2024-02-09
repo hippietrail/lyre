@@ -64,9 +64,7 @@ const wleEarl = new Earl('https://en.wiktionary.org', '/w/api.php', {
 interface BackLinksJson {
     query: {
         backlinks: [
-            {
-                title: string
-            }
+            { title: string }
         ]
     }
 }
@@ -84,9 +82,7 @@ interface DefineJson {
     [key: string]: {
         partOfSpeech: string,
         language: string,
-        definitions: {
-            definition: string
-        }[]
+        definitions: { definition: string }[]
     }[]
 }
 
