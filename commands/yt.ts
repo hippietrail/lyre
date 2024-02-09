@@ -3,17 +3,15 @@ import { YoutubeVidsEarl, Earl } from '../ute/earl';
 import { ago } from '../ute/ago';
 import fs from 'node:fs';
 
+interface Snippet {
+    title: string;
+    resourceId: { videoId: string },
+    publishedAt: string
+    channelTitle: string
+}
+
 interface ChannelVids {
-    items: {
-        snippet: {
-            title: string;
-            resourceId: {
-                videoId: string
-            },
-            publishedAt: string
-            channelTitle: string
-        }
-    }[]
+    items: { snippet: Snippet }[]
 };
 
 let config: { [key: string]: string[] } = {};
@@ -86,37 +84,36 @@ async function yt(interaction: CommandInteraction, chanGroupName: string, chanLi
     await interaction.deferReply();
     try {
         const earl = new Earl('https://www.youtube.com', '/shorts/');
-        const now = new Date();
+        const now = new Date().getTime();
 
-        const videoIdToPair: Record<string, [Promise<boolean>, boolean | null]> = {};
+        interface Vid { snippet: Snippet, promise?: Promise<boolean>, redirect?: boolean }
 
-        const allVids = (await Promise.all(Object.values(chanList).map(
-            async (plid): Promise<ChannelVids> => await fetchVideos(plid)
-        ))).map(chanVids => {
-            chanVids.items.forEach(v => {
-                earl.setLastPathSegment(v.snippet.resourceId.videoId);
-                videoIdToPair[v.snippet.resourceId.videoId] = [earl.checkRedirect(), null];
-            })
-            return chanVids.items
-        }).flat();
-
-        await Promise.all(Object.values(videoIdToPair).map(async pair => pair[1] = await pair[0]))
-
+        const array = (await Promise.all(Object.values(chanList).map(plid => fetchVideos(plid)).map(prom => prom.then(chanVids => chanVids.items.map(v => {
+            earl.setLastPathSegment(v.snippet.resourceId.videoId);
+            const promise = earl.checkRedirect();
+            const vid: Vid = { snippet: v.snippet, promise };
+            promise.then(redirect => vid.redirect = redirect)
+            return vid;
+        }))))).flat();
+        
+        await Promise.all(array.map(v => v.promise));
+        
         const reply = `${
-            allVids
+            array
+            .filter(v => v.redirect === true)
             .toSorted((a, b) => b.snippet.publishedAt.localeCompare(a.snippet.publishedAt))
-            .filter(v => videoIdToPair[v.snippet.resourceId.videoId][1])
             .slice(0, 10)
             .map(v => `${v.snippet.channelTitle}: [${
                 v.snippet.title
             }](<https://www.youtube.com/watch?v=${
                 v.snippet.resourceId.videoId
             }>) - ${
-                ago(now.getTime() - new Date(v.snippet.publishedAt).getTime())
+                ago(now - new Date(v.snippet.publishedAt).getTime())
             }`)
             .join('\n')
         }`;
-        await interaction.editReply(reply);
+
+        await interaction.editReply(reply || 'hmm... no videos');
     } catch (error) {
         console.error(error);
         await interaction.editReply('An error occurred while fetching data.');
