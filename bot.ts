@@ -17,6 +17,7 @@ import * as isaword from './commands/isaword';
 import * as ddg from './commands/ddg';
 import * as es from './commands/es';
 import * as fr from './commands/fr';
+import * as dns from './commands/dns';
 
 config();
 
@@ -120,6 +121,10 @@ async function interactionCommand(interaction: CommandInteraction) {
 
         case 'fr':
             await fr.execute(interaction as ChatInputCommandInteraction);
+            break;
+
+        case 'dns':
+            await dns.execute(interaction as ChatInputCommandInteraction);
             break;
 
         default:
