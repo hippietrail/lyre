@@ -88,13 +88,17 @@ async function yt(interaction: CommandInteraction, chanGroupName: string, chanLi
 
         interface Vid { snippet: Snippet, promise?: Promise<boolean>, redirect?: boolean }
 
-        const array = (await Promise.all(Object.values(chanList).map(plid => fetchVideos(plid)).map(prom => prom.then(chanVids => chanVids.items.map(v => {
-            earl.setLastPathSegment(v.snippet.resourceId.videoId);
-            const promise = earl.checkRedirect();
-            const vid: Vid = { snippet: v.snippet, promise };
-            promise.then(redirect => vid.redirect = redirect)
-            return vid;
-        }))))).flat();
+        const array = (await Promise.all(Object.values(chanList)
+            .map(plid => fetchVideos(plid)
+                .then(chanVids => chanVids.items.map(v => {
+                    earl.setLastPathSegment(v.snippet.resourceId.videoId);
+                    const promise = earl.checkRedirect();
+                    const vid: Vid = { snippet: v.snippet, promise };
+                    promise.then(redirect => vid.redirect = redirect)
+                    return vid;
+                }))
+            )
+        )).flat();
         
         await Promise.all(array.map(v => v.promise));
         
