@@ -27,7 +27,7 @@ export const data = new SlashCommandBuilder()
         .setRequired(false)
         .setMinValue(0)
         .setMaxValue(29)
-    );    
+    );
 
 export const execute = ddg;
 
@@ -97,12 +97,15 @@ async function ddgs(interaction: ChatInputCommandInteraction) {
         offset: 0,
     });
     const url = ddgEarl.getUrlString();
-    
+
     try {
         const dom = parse(JSON.parse(await (await fetch(url, { method: 'POST' })).text()).results) as DomNode[];
 
-        const searchResultExpand = domStroll('ddgs', true, dom, [
-            [0, 'div', { cls: 'search-result' }],
+
+        const r = 2 * Math.floor(Math.random() * dom.length / 2);
+
+        const searchResultExpand = domStroll('ddgs', false, dom, [
+            [r, 'div', { cls: 'search-result' }],
             [1, 'div', { cls: 'panel' }],
             [1, 'div', { cls: 'panel-body' }],
             [1, 'span', { cls: 'search-result-expand' }],
