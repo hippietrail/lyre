@@ -1,6 +1,7 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl';
-import { domStroll } from '../ute/dom';
+import { domStroll, DomNode } from '../ute/dom';
+import parse from 'html-dom-parser';
 
 export const data = new SlashCommandBuilder()
     .setName('ddg')
@@ -29,6 +30,17 @@ export const data = new SlashCommandBuilder()
     );    
 
 export const execute = ddg;
+
+export const data2 = new SlashCommandBuilder()
+    .setName('ddgs')
+    .setDescription('Search Deep Dream Generator')
+    .addStringOption(option => option
+        .setName('search-term')
+        .setDescription('search term')
+        .setRequired(true)
+    );
+
+export const execute2 = ddgs;
 
 async function ddg(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
@@ -76,4 +88,32 @@ async function ddg(interaction: ChatInputCommandInteraction) {
         console.error('[DDG]', error);
     }
     await interaction.editReply(reply);
+}
+
+async function ddgs(interaction: ChatInputCommandInteraction) {
+    await interaction.deferReply();
+    const ddgEarl = new Earl('https://deepdreamgenerator.com/', '/search-text', {
+        q: interaction.options.getString('search-term')!,
+        offset: 0,
+    });
+    const url = ddgEarl.getUrlString();
+    
+    try {
+        const dom = parse(JSON.parse(await (await fetch(url, { method: 'POST' })).text()).results) as DomNode[];
+
+        const searchResultExpand = domStroll('ddgs', true, dom, [
+            [0, 'div', { cls: 'search-result' }],
+            [1, 'div', { cls: 'panel' }],
+            [1, 'div', { cls: 'panel-body' }],
+            [1, 'span', { cls: 'search-result-expand' }],
+        ]);
+
+        const att = searchResultExpand?.attribs as { 'data-original-image-url': string };
+        const url2 = att['data-original-image-url'];
+
+        await interaction.editReply(url2);
+    } catch (error) {
+        console.error(error);
+        await interaction.editReply('An error occurred while fetching data.');
+    }
 }
