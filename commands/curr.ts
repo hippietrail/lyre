@@ -239,6 +239,68 @@ export const data2 = new SlashCommandBuilder()
 
 export const execute2 = curr2;
 
+export const data3 = new SlashCommandBuilder()
+        .setName('currplus')
+        .setDescription('Add two arbitrary currencies')
+        .addStringOption(option =>
+            option.setName('cur1')
+                .setDescription('First currency')
+                .setRequired(true)
+                .setMinLength(3).setMaxLength(3))
+        .addNumberOption(option =>
+            option.setName('amt1')
+                .setDescription('First amount')
+                .setRequired(true)
+                .setMinValue(0))
+        .addStringOption(option =>
+            option.setName('cur2')
+                .setDescription('Second currency')
+                .setRequired(true)
+                .setMinLength(3).setMaxLength(3))
+        .addNumberOption(option =>
+            option.setName('amt2')
+                .setDescription('Second amount')
+                .setRequired(true)
+                .setMinValue(0))
+        .addStringOption(option =>
+            option.setName('rescur')
+                .setDescription('Result currency')
+                .setRequired(true)
+                .setMinLength(3).setMaxLength(3));
+
+export const execute3 = currplus;
+
+export const data4 = new SlashCommandBuilder()
+        .setName('currdiff')
+        .setDescription('Difference between two arbitrary currencies')
+        .addStringOption(option =>
+            option.setName('cur1')
+                .setDescription('First currency')
+                .setRequired(true)
+                .setMinLength(3).setMaxLength(3))
+        .addNumberOption(option =>
+            option.setName('amt1')
+                .setDescription('First amount')
+                .setRequired(true)
+                .setMinValue(0))
+        .addStringOption(option =>
+            option.setName('cur2')
+                .setDescription('Second currency')
+                .setRequired(true)
+                .setMinLength(3).setMaxLength(3))
+        .addNumberOption(option =>
+            option.setName('amt2')
+                .setDescription('Second amount')
+                .setRequired(true)
+                .setMinValue(0))
+        .addStringOption(option =>
+            option.setName('rescur')
+                .setDescription('Result currency')
+                .setRequired(true)
+                .setMinLength(3).setMaxLength(3));
+
+export const execute4 = currdiff;
+
 // Converts `amount` from `cur1` to `cur2`
 function calculateCur1ToCur2Result(apilayerData: ApiLayerData, cur1: string, cur2: string, amount: number) {
     const cur1Amount = amount * (apilayerData.rates[cur2] / apilayerData.rates[cur1]);
@@ -483,23 +545,53 @@ async function curr2(interaction: ChatInputCommandInteraction) {
     console.log(`[HIPP] curr2: ${needDeferEdit ? 'edit' : 'reply'}`);
     if (needDeferEdit) await interaction.deferReply();
     try {
-        const fromCurr = interaction.options.getString('from-cur')!.toUpperCase();
-        const toCurr = interaction.options.getString('to-cur')!.toUpperCase();
+        const fromCurrCode = interaction.options.getString('from-cur')!.toUpperCase();
+        const toCurrCode = interaction.options.getString('to-cur')!.toUpperCase();
         const amount = interaction.options.getNumber('amount')!;
-        console.log(`curr2 fromCurr: '${fromCurr}', toCurr: '${toCurr}', amount: '${amount}'`);
+        console.log(`curr2 fromCurr: '${fromCurrCode}', toCurr: '${toCurrCode}', amount: '${amount}'`);
 
         const apilayerData = await getApilayerData(needDeferEdit);
-        if (!apilayerData) return;
-        const fromCurrInfo = globalCodeToInfo[fromCurr]!;
-        const toCurrInfo = globalCodeToInfo[toCurr]!;
-        const result = calculateCur1ToCur2Result(apilayerData, fromCurr, toCurr, amount);
+        if (!apilayerData) {
+            await replyOrEdit(interaction, needDeferEdit, 'Oops currencies failed to load!');
+            return;
+        }
+        const invalids = [fromCurrCode, toCurrCode].map(code => [code, code in apilayerData.rates] as [string, boolean]).filter(([code, valid]) => !valid);
+        if (invalids.length > 0) {
+            await replyOrEdit(interaction, needDeferEdit, `Invalid currencies: ${invalids.map(([code]) => code).join(', ')}`);
+            return;
+        }
+        const result = calculateCur1ToCur2Result(apilayerData, fromCurrCode, toCurrCode, amount);
         const reply = [result];
-
-        // TODO
 
         await replyOrEdit(interaction, needDeferEdit, reply.join(' '));
     } catch (err) {
         console.error(err);
         await replyOrEdit(interaction, needDeferEdit, `That's your fault!`);
+    }
+}
+
+async function currplus(interaction: ChatInputCommandInteraction) {
+    const needDeferEdit = needToRefreshApiLayerData();
+    console.log(`[HIPP] currplus: ${needDeferEdit ? 'edit' : 'reply'}`);
+    if (needDeferEdit) await interaction.deferReply();
+    try {
+        // TODO
+        await replyOrEdit(interaction, needDeferEdit, `maybe someday`);
+    } catch (err) {
+        console.error(err);
+        await replyOrEdit(interaction, needDeferEdit, `Was I supposed to add something?`);
+    }
+}
+
+async function currdiff(interaction: ChatInputCommandInteraction) {
+    const needDeferEdit = needToRefreshApiLayerData();
+    console.log(`[HIPP] currdiff: ${needDeferEdit ? 'edit' : 'reply'}`);
+    if (needDeferEdit) await interaction.deferReply();
+    try {
+        // TODO
+        await replyOrEdit(interaction, needDeferEdit, `hold your horses, I'll get to it`);
+    } catch (err) {
+        console.error(err);
+        await replyOrEdit(interaction, needDeferEdit, `Was I supposed to diff something?`);
     }
 }
