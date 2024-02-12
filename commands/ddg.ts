@@ -92,29 +92,31 @@ async function ddg(interaction: ChatInputCommandInteraction) {
 
 async function ddgs(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
+    const searchTerm = interaction.options.getString('search-term')!;
     const ddgEarl = new Earl('https://deepdreamgenerator.com/', '/search-text', {
-        q: interaction.options.getString('search-term')!,
+        q: searchTerm,
         offset: 0,
     });
     const url = ddgEarl.getUrlString();
 
     try {
-        const dom = parse(JSON.parse(await (await fetch(url, { method: 'POST' })).text()).results) as DomNode[];
+        const json = JSON.parse(await (await fetch(url, { method: 'POST' })).text());
 
+        const r = Math.floor(Math.random() * json.ids.length);
+        const id = json.ids[r];
+        const pageUrl = `https://deepdreamgenerator.com/search?t=explore&q=${id}&m=1`;
 
-        const r = 2 * Math.floor(Math.random() * dom.length / 2);
-
-        const searchResultExpand = domStroll('ddgs', false, dom, [
-            [r, 'div', { cls: 'search-result' }],
+        const searchResultExpand = domStroll('ddgs', false, parse(json.results) as DomNode[], [
+            [r * 2, 'div', { cls: 'search-result' }],
             [1, 'div', { cls: 'panel' }],
             [1, 'div', { cls: 'panel-body' }],
             [1, 'span', { cls: 'search-result-expand' }],
         ]);
 
         const att = searchResultExpand?.attribs as { 'data-original-image-url': string };
-        const url2 = att['data-original-image-url'];
+        const imgUrl = att['data-original-image-url'];
 
-        await interaction.editReply(url2);
+        await interaction.editReply(`${searchTerm} [open DDG page in browser](${pageUrl}) | [open image in browser](${imgUrl})`);
     } catch (error) {
         console.error(error);
         await interaction.editReply('An error occurred while fetching data.');
