@@ -82,6 +82,9 @@ async function interactionCommand(interaction: CommandInteraction) {
         case 'curr':
             await curr.execute(interaction as ChatInputCommandInteraction);
             break;
+        case 'curr2':
+            await curr.execute2(interaction as ChatInputCommandInteraction);
+            break;
 
         case 'github':
             await github.execute(interaction as ChatInputCommandInteraction);

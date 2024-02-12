@@ -216,9 +216,34 @@ export const data = new SlashCommandBuilder()
 
 export const execute = curr;
 
+export const data2 = new SlashCommandBuilder()
+    .setName('curr2')
+    .setDescription('Currency conversion')
+    .addStringOption(option =>
+        option.setName('from-cur')
+            .setDescription('Currency to convert from')
+            .setRequired(true)
+            //.setAutocomplete(true) // TODO
+            .setMinLength(3).setMaxLength(3))
+    .addStringOption(option =>
+        option.setName('to-cur')
+            .setDescription('currency to convert to')
+            .setRequired(true)
+            //.setAutocomplete(true) // TODO
+            .setMinLength(3).setMaxLength(3))
+    .addNumberOption(option =>
+        option.setName('amount')
+            .setDescription('amount to convert')
+            .setRequired(true)
+            .setMinValue(0));
+
+export const execute2 = curr2;
+
 // Converts `amount` from `cur1` to `cur2`
 function calculateCur1ToCur2Result(apilayerData: ApiLayerData, cur1: string, cur2: string, amount: number) {
     const cur1Amount = amount * (apilayerData.rates[cur2] / apilayerData.rates[cur1]);
+    console.log(`[HIPP] calculateCur1ToCur2Result: ${apilayerData.rates[cur1]}, ${apilayerData.rates[cur2]}, ${amount}, ${cur1Amount}`);
+    console.log(`[HIPP] calculateCur1ToCur2Result: ${cur1}, ${cur2}, ${amount}, ${cur1Amount}`);
     return `${
         (+amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     } ${cur1} is ${
@@ -451,4 +476,30 @@ function currSymOnly(apilayerData: ApiLayerData, amount: number, symTok: Token) 
     }
     reply.push(`(as of ${globalFormattedDate})`);
     return reply.join(' ');
+}
+
+async function curr2(interaction: ChatInputCommandInteraction) {
+    const needDeferEdit = needToRefreshApiLayerData();
+    console.log(`[HIPP] curr2: ${needDeferEdit ? 'edit' : 'reply'}`);
+    if (needDeferEdit) await interaction.deferReply();
+    try {
+        const fromCurr = interaction.options.getString('from-cur')!.toUpperCase();
+        const toCurr = interaction.options.getString('to-cur')!.toUpperCase();
+        const amount = interaction.options.getNumber('amount')!;
+        console.log(`curr2 fromCurr: '${fromCurr}', toCurr: '${toCurr}', amount: '${amount}'`);
+
+        const apilayerData = await getApilayerData(needDeferEdit);
+        if (!apilayerData) return;
+        const fromCurrInfo = globalCodeToInfo[fromCurr]!;
+        const toCurrInfo = globalCodeToInfo[toCurr]!;
+        const result = calculateCur1ToCur2Result(apilayerData, fromCurr, toCurr, amount);
+        const reply = [result];
+
+        // TODO
+
+        await replyOrEdit(interaction, needDeferEdit, reply.join(' '));
+    } catch (err) {
+        console.error(err);
+        await replyOrEdit(interaction, needDeferEdit, `That's your fault!`);
+    }
 }
