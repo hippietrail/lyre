@@ -545,8 +545,7 @@ async function curr2(interaction: ChatInputCommandInteraction) {
     console.log(`[HIPP] curr2: ${needDeferEdit ? 'edit' : 'reply'}`);
     if (needDeferEdit) await interaction.deferReply();
     try {
-        const fromCurrCode = interaction.options.getString('from-cur')!.toUpperCase();
-        const toCurrCode = interaction.options.getString('to-cur')!.toUpperCase();
+        const [fromCurrCode, toCurrCode] = ['from-cur', 'to-cur'].map(code => interaction.options.getString(code)!.toUpperCase());
         const amount = interaction.options.getNumber('amount')!;
         console.log(`curr2 fromCurr: '${fromCurrCode}', toCurr: '${toCurrCode}', amount: '${amount}'`);
 
@@ -575,7 +574,21 @@ async function currplus(interaction: ChatInputCommandInteraction) {
     console.log(`[HIPP] currplus: ${needDeferEdit ? 'edit' : 'reply'}`);
     if (needDeferEdit) await interaction.deferReply();
     try {
-        // TODO
+        const [curCode1, curCode2, curCodeRes] = ['cur1', 'cur2', 'rescur'].map(code => interaction.options.getString(code)!.toUpperCase());
+        const [amount1, amount2] = ['amt1', 'amt2'].map(code => interaction.options.getNumber(code)!);
+        console.log(`currplus curCode1: '${curCode1}', curCode2: '${curCode2}', result: '${curCodeRes}', amount1: '${amount1}', amount2: '${amount2}'`);
+
+        const apilayerData = await getApilayerData(needDeferEdit);
+        if (!apilayerData) {
+            await replyOrEdit(interaction, needDeferEdit, 'Oops currencies failed to load!');
+            return;
+        }
+        const invalids = [curCode1, curCode2, curCodeRes].map(code => [code, code in apilayerData.rates] as [string, boolean]).filter(([code, valid]) => !valid);
+        if (invalids.length > 0) {
+            await replyOrEdit(interaction, needDeferEdit, `Invalid currencies: ${invalids.map(([code]) => code).join(', ')}`);
+            return;
+        }
+        // do conversion from cur1 to rescur and from cur2 to rescur, add them, and result will be shown in rescur
         await replyOrEdit(interaction, needDeferEdit, `maybe someday`);
     } catch (err) {
         console.error(err);
@@ -588,7 +601,21 @@ async function currdiff(interaction: ChatInputCommandInteraction) {
     console.log(`[HIPP] currdiff: ${needDeferEdit ? 'edit' : 'reply'}`);
     if (needDeferEdit) await interaction.deferReply();
     try {
-        // TODO
+        const [curCode1, curCode2, result] = ['cur1', 'cur2', 'rescur'].map(code => interaction.options.getString(code)!.toUpperCase());
+        const [amount1, amount2] = ['amt1', 'amt2'].map(code => interaction.options.getNumber(code));
+        console.log(`currdiff curCode1: '${curCode1}', curCode2: '${curCode2}', result: '${result}', amount1: '${amount1}', amount2: '${amount2}'`);
+
+        const apilayerData = await getApilayerData(needDeferEdit);
+        if (!apilayerData) {
+            await replyOrEdit(interaction, needDeferEdit, 'Oops currencies failed to load!');
+            return;
+        }
+        const invalids = [curCode1, curCode2, result].map(code => [code, code in apilayerData.rates] as [string, boolean]).filter(([code, valid]) => !valid);
+        if (invalids.length > 0) {
+            await replyOrEdit(interaction, needDeferEdit, `Invalid currencies: ${invalids.map(([code]) => code).join(', ')}`);
+            return;
+        }
+        // do conversion from cur1 to rescur and from cur2 to rescur, subtract them, and result will be shown in rescur
         await replyOrEdit(interaction, needDeferEdit, `hold your horses, I'll get to it`);
     } catch (err) {
         console.error(err);
