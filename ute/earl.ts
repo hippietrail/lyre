@@ -2,8 +2,7 @@ import { config } from 'dotenv';
 import type { DomNode } from './dom';
 import parse from 'html-dom-parser';
 
-// TODO a way to handle redirects?
-// TODO add .fetch() that stores the redirected URL?
+export type IsRedirect = boolean | undefined;
 
 export class Earl {
     url: import("url").URL;
@@ -50,8 +49,23 @@ export class Earl {
     async fetchText() {
         return (await fetch(this.url)).text();
     }
-    async checkRedirect() {
-        return Math.floor((await fetch(this.url, { method: 'HEAD', redirect: 'manual' })).status / 100) === 3;
+    async checkRedirect(): Promise<IsRedirect> {
+        // using a closure so we can report the correct URL in case of an error
+        return (async function(link: string) {
+            try {
+                return Math.floor((await fetch(link, { method: 'HEAD', redirect: 'manual' })).status / 100) === 3;
+            } catch (error: any) {
+                // NOTE: ENOTFOUND is also occasionally returned
+                if (['UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET', 'ECONNRESET'].includes(error.cause.code))
+                    console.log(`!!${link}!!`, error.cause.code);
+                else
+                    console.log(`!!${link}!!`, JSON.stringify(error, null, 2));
+                // when we have network issues just let shorts get through
+                // TODO return null (or undefined) in case of an error
+                // return true;
+                return undefined;
+            }
+        })(this.url.href);
     }
 
     // apilayer.com that we use for currency exchange rates is sometimes broken
@@ -103,5 +117,9 @@ export class YoutubeVidsEarl extends Earl {
     }
     setPlaylistId(playlistId: string) {
         this.url.searchParams.set('playlistId', playlistId);
+    }
+    fetchPlaylistById(playlistId: string) {
+        this.setPlaylistId(playlistId);
+        return this.fetchJson();
     }
 }

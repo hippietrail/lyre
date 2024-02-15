@@ -1,5 +1,5 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { Earl } from '../ute/earl';
+import { Earl, IsRedirect } from '../ute/earl';
 import { humanFriendlyListFormatter } from '../ute/amis';
 import { wikt } from '../ute/wikt';
 
@@ -86,7 +86,7 @@ async function robert(word: string): Promise<boolean | null> {
     return null;
 }
 
-async function larousse(word: string): Promise<boolean | null> {
+async function larousse(word: string): Promise<IsRedirect> {
     // https://www.larousse.fr/dictionnaires/francais/WORD
     const larousseEarl = new Earl('https://www.larousse.fr', '/dictionnaires/francais/');
     larousseEarl.setLastPathSegment(word);
@@ -95,5 +95,5 @@ async function larousse(word: string): Promise<boolean | null> {
     } catch (error) {
         console.error(`[fr/larousse]`, error);
     }
-    return null;
+    return undefined;
 }
