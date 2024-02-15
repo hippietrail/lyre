@@ -52,10 +52,21 @@ export const data = new SlashCommandBuilder()
         .setDescription('The name of the group')
         .setRequired(true)
         .setAutocomplete(true)
+    )
+    .addStringOption(option => option
+        .setName('length')
+        .setDescription('Long vs short videos')
+        .addChoices(
+            { name: 'long videos only', value: 'long' },
+            { name: 'shorts only', value: 'short' },
+            { name: 'all', value: 'all' },
+            { name: 'all, and report which are shorts', value: 'all-short' },
+        )
     );
 
 export async function execute(interaction: ChatInputCommandInteraction) {
     const groupName: string = interaction.options.getString('group')!;
+    const lengthOpt: string = interaction.options.getString('length') || 'all';
 
     const chanList = groupName in config
         ? config[groupName]
@@ -68,7 +79,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     else if (Object.keys(chanList).length === 0)
         await interaction.reply(`No channels in group '${groupName}'`);
     else
-        await yt(interaction, groupName, chanList);
+        await yt(interaction, groupName, chanList, lengthOpt);
 }
 
 export async function autocomplete(interaction: AutocompleteInteraction) {
@@ -86,20 +97,25 @@ export async function autocomplete(interaction: AutocompleteInteraction) {
     );
 }
 
-async function yt(interaction: CommandInteraction, chanGroupName: string, chanList: Record<string, string>) {
+interface Vid { snippet: Snippet, promise?: Promise<IsRedirect>, redirect?: boolean }
+
+async function yt(
+    interaction: CommandInteraction,
+    chanGroupName: string,
+    chanList: Record<string, string>,
+    lengthOpt: string
+) {
     await interaction.deferReply();
     try {
         const earl = new Earl('https://www.youtube.com', '/shorts/');
         const now = new Date().getTime();
-
-        interface Vid { snippet: Snippet, promise?: Promise<IsRedirect>, redirect?: boolean }
 
         // TODO convert to use Promise.allSettled?
         const array = (await Promise.all(Object.values(chanList)
             .map((plid, i) => fetchVideos(plid, i)
                 .then(chanVids => chanVids.items.map(v => {
                     earl.setLastPathSegment(v.snippet.resourceId.videoId);
-                    const promise = earl.checkRedirect();
+                    const promise = lengthOpt === 'all' ? Promise.resolve(undefined) : earl.checkRedirect();
                     const vid: Vid = { snippet: v.snippet, promise };
                     promise.then(redirect => vid.redirect = redirect)
                     return vid;
@@ -111,12 +127,12 @@ async function yt(interaction: CommandInteraction, chanGroupName: string, chanLi
 
         const reply = `${
             array
-            .filter(v => v.redirect !== false)
+            .filter(v => filterPredicate(v, lengthOpt))
             .toSorted((a, b) => b.snippet.publishedAt.localeCompare(a.snippet.publishedAt))
             .slice(0, 10)
-            .map(v => `(${
-                v.redirect === true ? 'Long' : v.redirect === false ? 'Short' : 'Length?'
-            }) ${v.snippet.channelTitle}: [${
+            .map(v => `${
+                lengthOpt === 'all' ? '' : `(${v.redirect === true ? 'Long' : v.redirect === false ? 'Short' : 'Length?'}) `
+            }${v.snippet.channelTitle}: [${
                 v.snippet.title
             }](<https://www.youtube.com/watch?v=${
                 v.snippet.resourceId.videoId
@@ -132,3 +148,19 @@ async function yt(interaction: CommandInteraction, chanGroupName: string, chanLi
         await interaction.editReply('An error occurred while fetching data.');
     }
 }
+
+function filterPredicate(v: Vid, lengthOpt: string): boolean {
+    switch (lengthOpt) {
+        case 'long':
+            return v.redirect !== false;
+        case 'short':
+            return v.redirect !== true;
+        case 'all':
+        case 'all-short':
+            return true;
+        default:
+            // TODO how do I use the TypeScript `never` type here??
+            return false;
+    }
+}
+
