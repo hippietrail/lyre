@@ -18,6 +18,7 @@ import * as ddg from './commands/ddg';
 import * as es from './commands/es';
 import * as fr from './commands/fr';
 import * as dns from './commands/dns';
+import * as lao from './commands/lao';
 
 config();
 
@@ -139,8 +140,12 @@ async function interactionCommand(interaction: CommandInteraction) {
             await dns.execute(interaction as ChatInputCommandInteraction);
             break;
 
+        case 'lao':
+            await lao.execute(interaction as ChatInputCommandInteraction);
+            break;
+
         default:
-            console.error(`Interaction Command: Unknown command ${interaction.commandName}`);
+        console.error(`Interaction Command: Unknown command ${interaction.commandName}`);
     }
 }
 
