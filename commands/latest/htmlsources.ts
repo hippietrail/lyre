@@ -14,13 +14,13 @@ export async function callGo() {
             [1, 'article', { cls: 'Doc' }],
         ])!;
 
-        const paras = article.children!.filter(e => e.type === 'tag' && e.name === 'p');
+        const elements = article.children!.filter(e => e.type === 'tag' && ['h2', 'p'].includes(e.name!));
 
         let biggestVer: string | null = null;
         let dateOfBiggestVer: string | null = null;
 
-        for (const para of paras) {
-            const mat = para.children![0].data!.trim().match(/^go(\d+(?:\.\d+)*)\s+\(released (\d+-\d+-\d+)\)/m);
+        for (const element of elements) {
+            const mat = element.children![0].data!.trim().match(/^go(\d+(?:\.\d+)*)\s+\(released (\d+-\d+-\d+)\)/m);
             if (mat && (biggestVer === null || verCmp(mat[1], biggestVer) > 0)) {
                 biggestVer = mat[1];
                 dateOfBiggestVer = mat[2];
