@@ -44,7 +44,7 @@ interface VidRedirTriple {
 
 interface VidRedirPair {
     vid: MyVidStruct;
-    isRedir: boolean | undefined;
+    isRedir?: boolean;
 }
 
 export async function execute(interaction: ChatInputCommandInteraction) {
@@ -161,7 +161,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const selectedVids = await selectVids10AtATime(groupChannelVids, lenOpt);
     // const selectedVids = await selectVids(groupChannelVids, lenOpt);
 
-    const len = (r: boolean | undefined) => r === true ? 'Long' : r === false ? 'Short' : '???';
+    const len = (r?: boolean) => r === true ? 'Long' : r === false ? 'Short' : '???';
     const now = Date.now();
 
     const vidMap = selectedVids.map(({ vid: v, isRedir: r }) => {
@@ -177,7 +177,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     if (ytreply === '')
         return await interaction.editReply('No videos found').catch(e => editReplyFail(iid, e));
 
-        return await interaction.editReply(ytreply).catch(e => editReplyFail(iid, e));
+    return await interaction.editReply(ytreply).catch(e => editReplyFail(iid, e));
 }
 
 async function selectVids(groupChannelVids: MyVidStruct[], lenOpt: string): Promise<VidRedirPair[]> {
@@ -234,7 +234,7 @@ function checkRedir(v: MyVidStruct) {
     return earlR.checkRedirect();
 }
 
-function doWeWantIt(lenOpt: string, r: boolean | undefined): boolean {
+function doWeWantIt(lenOpt: string, r?: boolean): boolean {
     if (lenOpt === 'long')
         return r !== false;
     if (lenOpt === 'short')
