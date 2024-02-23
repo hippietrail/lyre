@@ -29,9 +29,27 @@ export const data = new SlashCommandBuilder()
 const isRejected = <t>(input: PromiseSettledResult<t>): input is PromiseRejectedResult => input.status === 'rejected';
 const isFulfilled = <t>(input: PromiseSettledResult<t>): input is PromiseFulfilledResult<t> => input.status === 'fulfilled';
 
+interface MyVidStruct {
+    channelTitle: string;
+    id: string;
+    timestamp: number;
+    title: string;
+}
+
+interface VidRedirTriple {
+    vid: MyVidStruct;
+    redirProm: Promise<boolean | undefined>;
+    isRedir?: boolean;
+}
+
+interface VidRedirPair {
+    vid: MyVidStruct;
+    isRedir: boolean | undefined;
+}
+
 export async function execute(interaction: ChatInputCommandInteraction) {
     const iid = interaction.id;
-    console.log('[YT] execute defer', iid);
+    // console.log('[YT] execute defer', iid);
 
     try {
         await interaction.deferReply();
@@ -48,7 +66,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     if (configData.error) {
         console.log(`[YT] execute config error`, typeof configData.error, Object.keys(configData.error));
-        return await interaction.editReply(`execute config error: ${config.error}.`).catch(editReplyFail(iid));
+        return await interaction.editReply(`execute config error: ${config.error}.`).catch(e => editReplyFail(iid, e));
     }
 
     if (!configData[group] && group !== 'all')
@@ -75,6 +93,10 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const fulfilled = settled.filter(isFulfilled);
     const rejected = settled.filter(isRejected);
 
+    console.log(`${fulfilled.length} fulfilled, ${rejected.length} rejected`);
+    if (rejected.length)
+        console.error('rejected[0]', rejected[0]);
+
     // This represents the "items" array from the "value" field of the JSON
     // returned by the YouTube API. Note that it represents an arbitrary
     // playlist rather than a Channel. This is the standard way to query a
@@ -93,7 +115,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
             pageInfo: {
                 totalResults: number;
                 resultsPerPage: number;
-            }            
+            }
         }
     }*/
     interface ChannelVids /* JSON playlist.value */ {
@@ -122,13 +144,6 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         // pageInfo
     };
 
-    interface MyVidStruct {
-        channelTitle: string;
-        id: string;
-        timestamp: number;
-        title: string;
-    }
-
     // map ChannelVids to an array of MyVidStruct
     const groupChannelVids = fulfilled
         .map(fr => fr.value as ChannelVids)
@@ -142,50 +157,81 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         )
         .flat().sort((a, b) => b.timestamp - a.timestamp);
 
+    // start at the beginning, check each video to seee if it's a short by whether there's a redirect via HTTP HEAD
+    const selectedVids = await selectVids10AtATime(groupChannelVids, lenOpt);
+    // const selectedVids = await selectVids(groupChannelVids, lenOpt);
+
+    const len = (r: boolean | undefined) => r === true ? 'Long' : r === false ? 'Short' : '???';
     const now = Date.now();
 
-    // start at the beginning, check each video to seee if it's a short by whether there's a redirect via HTTP HEAD
-    const earlR = new Earl('https://www.youtube.com', '/shorts/');
+    const vidMap = selectedVids.map(({ vid: v, isRedir: r }) => {
+        return `${
+            lenOpt === 'all' ? '' : `(${len(r)}) `
+        }${v.channelTitle}: [${v.title}](<${
+            `https://www.youtube.com/watch?v=${v.id}`
+        }>) - ${ago(now - v.timestamp)}`
+    });
 
-    const selectedVids = Array<[MyVidStruct, boolean | undefined]>();
+    const ytreply = vidMap.join('\n');
+
+    if (ytreply === '')
+        return await interaction.editReply('No videos found').catch(e => editReplyFail(iid, e));
+
+        return await interaction.editReply(ytreply).catch(e => editReplyFail(iid, e));
+}
+
+async function selectVids(groupChannelVids: MyVidStruct[], lenOpt: string): Promise<VidRedirPair[]> {
+    const earlR = new Earl('https://www.youtube.com', '/shorts/');
+    const selectedVids = new Array<VidRedirPair>();
     let [redirsChecked, redirsTrue, redirsFalse, redirsUndef] = [0, 0, 0, 0];
 
     for (const v of groupChannelVids) {
-        earlR.setLastPathSegment(v.id);
-        const rr = lenOpt === 'all' ? undefined : await earlR.checkRedirect();
-        
+        const rr = lenOpt === 'all' ? undefined : await checkRedir(v);
+
         redirsChecked++;
-        if (rr === true)
-            redirsTrue++;
-        else if (rr === false)
-            redirsFalse++;
-        else if (rr === undefined)
-            redirsUndef++;
+        if (rr === true) redirsTrue++;
+        else if (rr === false) redirsFalse++;
+        else if (rr === undefined) redirsUndef++;
 
         if (doWeWantIt(lenOpt, rr))
-            selectedVids.push([v, rr]);
+            selectedVids.push({ vid: v, isRedir: rr });
 
         if (selectedVids.length >= 10)
             break;
     }
 
-    const len = (r: boolean | undefined) => r === true ? 'Long' : r === false ? 'Short' : '???';
-
-    const vidMap = selectedVids.map(([v, r]) => `${
-        lenOpt === 'all' ? '' : `(${len(r)}) `
-    }${v.channelTitle}: [${v.title}](<${
-        `https://www.youtube.com/watch?v=${v.id}`
-    }>) -  ${ago(now - v.timestamp)}`);
-
     console.log(`redirsChecked: ${redirsChecked}, redirsTrue: ${redirsTrue}, redirsFalse: ${redirsFalse}, redirsUndef: ${redirsUndef}`);
 
-    console.log(`${fulfilled.length} fulfilled, ${rejected.length} rejected`);
-    if (rejected.length)
-        console.error('rejected[0]', rejected[0]);
-    
-    const ytreply = vidMap.join('\n');
+    return selectedVids;
+}
 
-    return await interaction.editReply(ytreply).catch(editReplyFail(iid));
+async function selectVids10AtATime(groupChannelVids: MyVidStruct[], lenOpt: string): Promise<VidRedirPair[]> {
+    const selectedVids = new Array<VidRedirPair>();
+
+    for (let offset = 0; offset < groupChannelVids.length; offset += 10) {
+        const group = groupChannelVids.slice(offset, offset + 10);
+
+        const vidsWithRedirFlag: VidRedirTriple[] = group.map(v => ({ vid: v, redirProm: checkRedir(v) }));
+        await Promise.allSettled(vidsWithRedirFlag.map(v => v.redirProm.then(r => v.isRedir = r)));
+
+        const badOnes = vidsWithRedirFlag.filter(v => v.isRedir === undefined)//.map(v => v.vid);
+        if (badOnes.length > 0) console.log(`[YT] ${badOnes.length} redirection checks failed!`);
+
+        const onesWeWant = vidsWithRedirFlag.filter(v => doWeWantIt(lenOpt, v.isRedir))//.map(v => v.vid);
+
+        selectedVids.push(...onesWeWant.slice(0, 10 - selectedVids.length).map(v => ({ vid: v.vid, isRedir: v.isRedir })));
+
+        if (selectedVids.length >= 10)
+            break;
+    }
+
+    return selectedVids;
+}
+
+function checkRedir(v: MyVidStruct) {
+    const earlR = new Earl('https://www.youtube.com', '/shorts/');
+    earlR.setLastPathSegment(v.id);
+    return earlR.checkRedirect();
 }
 
 function doWeWantIt(lenOpt: string, r: boolean | undefined): boolean {
@@ -197,7 +243,7 @@ function doWeWantIt(lenOpt: string, r: boolean | undefined): boolean {
     return true;
 }
 
-const editReplyFail = (iid: string) => () => console.log('[YT] execute editReply error', iid);
+const editReplyFail = (iid: string, e?: any) => () => console.log('[YT] execute editReply error', iid, e);
 
 export async function autocomplete(interaction: AutocompleteInteraction) {
     const foc = interaction.options.getFocused().toLowerCase();
@@ -205,7 +251,7 @@ export async function autocomplete(interaction: AutocompleteInteraction) {
     if (config.error)
         console.error(`[YT] autocomp config error`, typeof config.error, Object.keys(config.error));
     const configDataKeys = Object.keys(config.data);
-    
+
     const response = ['all', ...configDataKeys]
         .filter(key => key.toLowerCase().startsWith(foc))
         //.sort()
