@@ -1,48 +1,8 @@
-import { AutocompleteInteraction, ChatInputCommandInteraction, CommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { YoutubeVidsEarl, Earl, IsRedirect } from '../ute/earl';
+import { AutocompleteInteraction, ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { RESTJSONErrorCodes } from 'discord.js';
+import { YoutubeVidsEarl, Earl } from '../ute/earl';
 import { ago } from '../ute/ago';
-import fs from 'node:fs';
-
-interface Snippet {
-    title: string;
-    resourceId: { videoId: string },
-    publishedAt: string
-    channelTitle: string
-}
-
-interface ChannelVids {
-    items: { snippet: Snippet }[]
-};
-
-let config: { [key: string]: string[] } = {};
-let configTimestamp: number;
-
-function maybeLoadOrReloadConfig() {
-    if (fs.statSync('./config.json').mtimeMs !== configTimestamp) {
-        console.log(`[YouTube] config ${configTimestamp === undefined ? 'not yet loaded' : 'has changed'}!`);
-        try {
-            config = JSON.parse(fs.readFileSync('./config.json', 'utf8'));
-            console.log(`[YouTube] ${configTimestamp === undefined ? 'L' : 'Rel'}oaded config.json`);
-            configTimestamp = fs.statSync('./config.json').mtimeMs;
-        } catch (err) {
-            console.error(`[YouTube] ${err}`);
-        }
-    }
-}
-
-const ytEarl = new YoutubeVidsEarl();
-ytEarl.setMaxResults(10);
-
-function fetchVideos(playlistId: string, index: number): Promise<ChannelVids> {
-    ytEarl.setPlaylistId(playlistId);
-    // fetching these as fast as possible works fine in Thailand but not in Laos
-    // where we start to get UND_ERR_CONNECT_TIMEOUT, UND_ERR_SOCKET and sometimes ECONNRESET
-    // NOTE this is not the per-redirect request, this is the per-channel request!
-    return new Promise(resolve => setTimeout(
-        () => resolve(ytEarl.fetchPlaylistById(playlistId) as Promise<ChannelVids>),
-        index * 10.5   // 10 is not always enough
-    ));
-}
+import fs from 'fs/promises';
 
 export const data = new SlashCommandBuilder()
     .setName('yt')
@@ -64,103 +24,215 @@ export const data = new SlashCommandBuilder()
         )
     );
 
+// const elap = (startTime: number) => new Date().getTime() - startTime;
+
+const isRejected = <t>(input: PromiseSettledResult<t>): input is PromiseRejectedResult => input.status === 'rejected';
+const isFulfilled = <t>(input: PromiseSettledResult<t>): input is PromiseFulfilledResult<t> => input.status === 'fulfilled';
+
 export async function execute(interaction: ChatInputCommandInteraction) {
-    const groupName: string = interaction.options.getString('group')!;
-    const lengthOpt: string = interaction.options.getString('length') || 'all';
+    const iid = interaction.id;
+    console.log('[YT] execute defer', iid);
 
-    const chanList = groupName in config
-        ? config[groupName]
-        : groupName === 'all' || groupName === '*'
-            ? Object.values(config).reduce((a, b) => ({ ...a, ...b }), {})
-            : null;
+    try {
+        await interaction.deferReply();
+    } catch (e: any) {
+        if (e.code === RESTJSONErrorCodes.UnknownInteraction)
+            return console.log('[YT] deferReply UnknownInteraction due to laggy/bursty connection timeout');
+        return console.log('[YT] deferReply error', e);
+    }
 
-    if (!chanList)
-        await interaction.reply(`No group of YouTube channels by the name '${groupName}'`);
-    else if (Object.keys(chanList).length === 0)
-        await interaction.reply(`No channels in group '${groupName}'`);
-    else
-        await yt(interaction, groupName, chanList, lengthOpt);
+    const group = interaction.options.getString('group') || '';
+    const lenOpt = interaction.options.getString('length') || 'all';
+    const config = await getConfig();
+    const configData = config.data;
+
+    if (configData.error) {
+        console.log(`[YT] execute config error`, typeof configData.error, Object.keys(configData.error));
+        return await interaction.editReply(`execute config error: ${config.error}.`).catch(editReplyFail(iid));
+    }
+
+    if (!configData[group] && group !== 'all')
+        return await interaction.editReply(`'${group}' group not found.`).catch(editReplyFail(iid));
+
+    const configGroup: Record<string, string> = group !== 'all' && group !== '*'
+        ? configData[group]
+        : Object.values(configData).reduce((a, b) => ({ ...a, ...b }));
+
+    const groupChannelNames = Object.keys(configGroup);
+
+    if (groupChannelNames.length === 0)
+        return await interaction.editReply(`'${group}' empty group.`).catch(editReplyFail(iid));
+
+    const channelIDs = Object.values(configGroup);
+
+    const earlYtv = new YoutubeVidsEarl();
+    earlYtv.setMaxResults(10);
+
+    const channelPromises = channelIDs.map(id => earlYtv.fetchPlaylistById(id));
+
+    const settled = await Promise.allSettled(channelPromises);
+
+    const fulfilled = settled.filter(isFulfilled);
+    const rejected = settled.filter(isRejected);
+
+    // This represents the "items" array from the "value" field of the JSON
+    // returned by the YouTube API. Note that it represents an arbitrary
+    // playlist rather than a Channel. This is the standard way to query a
+    // channel's videos - just like any playlist. For this reason there is
+    // no channel title field. But each video has a channel title field.
+    // The official name of the whole JSON is probably "playlistItemListResponse"
+    // https://developers.google.com/youtube/v3/docs/playlistItems/list
+    // The other fields were:
+    /*interface YouTubePlaylistJSON {
+        status: string;
+        value: {
+            kind: string;
+            etag: string;
+            nextPageToken: string;
+            items: ChannelVids;
+            pageInfo: {
+                totalResults: number;
+                resultsPerPage: number;
+            }            
+        }
+    }*/
+    interface ChannelVids /* JSON playlist.value */ {
+        // kind, etag, nextPageToken
+        items: {
+            // kind: string;
+            // etag: string;
+            // id: string;
+            snippet: {
+                publishedAt: string;    // format: "2024-01-20T15:42:16Z"
+                // channelId: string;
+                title: string;
+                // description: string;
+                // thumbnail: { /* default, medium, high, standard, maxres */ };
+                channelTitle: string;
+                // playlistId: string;
+                // position: number;
+                resourceId: {
+                    // kind: string;
+                    videoId: string;
+                };
+                // videoOwnerChannelTitle: string;
+                // videoOwnerChannelId: string;
+            }
+        }[]
+        // pageInfo
+    };
+
+    interface MyVidStruct {
+        channelTitle: string;
+        id: string;
+        timestamp: number;
+        title: string;
+    }
+
+    // map ChannelVids to an array of MyVidStruct
+    const groupChannelVids = fulfilled
+        .map(fr => fr.value as ChannelVids)
+        .map(cv => cv.items
+            .map(i => ({
+                channelTitle: i.snippet.channelTitle,
+                id: i.snippet.resourceId.videoId,
+                timestamp: Date.parse(i.snippet.publishedAt),
+                title: i.snippet.title
+            }) as MyVidStruct)
+        )
+        .flat().sort((a, b) => b.timestamp - a.timestamp);
+
+    const now = Date.now();
+
+    // start at the beginning, check each video to seee if it's a short by whether there's a redirect via HTTP HEAD
+    const earlR = new Earl('https://www.youtube.com', '/shorts/');
+
+    const selectedVids = Array<[MyVidStruct, boolean | undefined]>();
+    let [redirsChecked, redirsTrue, redirsFalse, redirsUndef] = [0, 0, 0, 0];
+
+    for (const v of groupChannelVids) {
+        earlR.setLastPathSegment(v.id);
+        const rr = lenOpt === 'all' ? undefined : await earlR.checkRedirect();
+        
+        redirsChecked++;
+        if (rr === true)
+            redirsTrue++;
+        else if (rr === false)
+            redirsFalse++;
+        else if (rr === undefined)
+            redirsUndef++;
+
+        if (doWeWantIt(lenOpt, rr))
+            selectedVids.push([v, rr]);
+
+        if (selectedVids.length >= 10)
+            break;
+    }
+
+    const len = (r: boolean | undefined) => r === true ? 'Long' : r === false ? 'Short' : '???';
+
+    const vidMap = selectedVids.map(([v, r]) => `${
+        lenOpt === 'all' ? '' : `(${len(r)}) `
+    }${v.channelTitle}: [${v.title}](<${
+        `https://www.youtube.com/watch?v=${v.id}`
+    }>) -  ${ago(now - v.timestamp)}`);
+
+    console.log(`redirsChecked: ${redirsChecked}, redirsTrue: ${redirsTrue}, redirsFalse: ${redirsFalse}, redirsUndef: ${redirsUndef}`);
+
+    console.log(`${fulfilled.length} fulfilled, ${rejected.length} rejected`);
+    if (rejected.length)
+        console.error('rejected[0]', rejected[0]);
+    
+    const ytreply = vidMap.join('\n');
+
+    return await interaction.editReply(ytreply).catch(editReplyFail(iid));
 }
+
+function doWeWantIt(lenOpt: string, r: boolean | undefined): boolean {
+    if (lenOpt === 'long')
+        return r !== false;
+    if (lenOpt === 'short')
+        return r !== true;
+    // for all and all-short we want everything
+    return true;
+}
+
+const editReplyFail = (iid: string) => () => console.log('[YT] execute editReply error', iid);
 
 export async function autocomplete(interaction: AutocompleteInteraction) {
-    maybeLoadOrReloadConfig();
-
     const foc = interaction.options.getFocused().toLowerCase();
+    const config = await getConfig();
+    if (config.error)
+        console.error(`[YT] autocomp config error`, typeof config.error, Object.keys(config.error));
+    const configDataKeys = Object.keys(config.data);
+    
+    const response = ['all', ...configDataKeys]
+        .filter(key => key.toLowerCase().startsWith(foc))
+        //.sort()
+        .map(key => ({ name: key, value: key }));
 
-    interaction.respond(
-        ['all', ...Object.keys(config)]
-        .filter(name => name
-            .toLowerCase()
-            .startsWith(foc))
-        .sort()
-        .map(name => ({ name, value: name }))
-    );
+    await interaction.respond(response).catch(() => console.log('[YT] autocomp respond error'));
 }
 
-interface Vid { snippet: Snippet, promise?: Promise<IsRedirect>, redirect?: boolean }
+interface Config {
+    data: Record<string, Record<string, string>>;
+    timestamp: number;
+    error?: any;
+}
 
-async function yt(
-    interaction: CommandInteraction,
-    chanGroupName: string,
-    chanList: Record<string, string>,
-    lengthOpt: string
-) {
-    await interaction.deferReply();
+let cachedConfig: Config = { data: {}, timestamp: 0 };
+async function getConfig(): Promise<Config> {
     try {
-        const earl = new Earl('https://www.youtube.com', '/shorts/');
-        const now = new Date().getTime();
+        const timestamp = (await fs.stat('config.json')).mtimeMs;
+        if (cachedConfig.timestamp === timestamp)
+            return cachedConfig;
 
-        // TODO convert to use Promise.allSettled?
-        const array = (await Promise.all(Object.values(chanList)
-            .map((plid, i) => fetchVideos(plid, i)
-                .then(chanVids => chanVids.items.map(v => {
-                    earl.setLastPathSegment(v.snippet.resourceId.videoId);
-                    const promise = lengthOpt === 'all' ? Promise.resolve(undefined) : earl.checkRedirect();
-                    const vid: Vid = { snippet: v.snippet, promise };
-                    promise.then(redirect => vid.redirect = redirect)
-                    return vid;
-                }))
-            )
-        )).flat();
-
-        await Promise.all(array.map(v => v.promise));
-
-        const reply = `${
-            array
-            .filter(v => filterPredicate(v, lengthOpt))
-            .toSorted((a, b) => b.snippet.publishedAt.localeCompare(a.snippet.publishedAt))
-            .slice(0, 10)
-            .map(v => `${
-                lengthOpt === 'all' ? '' : `(${v.redirect === true ? 'Long' : v.redirect === false ? 'Short' : 'Length?'}) `
-            }${v.snippet.channelTitle}: [${
-                v.snippet.title
-            }](<https://www.youtube.com/watch?v=${
-                v.snippet.resourceId.videoId
-            }>) - ${
-                ago(now - new Date(v.snippet.publishedAt).getTime())
-            }`)
-            .join('\n')
-        }`;
-
-        await interaction.editReply(reply || 'hmm... no videos');
+        const jsonText = await fs.readFile('config.json', 'utf8');
+        const data = JSON.parse(jsonText);
+        cachedConfig = { data, timestamp };
+        return cachedConfig;
     } catch (error) {
-        console.error(error);
-        await interaction.editReply('An error occurred while fetching data.');
+        cachedConfig = { data: {}, timestamp: 0, error };
+        return cachedConfig;
     }
 }
-
-function filterPredicate(v: Vid, lengthOpt: string): boolean {
-    switch (lengthOpt) {
-        case 'long':
-            return v.redirect !== false;
-        case 'short':
-            return v.redirect !== true;
-        case 'all':
-        case 'all-short':
-            return true;
-        default:
-            // TODO how do I use the TypeScript `never` type here??
-            return false;
-    }
-}
-
