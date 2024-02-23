@@ -166,11 +166,16 @@ client.login(process.env.TOKEN);
 
 client.on(Events.InteractionCreate, handleInteraction);
 
-client.on(Events.Debug, d => console.log(`[DEBUG] ${d}`));
+client.on(Events.Debug, d => {
+    if (d.includes('Heartbeat acknowledged')) return;
+    console.log(`[DEBUG] ${d}`)
+});
 
 client.on(Events.ShardResume, id => console.log(`💎🔄 Shard ${id} resumed!`));
 
 client.on(Events.Error, e => console.log(`[ERROR] ${JSON.stringify(e, null, 2)}`));
+
+client.on(Events.Warn, w => console.log(`[WARN] ${w}`));
 
 // trying out DMs
 
