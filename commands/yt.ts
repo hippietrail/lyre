@@ -93,7 +93,7 @@ export async function execute(interaction: ChatInputCommandInteraction) {
     const fulfilled = settled.filter(isFulfilled);
     const rejected = settled.filter(isRejected);
 
-    console.log(`${fulfilled.length} fulfilled, ${rejected.length} rejected`);
+    console.log(`[YT] fetching channels: ${fulfilled.length} fulfilled, ${rejected.length} rejected`);
     if (rejected.length)
         console.error('rejected[0]', rejected[0]);
 
@@ -208,6 +208,8 @@ async function selectVids(groupChannelVids: MyVidStruct[], lenOpt: string): Prom
 async function selectVids10AtATime(groupChannelVids: MyVidStruct[], lenOpt: string): Promise<VidRedirPair[]> {
     const selectedVids = new Array<VidRedirPair>();
 
+    let [settled, fulfilled, rejected] = [0, 0, 0];
+
     for (let offset = 0; offset < groupChannelVids.length; offset += 10) {
         const group = groupChannelVids.slice(offset, offset + 10);
 
@@ -217,6 +219,10 @@ async function selectVids10AtATime(groupChannelVids: MyVidStruct[], lenOpt: stri
         const badOnes = vidsWithRedirFlag.filter(v => v.isRedir === undefined)//.map(v => v.vid);
         if (badOnes.length > 0) console.log(`[YT] ${badOnes.length} redirection checks failed!`);
 
+        settled += vidsWithRedirFlag.length;
+        rejected += badOnes.length;
+        fulfilled += settled - badOnes.length;
+
         const onesWeWant = vidsWithRedirFlag.filter(v => doWeWantIt(lenOpt, v.isRedir))//.map(v => v.vid);
 
         selectedVids.push(...onesWeWant.slice(0, 10 - selectedVids.length).map(v => ({ vid: v.vid, isRedir: v.isRedir })));
@@ -224,6 +230,8 @@ async function selectVids10AtATime(groupChannelVids: MyVidStruct[], lenOpt: stri
         if (selectedVids.length >= 10)
             break;
     }
+
+    console.log(`[YT] checking redirections: ${fulfilled} fulfilled, ${rejected} rejected`);
 
     return selectedVids;
 }
