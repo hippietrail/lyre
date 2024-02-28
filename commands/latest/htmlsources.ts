@@ -361,29 +361,38 @@ export async function callSdlMame() {
             [3, 'table'],
         ])!;
 
-        const tr = table.children![table.children!.length - 6];
+        // odd numbered children are whitespace text nodes
+        // last child (-2) is just an <hr>
+        // we want the last one that matches (formerly hardcoded to -6)
+        for (let i = 0; i < table.children!.length - 2; i += 2) {
+            const tr = table.children![table.children!.length - 2 - i];
 
-        const [linkAnchor, dateTimeTD] = [
-            domStroll('sdl', false, tr.children!, [
-                [1, 'td'],
-                [0, 'a'],
-            ])!,
-            domStroll('sdl', false, tr.children!, [
-                [2, 'td'],
-            ])!,
-        ];
+            // <hr> entry has only 1 child node
+            if (tr.children!.length === 1) continue;
 
-        const matty = linkAnchor.attribs!.href!.match(/^mame(\d)(\d+)-arm64.zip$/);
-        if (matty) {
-            const [maj, min] = [matty[1], matty[2]];
+            // for now, file entries have 5 child nodes
+            const [linkAnchor, dateTimeTD] = [
+                domStroll('sdl', false, tr.children!, [
+                    [1, 'td'],
+                    [0, 'a'],
+                ])!,
+                domStroll('sdl', false, tr.children!, [
+                    [2, 'td'],
+                ])!,
+            ];
 
-            return [{
-                name: 'SDL MAME',
-                ver: `${maj}.${min}`,
-                link: `https://sdlmame.lngn.net/whatsnew/whatsnew_${maj}${min}.txt`,
-                timestamp: new Date(dateTimeTD.children![0].data!.trim()),
-                src: 'sdlmame.lngn.net',
-            }];
+            const matty = linkAnchor.attribs!.href!.match(/^mame(\d)(\d+)-arm64.zip$/);
+            if (matty) {
+                const [maj, min] = [matty[1], matty[2]];
+
+                return [{
+                    name: 'SDL MAME',
+                    ver: `${maj}.${min}`,
+                    link: `https://sdlmame.lngn.net/whatsnew/whatsnew_${maj}${min}.txt`,
+                    timestamp: new Date(dateTimeTD.children![0].data!.trim()),
+                    src: 'sdlmame.lngn.net',
+                }];
+            }
         }
     } catch (error) {
         console.error(`[SdlMame]`, error);
