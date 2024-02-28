@@ -286,15 +286,17 @@ export async function callIdea() {
     const ideaEarl = new Earl('https://blog.jetbrains.com', '/idea/category/releases/');
 
     try {
-        const row = domStroll('IdeaA', false, await ideaEarl.fetchDom(), [
+        const container = domStroll('IdeaB', false, await ideaEarl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
             [6, 'div', { id: 'wrapper' }],
             [3, 'main', { id: 'main' }],
             [3, 'section', { cls: 'tax-archive' }],
             [1, 'div', { cls: 'container' }],
-            [3, 'div', { cls: 'row' }],
         ])!;
+
+        // ignore all the text and comment child nodes, find the first div node with row class
+        const row = container.children!.find(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('row'))!;
 
         const cols = row.children!.filter(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('col'));
 
