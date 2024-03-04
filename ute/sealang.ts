@@ -5,7 +5,7 @@ import { domStroll } from '../ute/dom';
 // So we turn off the NODE_TLS_REJECT_UNAUTHORIZED environment variable before and make
 // sure we turn it back on afterwards no matter if the request succeeds, fails, or an exception is thrown
 export async function seaLang(lang: string, word: string) {
-    const childNum = lang === 'thai' ? 6 : lang === 'lao' ? 4 : 0;
+    const childNum = lang === 'thai' ? 6 : 4;   // lao and vietnamese both use child #4
 
     const seaEarl = new Earl('https://sealang.net', `/${lang}/search.pl`, {
         'dict': lang,

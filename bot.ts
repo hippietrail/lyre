@@ -19,6 +19,7 @@ import * as es from './commands/es';
 import * as fr from './commands/fr';
 import * as dns from './commands/dns';
 import * as lao from './commands/lao';
+import * as viet from './commands/viet';
 
 config();
 
@@ -142,6 +143,10 @@ async function interactionCommand(interaction: CommandInteraction) {
 
         case 'lao':
             await lao.execute(interaction as ChatInputCommandInteraction);
+            break;
+
+        case 'viet':
+            await viet.execute(interaction as ChatInputCommandInteraction);
             break;
 
         default:
