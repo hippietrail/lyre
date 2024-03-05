@@ -19,6 +19,7 @@ async function es(interaction: ChatInputCommandInteraction) {
 
         const replies = await Promise.all(([
             ['rae', rae],
+            ['americanismos', americanismos],
             ['enwiktionary', () => wikt('en', word!)],
             ['viwiktionary', () => wikt('es', word!)],
         ] as Array<DictTuple>).map(async ([name, func]) => {
@@ -78,4 +79,36 @@ async function rae(word: string): Promise<number | null> {
         console.error(error);
         return null;
     }
+}
+
+async function americanismos(word: string): Promise<number | null> {
+    // https://www.asale.org/damer/WORD
+    const earl = new Earl('https://www.asale.org', '/damer/');
+    earl.setLastPathSegment(word);
+    try {
+        const dom = await earl.fetchDom();
+        const resultados = domStroll('asale', false, dom, [
+            [2, 'html'],
+            [3, 'body'],
+            [1, 'div'],
+            [1, 'div'],
+            [1, 'div', { id: 'pg__c' }],
+            [3, 'div', { cls: 'container' }],
+            [1, 'div', { cls: 'row' }],
+            [1, 'div', { cls: 'col-md-8' }],
+            [5, 'div', { id: 'resultados' }],
+        ])!;
+
+        // bad: #text <span> #text <p> <div.item-list>   <p.o> <center> <p.compartir>
+        // ok : <entry> #text                            <p.o> <center> <p.compartir>
+
+        const entry = domStroll('asale', false, resultados.children!, [
+            [1, 'entry', { optional: true }],
+        ]);
+
+        return entry ? 1 : 0;
+    } catch (error) {
+        console.error(`[ES/americanismos]`, error);
+    }
+    return null;
 }
