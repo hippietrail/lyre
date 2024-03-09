@@ -293,6 +293,7 @@ export async function callIdea() {
             [3, 'main', { id: 'main' }],
             [3, 'section', { cls: 'tax-archive' }],
             [1, 'div', { cls: 'container' }],
+            [3, 'div', { cls: 'tax-archive__wrapper' }],    // added < 2024-03-09
         ])!;
 
         // ignore all the text and comment child nodes, find the first div node with row class
