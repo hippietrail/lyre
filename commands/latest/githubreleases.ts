@@ -38,6 +38,7 @@ const ownerRepos: StringFunctionTuple[] = [
     ['discordjs/discord.js', xformRepoCapTag],
     /*['elixir-lang/elixir', xformRepoCapTag],*/
     ['exiftool/exiftool', xformNameSplit],
+    ['gleam-lang/gleam', xformRepoCapTag],
     ['JetBrains/kotlin', xformNameSplit],
     ['JuliaLang/julia', xformRepoCapTag],
     ['lampepfl/dotty', (_: string, __: string, jt: string) => ['Scala 3', jt]],     // "tag_name": "3.3.1", "name": "3.3.1",
