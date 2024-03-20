@@ -24,8 +24,8 @@ export const data = new SlashCommandBuilder()
         )
     );
 
-// const elap = (startTime: number) => new Date().getTime() - startTime;
-
+// Type guard functions to check whether a PromiseSettledResult is PromiseRejectedResult or PromiseFulfilledResult
+// They narrow the type of input
 const isRejected = <t>(input: PromiseSettledResult<t>): input is PromiseRejectedResult => input.status === 'rejected';
 const isFulfilled = <t>(input: PromiseSettledResult<t>): input is PromiseFulfilledResult<t> => input.status === 'fulfilled';
 
@@ -49,7 +49,6 @@ interface VidRedirPair {
 
 export async function execute(interaction: ChatInputCommandInteraction) {
     const iid = interaction.id;
-    // console.log('[YT] execute defer', iid);
 
     try {
         await interaction.deferReply();
@@ -83,71 +82,37 @@ export async function execute(interaction: ChatInputCommandInteraction) {
 
     const channelIDs = Object.values(configGroup);
 
+    const selectedVids = await processChannels(channelIDs, lenOpt);
+
+    const ytreply = formatReply(selectedVids, lenOpt);
+
+    if (ytreply === '')
+        return await interaction.editReply('No videos found').catch(e => editReplyFail(iid, e));
+
+    return await interaction.editReply(ytreply).catch(e => editReplyFail(iid, e));
+}
+
+interface ChannelVids {
+    items: {
+        snippet: {
+            publishedAt: string; // format: "2024-01-20T15:42:16Z"
+            channelId: string;
+            title: string;
+            channelTitle: string;
+            resourceId: { videoId: string; };
+        };
+    }[];
+};
+
+async function processChannels(channelIDs: string[], lenOpt: string) {
     const earlYtv = new YoutubeVidsEarl();
     earlYtv.setMaxResults(10);
 
-    const channelPromises = channelIDs.map(id => earlYtv.fetchPlaylistById(id));
-
-    const settled = await Promise.allSettled(channelPromises);
-
-    const fulfilled = settled.filter(isFulfilled);
-    const rejected = settled.filter(isRejected);
-
-    console.log(`[YT] fetching channels: ${fulfilled.length} fulfilled, ${rejected.length} rejected`);
-    if (rejected.length)
-        console.error('rejected[0]', rejected[0]);
-
-    // This represents the "items" array from the "value" field of the JSON
-    // returned by the YouTube API. Note that it represents an arbitrary
-    // playlist rather than a Channel. This is the standard way to query a
-    // channel's videos - just like any playlist. For this reason there is
-    // no channel title field. But each video has a channel title field.
-    // The official name of the whole JSON is probably "playlistItemListResponse"
-    // https://developers.google.com/youtube/v3/docs/playlistItems/list
-    // The other fields were:
-    /*interface YouTubePlaylistJSON {
-        status: string;
-        value: {
-            kind: string;
-            etag: string;
-            nextPageToken: string;
-            items: ChannelVids;
-            pageInfo: {
-                totalResults: number;
-                resultsPerPage: number;
-            }
-        }
-    }*/
-    interface ChannelVids /* JSON playlist.value */ {
-        // kind, etag, nextPageToken
-        items: {
-            // kind: string;
-            // etag: string;
-            // id: string;
-            snippet: {
-                publishedAt: string;    // format: "2024-01-20T15:42:16Z"
-                // channelId: string;
-                title: string;
-                // description: string;
-                // thumbnail: { /* default, medium, high, standard, maxres */ };
-                channelTitle: string;
-                // playlistId: string;
-                // position: number;
-                resourceId: {
-                    // kind: string;
-                    videoId: string;
-                };
-                // videoOwnerChannelTitle: string;
-                // videoOwnerChannelId: string;
-            }
-        }[]
-        // pageInfo
-    };
+    const fulfilled = await fetchChannels(channelIDs, earlYtv);
 
     // map ChannelVids to an array of MyVidStruct
     const groupChannelVids = fulfilled
-        .map(fr => fr.value as ChannelVids)
-        .map(cv => cv.items
+        .map(fr => (fr.value as ChannelVids).items
             .map(i => ({
                 channelTitle: i.snippet.channelTitle,
                 id: i.snippet.resourceId.videoId,
@@ -158,51 +123,54 @@ export async function execute(interaction: ChatInputCommandInteraction) {
         .flat().sort((a, b) => b.timestamp - a.timestamp);
 
     // start at the beginning, check each video to seee if it's a short by whether there's a redirect via HTTP HEAD
-    const selectedVids = await selectVids10AtATime(groupChannelVids, lenOpt);
-    // const selectedVids = await selectVids(groupChannelVids, lenOpt);
+    return await selectVids10AtATime(groupChannelVids, lenOpt);
+}
 
+async function fetchChannels(channelIDs: string[], earlYtv: YoutubeVidsEarl, maxRetries = 5): Promise<PromiseFulfilledResult<ChannelVids>[]> {
+    // try {
+    const requestedIDCount = channelIDs.length;
+    let rejectedIDs: string[] = [];
+    let retryCount = 0;
+    const results: PromiseFulfilledResult<ChannelVids>[] = [];
+
+    do {
+        const channelPromises = channelIDs
+            .map(id => earlYtv.fetchPlaylistById(id));
+
+        const settled = await Promise.allSettled(channelPromises);
+
+        const fulfilled = settled.filter(isFulfilled) as PromiseFulfilledResult<ChannelVids>[];
+
+        console.log(`[YT] try ${retryCount}, ${requestedIDCount} total, ${channelIDs.length} requested, ${fulfilled.length} fulfilled, ${channelIDs.length - fulfilled.length} rejected`);
+
+        // the IDs in the snippet have the UC (channel) prefix but we have to use the UU (playlist) prefix
+        rejectedIDs = channelIDs.length === fulfilled.length
+            ? []    // all fulfilled means no rejected
+            : channelIDs.filter(reqID => !fulfilled.map(resCV => resCV.value.items[0].snippet.channelId.substring(2)).includes(reqID.substring(2)));
+
+        results.push(...fulfilled);
+
+        channelIDs = rejectedIDs;
+        retryCount++;
+    } while (channelIDs.length > 0 && retryCount < maxRetries);
+
+    console.log(`[YT] fetched ${results.length} of ${requestedIDCount} channel IDs after ${retryCount} retries`);
+
+    return results;
+}
+
+function formatReply(selectedVids: VidRedirPair[], lenOpt: string) {
     const len = (r?: boolean) => r === true ? 'Long' : r === false ? 'Short' : '???';
     const now = Date.now();
 
-    const vidMap = selectedVids.map(({ vid: v, isRedir: r }) => {
-        return `${
-            lenOpt === 'all' ? '' : `(${len(r)}) `
-        }${v.channelTitle}: [${v.title}](<${
-            `https://www.youtube.com/watch?v=${v.id}`
-        }>) - ${ago(now - v.timestamp)}`
-    });
+    const vidMap = selectedVids.map(({ vid: v, isRedir: r }) => `${
+        lenOpt === 'all' ? ''
+            : `(${len(r)}) `}${v.channelTitle}: [${v.title}](<${
+                `https://www.youtube.com/watch?v=${v.id}`
+            }>) - ${ago(now - v.timestamp)}`
+    );
 
-    const ytreply = vidMap.join('\n');
-
-    if (ytreply === '')
-        return await interaction.editReply('No videos found').catch(e => editReplyFail(iid, e));
-
-    return await interaction.editReply(ytreply).catch(e => editReplyFail(iid, e));
-}
-
-async function selectVids(groupChannelVids: MyVidStruct[], lenOpt: string): Promise<VidRedirPair[]> {
-    const earlR = new Earl('https://www.youtube.com', '/shorts/');
-    const selectedVids = new Array<VidRedirPair>();
-    let [redirsChecked, redirsTrue, redirsFalse, redirsUndef] = [0, 0, 0, 0];
-
-    for (const v of groupChannelVids) {
-        const rr = lenOpt === 'all' ? undefined : await checkRedir(v);
-
-        redirsChecked++;
-        if (rr === true) redirsTrue++;
-        else if (rr === false) redirsFalse++;
-        else if (rr === undefined) redirsUndef++;
-
-        if (doWeWantIt(lenOpt, rr))
-            selectedVids.push({ vid: v, isRedir: rr });
-
-        if (selectedVids.length >= 10)
-            break;
-    }
-
-    console.log(`redirsChecked: ${redirsChecked}, redirsTrue: ${redirsTrue}, redirsFalse: ${redirsFalse}, redirsUndef: ${redirsUndef}`);
-
-    return selectedVids;
+    return vidMap.join('\n');
 }
 
 async function selectVids10AtATime(groupChannelVids: MyVidStruct[], lenOpt: string): Promise<VidRedirPair[]> {
