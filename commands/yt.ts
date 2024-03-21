@@ -29,24 +29,6 @@ export const data = new SlashCommandBuilder()
 const isRejected = <t>(input: PromiseSettledResult<t>): input is PromiseRejectedResult => input.status === 'rejected';
 const isFulfilled = <t>(input: PromiseSettledResult<t>): input is PromiseFulfilledResult<t> => input.status === 'fulfilled';
 
-interface MyVidStruct {
-    channelTitle: string;
-    id: string;
-    timestamp: number;
-    title: string;
-}
-
-interface VidRedirTriple {
-    vid: MyVidStruct;
-    redirProm: Promise<boolean | undefined>;
-    isRedir?: boolean;
-}
-
-interface VidRedirPair {
-    vid: MyVidStruct;
-    isRedir?: boolean;
-}
-
 export async function execute(interaction: ChatInputCommandInteraction) {
     const iid = interaction.id;
 
@@ -104,51 +86,54 @@ interface ChannelVids {
     }[];
 };
 
+interface VidInfo {
+    channelTitle: string;
+    id: string;
+    timestamp: number;
+    title: string;
+}
+
 async function processChannels(channelIDs: string[], lenOpt: string) {
-    const earlYtv = new YoutubeVidsEarl();
-    earlYtv.setMaxResults(10);
+    const earl = new YoutubeVidsEarl();
+    earl.setMaxResults(10);
 
-    const fulfilled = await fetchChannels(channelIDs, earlYtv);
-
-    // map ChannelVids to an array of MyVidStruct
-    const groupChannelVids = fulfilled
+    const allVideos = (await fetchChannels(channelIDs, earl))
         .map(fr => (fr.value as ChannelVids).items
             .map(i => ({
                 channelTitle: i.snippet.channelTitle,
                 id: i.snippet.resourceId.videoId,
                 timestamp: Date.parse(i.snippet.publishedAt),
                 title: i.snippet.title
-            }) as MyVidStruct)
+            }) as VidInfo)
         )
         .flat().sort((a, b) => b.timestamp - a.timestamp);
 
-    // start at the beginning, check each video to seee if it's a short by whether there's a redirect via HTTP HEAD
-    return await selectVids10AtATime(groupChannelVids, lenOpt);
+    // select long or short videos, which requires a HTTP HEAD request each
+    return await selectVideos(allVideos, lenOpt);
 }
 
-async function fetchChannels(channelIDs: string[], earlYtv: YoutubeVidsEarl, maxRetries = 5): Promise<PromiseFulfilledResult<ChannelVids>[]> {
-    // try {
+async function fetchChannels(channelIDs: string[], earl: YoutubeVidsEarl, maxRetries = 5): Promise<PromiseFulfilledResult<ChannelVids>[]> {
     const requestedIDCount = channelIDs.length;
     let rejectedIDs: string[] = [];
-    let retryCount = 0;
+    let retryCount = 1;
     const results: PromiseFulfilledResult<ChannelVids>[] = [];
 
     do {
-        const channelPromises = channelIDs
-            .map(id => earlYtv.fetchPlaylistById(id));
+        const channelPromises = channelIDs.map(chid => earl.fetchPlaylistById(chid));
 
-        const settled = await Promise.allSettled(channelPromises);
+        const settledResults = await Promise.allSettled(channelPromises);
+        const fulfilledResults = settledResults.filter(isFulfilled) as PromiseFulfilledResult<ChannelVids>[];
 
-        const fulfilled = settled.filter(isFulfilled) as PromiseFulfilledResult<ChannelVids>[];
+        console.log(`[YT] fetch chans try ${retryCount}, ${requestedIDCount} total, ${channelIDs.length} requested, ${fulfilledResults.length} fulfilled, ${channelIDs.length - fulfilledResults.length} rejected`);
 
-        console.log(`[YT] try ${retryCount}, ${requestedIDCount} total, ${channelIDs.length} requested, ${fulfilled.length} fulfilled, ${channelIDs.length - fulfilled.length} rejected`);
+        const isSameChan = (a: string, b: string) => a.substring(2) === b.substring(2);
 
-        // the IDs in the snippet have the UC (channel) prefix but we have to use the UU (playlist) prefix
-        rejectedIDs = channelIDs.length === fulfilled.length
+        // the IDs in the snippet have the UC (channel) prefix but the YouTube API we have to use requires the UU (playlist) prefix
+        rejectedIDs = channelIDs.length === fulfilledResults.length
             ? []    // all fulfilled means no rejected
-            : channelIDs.filter(reqID => !fulfilled.map(resCV => resCV.value.items[0].snippet.channelId.substring(2)).includes(reqID.substring(2)));
+            : channelIDs.filter(reqID => !fulfilledResults.map(res => res.value.items[0].snippet.channelId).some(resID => isSameChan(reqID, resID)));
 
-        results.push(...fulfilled);
+        results.push(...fulfilledResults);
 
         channelIDs = rejectedIDs;
         retryCount++;
@@ -157,6 +142,11 @@ async function fetchChannels(channelIDs: string[], earlYtv: YoutubeVidsEarl, max
     console.log(`[YT] fetched ${results.length} of ${requestedIDCount} channel IDs after ${retryCount} retries`);
 
     return results;
+}
+
+interface VidRedirPair {
+    vid: VidInfo;
+    isRedir?: boolean;
 }
 
 function formatReply(selectedVids: VidRedirPair[], lenOpt: string) {
@@ -173,38 +163,71 @@ function formatReply(selectedVids: VidRedirPair[], lenOpt: string) {
     return vidMap.join('\n');
 }
 
-async function selectVids10AtATime(groupChannelVids: MyVidStruct[], lenOpt: string): Promise<VidRedirPair[]> {
+interface VidRedirTriple {
+    vid: VidInfo;
+    redirProm: Promise<boolean | undefined>;
+    isRedir?: boolean;
+}
+
+async function selectVideos(vids: VidInfo[], lenOpt: string, maxRetries: number = 3): Promise<VidRedirPair[]> {
     const selectedVids = new Array<VidRedirPair>();
 
-    let [settled, fulfilled, rejected] = [0, 0, 0];
+    let [settledNum, fulfilledNum, rejectedNum] = [0, 0, 0];
 
-    for (let offset = 0; offset < groupChannelVids.length; offset += 10) {
-        const group = groupChannelVids.slice(offset, offset + 10);
+    // chunk loop
+    let chunkNum = 1;
+    let retryCount = 0;
+    for (let offset = 0; offset < vids.length; offset += 10) {
+        const chunk = vids.slice(offset, offset + 10);
 
-        const vidsWithRedirFlag: VidRedirTriple[] = group.map(v => ({ vid: v, redirProm: checkRedir(v) }));
-        await Promise.allSettled(vidsWithRedirFlag.map(v => v.redirProm.then(r => v.isRedir = r)));
+        const vidsWithRedirFlag: VidRedirTriple[] = chunk.map(v => ({ vid: v, redirProm: checkRedir(v) }));
 
-        const badOnes = vidsWithRedirFlag.filter(v => v.isRedir === undefined)//.map(v => v.vid);
-        if (badOnes.length > 0) console.log(`[YT] ${badOnes.length} redirection checks failed!`);
+        let badOnes: VidRedirTriple[] = [];
+        let retryNum = 1;
 
-        settled += vidsWithRedirFlag.length;
-        rejected += badOnes.length;
-        fulfilled += settled - badOnes.length;
+        while (true) {
+            console.log(`[YT] redir check chunk ${chunkNum} try ${retryNum}`);
+            await Promise.allSettled(vidsWithRedirFlag.map(v => v.redirProm.then(r => v.isRedir = r)));
 
-        const onesWeWant = vidsWithRedirFlag.filter(v => doWeWantIt(lenOpt, v.isRedir))//.map(v => v.vid);
+            badOnes = vidsWithRedirFlag.filter(v => v.isRedir === undefined);
+            if (badOnes.length > 0) {
+                console.log(`[YT] ${badOnes.length} redirection checks failed!`);
+                console.log((`${badOnes.map(v => `[YT]   ${v.vid.channelTitle} :: ${v.vid.title}`).join('\n')}`));
+                if (retryNum >= maxRetries) {
+                    console.log(`[YT] check redirs max retries reached!`);
+                    break;
+                }
+            } else {
+                console.log(`[YT] all ${vidsWithRedirFlag.length} redir checks succeeded`);
+                break;
+            }
 
-        selectedVids.push(...onesWeWant.slice(0, 10 - selectedVids.length).map(v => ({ vid: v.vid, isRedir: v.isRedir })));
+            console.log(`[YT] retrying ${badOnes.length} redirection checks`);
+            vidsWithRedirFlag.forEach(v => { if (v.isRedir === undefined) v.redirProm = checkRedir(v.vid) });
+            retryNum++;
+            retryCount++;
+        }
+
+        settledNum += vidsWithRedirFlag.length;
+        rejectedNum += badOnes.length;
+        fulfilledNum += settledNum - badOnes.length;
+
+        const vidsWeWant = vidsWithRedirFlag.filter(v => doWeWantIt(lenOpt, v.isRedir));
+
+        selectedVids.push(...vidsWeWant.slice(0, 10 - selectedVids.length).map(v => ({ vid: v.vid, isRedir: v.isRedir })));
 
         if (selectedVids.length >= 10)
             break;
+
+        chunkNum++;
     }
 
-    console.log(`[YT] checking redirections: ${fulfilled} fulfilled, ${rejected} rejected`);
+    console.log(`[YT] selected ${selectedVids.length} of ${settledNum} total, ${fulfilledNum} fulfilled, ${rejectedNum} rejected, after ${retryCount} retries`);
 
     return selectedVids;
 }
 
-function checkRedir(v: MyVidStruct) {
+function checkRedir(v: VidInfo) {
     const earlR = new Earl('https://www.youtube.com', '/shorts/');
     earlR.setLastPathSegment(v.id);
     return earlR.checkRedirect();

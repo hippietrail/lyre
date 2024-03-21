@@ -55,14 +55,13 @@ export class Earl {
             try {
                 return Math.floor((await fetch(link, { method: 'HEAD', redirect: 'manual' })).status / 100) === 3;
             } catch (error: any) {
-                // NOTE: ENOTFOUND is also occasionally returned
-                if (['UND_ERR_CONNECT_TIMEOUT', 'UND_ERR_SOCKET', 'ECONNRESET'].includes(error.cause.code))
+                // ignore the most common, timeout, short message for somehwat common, long message for others
+                if (['UND_ERR_SOCKET', 'ECONNRESET'].includes(error.cause.code))
                     console.log(`!!${link}!!`, error.cause.code);
-                else
+                else if (error.cause.code !== 'UND_ERR_CONNECT_TIMEOUT')
                     console.log(`!!${link}!!`, JSON.stringify(error, null, 2));
-                // when we have network issues just let shorts get through
-                // TODO return null (or undefined) in case of an error
-                // return true;
+                // NOTE: ENOTFOUND is also occasionally returned
+                // neither true nor false
                 return undefined;
             }
         })(this.url.href);
