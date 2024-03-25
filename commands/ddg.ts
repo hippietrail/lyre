@@ -55,7 +55,7 @@ async function ddg(interaction: ChatInputCommandInteraction) {
     try {
         const dom = await ddgEarl.fetchDom();
         const htmlIndex = dom.findIndex(child => child.name === 'html');
-        const feedIndex = ['trending', 'best/editor-choice'].includes(listOpt) ? 11 : 9;
+        const feedIndex = ['trending'].includes(listOpt) ? 15 : 13;
 
         console.log(`html index: ${htmlIndex} list: '${listOpt}' feed index: ${feedIndex}`);
         console.log(`user chosen index: ${indexOpt}`);
