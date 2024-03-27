@@ -137,9 +137,9 @@ async function fetchChannels(channelIDs: string[], earl: YoutubeVidsEarl, maxRet
 
         channelIDs = rejectedIDs;
         retryCount++;
-    } while (channelIDs.length > 0 && retryCount < maxRetries);
+    } while (channelIDs.length > 0 && retryCount <= maxRetries);
 
-    console.log(`[YT] fetched ${results.length} of ${requestedIDCount} channel IDs after ${retryCount} retries`);
+    console.log(`[YT] fetched ${results.length} of ${requestedIDCount} channel IDs after ${retryCount-1} retries`);
 
     return results;
 }
