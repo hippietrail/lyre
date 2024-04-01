@@ -118,26 +118,19 @@ async function processChannels(channelIDs: string[], lenOpt: string) {
 
 async function fetchChannels(channelIDs: string[], earl: YoutubeVidsEarl, maxRetries = 5): Promise<PromiseFulfilledResult<ChannelVids>[]> {
     const requestedIDCount = channelIDs.length;
-    let retryIDs: string[];
     let retryCount = 1;
     const results: PromiseFulfilledResult<ChannelVids>[] = [];
 
     do {
         const channelPromises = channelIDs.map(chid => earl.fetchPlaylistById(chid));
         
-        const settledResults = await Promise.allSettled(channelPromises);
-        const fulfilledResults = settledResults.filter(isFulfilled) as PromiseFulfilledResult<ChannelVids>[];
+        const settledResults = await Promise.allSettled(channelPromises) as PromiseSettledResult<ChannelVids>[];
+        const fulfilledResults = settledResults.filter(isFulfilled);
         
-        retryIDs = [];
-        channelIDs.map((id, idx) => [id, settledResults[idx]] as const).forEach(([id, res]) => {
-            if (isFulfilled(res)) {
-                if ('error' in (res.value as ChannelVids)) {
-                    console.log(`[YT] ${id} '${getChannelNameByID(id)}'\n[YT]   ${((res.value as ChannelVids).error!.message)}`);
-                }
-            } else {
-                retryIDs.push(id);
-            }
-        });
+        const retryIDs = channelIDs.filter((_, idx) => !isFulfilled(settledResults[idx]));
+        console.log(`[YT] idsToRetry: ${JSON.stringify(retryIDs)}`);
+        const errorIDs = channelIDs.filter((_, idx) => isFulfilled(settledResults[idx]) && 'error' in (settledResults[idx] as PromiseFulfilledResult<ChannelVids>).value);
+        console.log(`[YT] errorIDs: ${JSON.stringify(errorIDs)}`);
 
         results.push(...fulfilledResults);
 
