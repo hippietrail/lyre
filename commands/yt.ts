@@ -26,7 +26,6 @@ export const data = new SlashCommandBuilder()
 
 // Type guard functions to check whether a PromiseSettledResult is PromiseRejectedResult or PromiseFulfilledResult
 // They narrow the type of input
-const isRejected = <t>(input: PromiseSettledResult<t>): input is PromiseRejectedResult => input.status === 'rejected';
 const isFulfilled = <t>(input: PromiseSettledResult<t>): input is PromiseFulfilledResult<t> => input.status === 'fulfilled';
 
 export async function execute(interaction: ChatInputCommandInteraction) {
@@ -103,13 +102,6 @@ async function processChannels(channelIDs: string[], lenOpt: string) {
     const allVideos = (await fetchChannels(channelIDs, earl))
         .map((fr, num) => {
             const items = 'items' in fr.value ? (fr.value as ChannelVids).items : [];
-            if (items.length === 0) {
-                const name = Object.values(cachedConfig.data)
-                    .map(x => Object.entries(x))
-                    .flat()
-                    .find(x => x[1] === channelIDs[num])![0];
-                console.log(`[YT] no videos found for channel '${name}': ${fr.value!.error!.message}`);
-            }
             return items
                 .map(i => ({
                     channelTitle: i.snippet.channelTitle,
@@ -126,28 +118,30 @@ async function processChannels(channelIDs: string[], lenOpt: string) {
 
 async function fetchChannels(channelIDs: string[], earl: YoutubeVidsEarl, maxRetries = 5): Promise<PromiseFulfilledResult<ChannelVids>[]> {
     const requestedIDCount = channelIDs.length;
-    let rejectedIDs: string[] = [];
+    let retryIDs: string[];
     let retryCount = 1;
     const results: PromiseFulfilledResult<ChannelVids>[] = [];
 
     do {
         const channelPromises = channelIDs.map(chid => earl.fetchPlaylistById(chid));
-
+        
         const settledResults = await Promise.allSettled(channelPromises);
         const fulfilledResults = settledResults.filter(isFulfilled) as PromiseFulfilledResult<ChannelVids>[];
-
-        console.log(`[YT] fetch chans try ${retryCount}, ${requestedIDCount} total, ${channelIDs.length} requested, ${fulfilledResults.length} fulfilled, ${channelIDs.length - fulfilledResults.length} rejected`);
-
-        const isSameChan = (a: string, b: string) => a.substring(2) === b.substring(2);
-
-        // the IDs in the snippet have the UC (channel) prefix but the YouTube API we have to use requires the UU (playlist) prefix
-        rejectedIDs = channelIDs.length === fulfilledResults.length
-            ? []    // all fulfilled means no rejected
-            : channelIDs.filter(reqID => !fulfilledResults.map(res => res.value.items[0].snippet.channelId).some(resID => isSameChan(reqID, resID)));
+        
+        retryIDs = [];
+        channelIDs.map((id, idx) => [id, settledResults[idx]] as const).forEach(([id, res]) => {
+            if (isFulfilled(res)) {
+                if ('error' in (res.value as ChannelVids)) {
+                    console.log(`[YT] ${id} '${getChannelNameByID(id)}'\n[YT]   ${((res.value as ChannelVids).error!.message)}`);
+                }
+            } else {
+                retryIDs.push(id);
+            }
+        });
 
         results.push(...fulfilledResults);
 
-        channelIDs = rejectedIDs;
+        channelIDs = channelIDs.filter((_, idx) => !isFulfilled(settledResults[idx]));
         retryCount++;
     } while (channelIDs.length > 0 && retryCount <= maxRetries);
 
@@ -159,6 +153,13 @@ async function fetchChannels(channelIDs: string[], earl: YoutubeVidsEarl, maxRet
 interface VidRedirPair {
     vid: VidInfo;
     isRedir?: boolean;
+}
+
+function getChannelNameByID(id: string) {
+    return Object.values(cachedConfig.data)
+        .map(gr => Object.entries(gr))
+        .flat()
+        .find(ch => ch[1] === id)![0];
 }
 
 function formatReply(selectedVids: VidRedirPair[], lenOpt: string) {
