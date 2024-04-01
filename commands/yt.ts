@@ -119,26 +119,30 @@ async function processChannels(channelIDs: string[], lenOpt: string) {
 async function fetchChannels(channelIDs: string[], earl: YoutubeVidsEarl, maxRetries = 5): Promise<PromiseFulfilledResult<ChannelVids>[]> {
     const requestedIDCount = channelIDs.length;
     let retryCount = 1;
+    let apiErrorCount = 0;
+    let httpErrorCount = 0;
     const results: PromiseFulfilledResult<ChannelVids>[] = [];
 
     do {
-        const channelPromises = channelIDs.map(chid => earl.fetchPlaylistById(chid));
+        const settledResults = await Promise.allSettled(channelIDs.map(chid => earl.fetchPlaylistById(chid))) as PromiseSettledResult<ChannelVids>[];
         
-        const settledResults = await Promise.allSettled(channelPromises) as PromiseSettledResult<ChannelVids>[];
-        const fulfilledResults = settledResults.filter(isFulfilled);
+        results.push(...settledResults.filter(isFulfilled));
         
-        const retryIDs = channelIDs.filter((_, idx) => !isFulfilled(settledResults[idx]));
-        console.log(`[YT] idsToRetry: ${JSON.stringify(retryIDs)}`);
-        const errorIDs = channelIDs.filter((_, idx) => isFulfilled(settledResults[idx]) && 'error' in (settledResults[idx] as PromiseFulfilledResult<ChannelVids>).value);
-        console.log(`[YT] errorIDs: ${JSON.stringify(errorIDs)}`);
+        // API errors are NOT the same as HTTP errors! if they failed once they will keep failing, do NOT retry them!
+        const apiErrorIDs = channelIDs.filter((_, idx) => isFulfilled(settledResults[idx]) && 'error' in (settledResults[idx] as PromiseFulfilledResult<ChannelVids>).value);
+        apiErrorCount += apiErrorIDs.length;
 
-        results.push(...fulfilledResults);
+        // HTTP errors are things like timeouts. retry them
+        const httpErrorIDs: string[] = channelIDs.filter((_, idx) => !isFulfilled(settledResults[idx]));
+        httpErrorCount += httpErrorIDs.length;
 
-        channelIDs = channelIDs.filter((_, idx) => !isFulfilled(settledResults[idx]));
+        logHttpAndApiErrors(httpErrorIDs, apiErrorIDs);
+
+        channelIDs = httpErrorIDs;
         retryCount++;
     } while (channelIDs.length > 0 && retryCount <= maxRetries);
 
-    console.log(`[YT] fetched ${results.length} of ${requestedIDCount} channel IDs after ${retryCount - 1} retries`);
+    console.log(`[YT] fetched ${results.length} of ${requestedIDCount} channel IDs after ${retryCount - 1} retries and ${httpErrorCount} HTTP errors and ${apiErrorCount} API errors`);
 
     return results;
 }
@@ -146,6 +150,14 @@ async function fetchChannels(channelIDs: string[], earl: YoutubeVidsEarl, maxRet
 interface VidRedirPair {
     vid: VidInfo;
     isRedir?: boolean;
+}
+
+function logHttpAndApiErrors(httpErrorIDs: string[], apiErrorIDs: string[]) {
+    httpErrorIDs.length > 0 && console.log(`[YT] HTTP errors: ${JSON.stringify(httpErrorIDs)}... retrying...`);
+    if (apiErrorIDs.length > 0) {
+        console.log(`[YT] API errors: ${JSON.stringify(apiErrorIDs)}. not retrying.`);
+        console.log(apiErrorIDs.map(id => `[YT]  ${getChannelNameByID(id)}`).join('\n'));
+    }
 }
 
 function getChannelNameByID(id: string) {
