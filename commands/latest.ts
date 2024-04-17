@@ -67,6 +67,15 @@ interface VersionInfoTight {
     src: string;
 }
 
+interface VersionInfoTightArray extends Array<VersionInfoTight> {
+    toSorted(compareFn: (a: VersionInfoTight, b: VersionInfoTight) => number): VersionInfoTight[];
+}
+  
+function toSorted(arr: VersionInfoTight[], compareFn: (a: VersionInfoTight, b: VersionInfoTight) => number): VersionInfoTight[] {
+    const sortedArr = [...arr].sort(compareFn);
+    return sortedArr;
+}
+    
 async function latest(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
 
@@ -130,8 +139,8 @@ async function latest(interaction: ChatInputCommandInteraction) {
 
             responses.push(...tightenedUp);
 
-            let reply = responses
-                .toSorted((a, b) => {
+            let reply = (responses as VersionInfoTightArray)
+                .toSorted((a: VersionInfoTight, b: VersionInfoTight) => {
                     const ageDiff = !a.timestamp
                         ? !b.timestamp ? 0 : 2
                         : !b.timestamp ? -2 : b.timestamp.getTime() - a.timestamp.getTime();
@@ -140,7 +149,7 @@ async function latest(interaction: ChatInputCommandInteraction) {
                         ? ageDiff
                         : a.name.localeCompare(b.name);
                 })
-                .map(vi => versionInfoToString(vi))
+                .map((vi: VersionInfoTight) => versionInfoToString(vi))
                 .join('\n');
 
             const note = sourceNames.length !== 0
@@ -177,12 +186,12 @@ async function latest(interaction: ChatInputCommandInteraction) {
         
         if (useJson) {
             sourcePromises.push(Promise.all([
-                //callNodejs(),
+                //callNodejs(), // doing it another way
                 callGimp(),
                 callXcode(),
-                //callMame(),
+                //callMame(),   // doing it another way
                 callDart(),
-                callPhp(),
+                // callPhp(),   // not interested for now
             ]).then(async arr => await updateReply(arr, 'JSON')));
         }
 
@@ -192,11 +201,11 @@ async function latest(interaction: ChatInputCommandInteraction) {
                 callRvm(),
                 callAS(),
                 callElixir(),
-                callRuby(),
+                // callRuby(),      // not interested for now
                 callIdea(),
-                callWikiDump(), // actually HTML first then JSON
+                callWikiDump(),     // actually HTML first then JSON
                 callSdlMame(),
-                callSublime(),
+                // callSublime(),   // not interested for now
                 callPython(),
             ]).then(async arr => await updateReply(arr, 'HTML')));
         } else if (useWikiDump) {
