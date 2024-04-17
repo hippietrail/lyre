@@ -40,7 +40,7 @@ const ownerRepos: StringFunctionTuple[] = [
     ['exiftool/exiftool', xformNameSplit],
     ['gleam-lang/gleam', xformRepoCapTag],
     ['JetBrains/kotlin', xformNameSplit],
-    ['JuliaLang/julia', xformRepoCapTag],
+    // ['JuliaLang/julia', xformRepoCapTag],    // not interested for now
     ['lampepfl/dotty', (_: string, __: string, jt: string) => ['Scala 3', jt]],     // "tag_name": "3.3.1", "name": "3.3.1",
     ['llvm/llvm-project', xformNameSplit],
     ['lua/lua', xformNameSplit],
@@ -50,9 +50,10 @@ const ownerRepos: StringFunctionTuple[] = [
     ['nodejs/node', (_: string, __: string, jt: string) => ['Node (Current)', jt]],
     ['odin-lang/Odin', (_: string, __: string, jt: string) => ['Odin', jt]],
     ['oven-sh/bun', xformNameSplit],
-    ['rakudo/rakudo', xformRepoCapTag],
+    // ['rakudo/rakudo', xformRepoCapTag],  // not interested for now
     /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
-    ['scala/scala', (_: string, __: string, jt: string) => ['Scala 2', jt]],        // "tag_name": "v2.13.12", "name": "Scala 2.13.12",
+    // scala: not interested for now
+    // ['scala/scala', (_: string, __: string, jt: string) => ['Scala 2', jt]],        // "tag_name": "v2.13.12", "name": "Scala 2.13.12",
     ['rust-lang/rust', xformRepoCapTag],
     ['unicode-org/icu', xformNameSplit],
     ['vlang/v', xformRepoCapTag],
