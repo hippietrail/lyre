@@ -154,9 +154,9 @@ export async function callAS() {
             // 'Canary',    // Canary builds are the bleeding edge, released about weekly. While these builds do get tested, they are still subject to bugs, as we want people to see what's new as soon as possible. This is not recommended for production development.
             // 'Dev',       // Dev builds are hand-picked older canary builds that survived the test of time. It should be updated roughly bi-weekly or monthly.
             // 'Beta',      // When we reach a beta milestone for the next version of Android Studio, we post the beta builds here. When the version is stable, the beta channel contains the stable version until the next version's beta.
-            'Stable',       // Contains the most recent stable version of Android Studio. 
+            'Stable',       // Contains the most recent stable version of Android Studio.
         ].includes(e[0])).map(e => e[1]);
-        
+
     } catch (error) {
         console.error(`[AS]`, error);
     }
@@ -421,7 +421,7 @@ export async function callSublime() {
 
         const [h3, releaseDate] = [
             domStroll('sublime2', false, current.children!, [
-                [1, 'h3'],      
+                [1, 'h3'],
             ])!,
             domStroll('sublime3', false, current.children!, [
                 [3, 'div', { cls: 'release-date' }],
@@ -487,6 +487,53 @@ export async function callPython() {
         }];
     } catch (error) {
         console.error(`[Python]`, error);
+    }
+    return [];
+}
+
+
+export async function callD() {
+    // https://dlang.org/changelog/
+    const dEarl = new Earl('https://dlang.org', '/changelog/');
+    try {
+        const secondLi = domStroll('d', false, await dEarl.fetchDom(), [
+            [3, 'html'],
+            [5, 'body'],
+            [5, 'div', { cls: 'container' }],
+            [5, 'div', { id: 'content' }],
+            [7, 'ul'],
+            [7, 'li']
+        ])!;
+
+        const [a, span] = [
+            domStroll('d', false, secondLi.children!, [
+                [0, 'a'],
+            ])!,
+            domStroll('d', false, secondLi.children!, [
+                [1, 'span']
+            ])!
+        ];
+
+        const [ver, relLink] = [
+            a.attribs!.id,
+            a.attribs!.href!
+        ];
+
+        let date = span.children![0].data!;
+
+        const timestamp = (date.startsWith(' (') && date[date.length - 1] === ')')
+            ? new Date(date.substring(2, date.length - 1))
+            : null;
+
+        return [{
+            name: 'D',
+            ver,
+            link: new URL(relLink, dEarl.getUrlString()).href,
+            timestamp,
+            src: 'dlang.org',
+        }];
+    } catch (error) {
+        console.error(`[D]`, error);
     }
     return [];
 }
