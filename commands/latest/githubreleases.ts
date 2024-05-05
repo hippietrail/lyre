@@ -22,6 +22,11 @@ function xformRepoCapTagVersionUnderscore(gor: string, _: string, jt: string) {
     return [rn.charAt(0).toUpperCase() + rn.slice(1), jt.replace(/_/g, '.')];
 }
 
+// Repo name is name, version is GitHub JSON name
+function xformRepoName(gor: string, jn: string, __: string) {
+    return [gor.split('/')[1], jn];
+}
+
 interface GithubJson {
     name: string;
     tag_name: string;
@@ -54,6 +59,8 @@ const ownerRepos: StringFunctionTuple[] = [
     /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
     // scala: not interested for now
     // ['scala/scala', (_: string, __: string, jt: string) => ['Scala 2', jt]],        // "tag_name": "v2.13.12", "name": "Scala 2.13.12",
+    ['libsdl-org/SDL', xformRepoName],
+    ['raysan5/raylib', xformNameSplit],
     ['rust-lang/rust', xformRepoCapTag],
     ['unicode-org/icu', xformNameSplit],
     ['vlang/v', xformRepoCapTag],
