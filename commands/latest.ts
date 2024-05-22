@@ -3,7 +3,7 @@ import { ago } from '../ute/ago';
 import { callGithubReleases } from './latest/githubreleases';
 import { callGithubTags } from './latest/githubtags';
 import { callWikiDump } from './latest/wikidump';
-import { callAS, callD, callElixir, callGo, callIdea, callPython, callRuby, callRvm, callSdlMame, callSublime } from './latest/htmlsources';
+import { callAS, callD, callElixir, callGo, callIdea, callRustRover, callPython, callRuby, callRvm, callSdlMame, callSublime } from './latest/htmlsources';
 import { callNodejs, callGimp, callXcode, callMame, callDart, callPhp } from './latest/jsonsources';
 
 export const data = new SlashCommandBuilder()
@@ -202,6 +202,7 @@ async function latest(interaction: ChatInputCommandInteraction) {
                 callElixir(),
                 callGo(),
                 callIdea(),
+                callRustRover(),
                 callPython(),
                 // callRuby(),      // not interested for now
                 callRvm(),
