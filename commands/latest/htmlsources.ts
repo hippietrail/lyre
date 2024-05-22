@@ -282,11 +282,12 @@ export async function callRuby() {
     return [];
 }
 
-export async function callIdea() {
-    const ideaEarl = new Earl('https://blog.jetbrains.com', '/idea/category/releases/');
+// generalized function to work with both IntelliJ IDEA and RustRover
+async function callIntelliJ(debugName: string, linkName: string, regex: RegExp, returnName: string) {
+    const ijEarl = new Earl('https://blog.jetbrains.com', `${linkName}/category/releases/`);
 
     try {
-        const container = domStroll('IdeaB', false, await ideaEarl.fetchDom(), [
+        const container = domStroll(`${debugName}a`, false, await ijEarl.fetchDom(), [
             [2, 'html'],
             [3, 'body'],
             [6, 'div', { id: 'wrapper' }],
@@ -302,7 +303,7 @@ export async function callIdea() {
         const cols = row.children!.filter(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('col'));
 
         for (const col of cols) {
-            const aLink = domStroll('IdeaB', false, col.children!, [
+            const aLink = domStroll(`${debugName}b`, false, col.children!, [
                 [1, 'a', { cls: 'card' }],
             ])!;
 
@@ -317,24 +318,23 @@ export async function callIdea() {
                 // if header and footer were wrong (1 and 5 instead of 3 and 7) then h4 will be at 3 instead of 1
                 const h4index = 4 - headerIndex;
 
-                const h4 = domStroll('IdeaC', false, header.children!, [
+                const h4 = domStroll(`${debugName}c`, false, header.children!, [
                     [h4index, 'h4'],
                 ])!;
 
-                const publishDate = domStroll('IdeaD', false, footer.children!, [
+                const publishDate = domStroll(`${debugName}d`, false, footer.children!, [
                     [1, 'div', { cls: 'author' }],
                     [3, 'div', { cls: 'author__info' }],
                     [3, 'time', { cls: 'publish-date' }],
                 ])!;
 
-                // title will be this form: IntelliJ IDEA 2023.1.4 Is Here!
                 const title = h4.children![0].data!;
-                const matt = title.match(/IntelliJ IDEA (\d+\.\d+(?:\.\d+)?) Is (?:Here|Out)!/);
+                const matt = title.match(regex);
                 if (matt) {
                     const pubDateAttribs = publishDate.attribs as { datetime?: string };
 
                     return [{
-                        name: 'IntelliJ IDEA',
+                        name: returnName,
                         ver: matt[1],
                         link: aLink.attribs!.href,
                         timestamp: new Date(pubDateAttribs.datetime!),
@@ -342,89 +342,24 @@ export async function callIdea() {
                     }];
                 } else {
                     const colAttribs = col.attribs as { post_id?: string };
-                    console.log(`[Idea] ${colAttribs.post_id!} :couldn't parse version from '${title}'`);
+                    console.log(`[${debugName}] ${colAttribs.post_id!} :couldn't parse version from '${title}'`);
                 }
             }
         }
 
     } catch (error) {
-        console.error(`[Idea]`, error);
+        console.error(`[${debugName}]`, error);
     }
 
     return [];
 }
 
+export async function callIdea() {
+    return await callIntelliJ('Idea', 'idea', /IntelliJ IDEA (\d+\.\d+(?:\.\d+)?)/, 'IntelliJ IDEA');
+}
+
 export async function callRustRover() {
-    const ideaEarl = new Earl('https://blog.jetbrains.com', '/rust/category/releases/');
-
-    try {
-        const container = domStroll('RRa', false, await ideaEarl.fetchDom(), [
-            [2, 'html'],
-            [3, 'body'],
-            [6, 'div', { id: 'wrapper' }],
-            [3, 'main', { id: 'main' }],
-            [3, 'section', { cls: 'tax-archive' }],
-            [1, 'div', { cls: 'container' }],
-            [3, 'div', { cls: 'tax-archive__wrapper' }],    // added < 2024-03-09
-        ])!;
-
-        // ignore all the text and comment child nodes, find the first div node with row class
-        const row = container.children!.find(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('row'))!;
-
-        const cols = row.children!.filter(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('col'));
-
-        for (const col of cols) {
-            const aLink = domStroll('RRb', false, col.children!, [
-                [1, 'a', { cls: 'card' }],
-            ])!;
-
-            const headerIndex = aLink.children!.findIndex(e => e.type === 'tag' && e.name === 'div' && e.attribs?.class?.includes('card__header'));
-
-            if (headerIndex) {
-                const header = aLink.children![headerIndex];
-                const footer = aLink.children![headerIndex + 4];
-                // card header and footer are normally children #3 and #7
-                // but sometimes an image is missing so the header and footer are #1 and #5
-
-                // if header and footer were wrong (1 and 5 instead of 3 and 7) then h4 will be at 3 instead of 1
-                const h4index = 4 - headerIndex;
-
-                const h4 = domStroll('RRc', false, header.children!, [
-                    [h4index, 'h4'],
-                ])!;
-
-                const publishDate = domStroll('RRd', false, footer.children!, [
-                    [1, 'div', { cls: 'author' }],
-                    [3, 'div', { cls: 'author__info' }],
-                    [3, 'time', { cls: 'publish-date' }],
-                ])!;
-
-                // title will be this form: IntelliJ IDEA 2023.1.4 Is Here!
-                // title will be this form: New in IntelliJ Rust for 2023.1 (Part 2)
-                const title = h4.children![0].data!;
-                const matt = title.match(/IntelliJ Rust for (\d+\.\d+(?:\.\d+)?)/);
-                if (matt) {
-                    const pubDateAttribs = publishDate.attribs as { datetime?: string };
-
-                    return [{
-                        name: 'RustRover',
-                        ver: matt[1],
-                        link: aLink.attribs!.href,
-                        timestamp: new Date(pubDateAttribs.datetime!),
-                        src: 'jetbrains.com',
-                    }];
-                } else {
-                    const colAttribs = col.attribs as { post_id?: string };
-                    console.log(`[RR] ${colAttribs.post_id!} :couldn't parse version from '${title}'`);
-                }
-            }
-        }
-
-    } catch (error) {
-        console.error(`[RR]`, error);
-    }
-
-    return [];
+    return await callIntelliJ('RR', 'rust', /IntelliJ Rust for (\d+\.\d+(?:\.\d+)?)/, 'RustRover');
 }
 
 export async function callSdlMame() {
