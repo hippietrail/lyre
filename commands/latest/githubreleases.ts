@@ -42,7 +42,7 @@ const ownerRepos: StringFunctionTuple[] = [
     ['audacity/audacity', xformNameSplit],
     ['discordjs/discord.js', xformRepoCapTag],
     /*['elixir-lang/elixir', xformRepoCapTag],*/
-    ['exiftool/exiftool', xformNameSplit],
+    // ['exiftool/exiftool', xformNameSplit],
     ['gleam-lang/gleam', xformRepoCapTag],
     ['JetBrains/kotlin', xformNameSplit],
     // ['JuliaLang/julia', xformRepoCapTag],    // not interested for now
