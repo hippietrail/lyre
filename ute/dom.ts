@@ -11,6 +11,7 @@ export interface DomNode {
     },
     data?: string,
     parent: DomNode,
+    next?: DomNode,
 }
 
 interface DatumOpts {

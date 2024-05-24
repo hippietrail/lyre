@@ -216,6 +216,67 @@ export async function callElixir() {
     return [];
 }
 
+export async function callExifTool() {
+    const exifEarl = new Earl('https://exiftool.org', '/history.html');
+    try {
+        const body = domStroll('Exif1', false, await exifEarl.fetchDom(), [
+            [2, 'html'],
+            [3, 'body'],
+        ])!
+
+        let latestDevRelease = null;
+        let latestProdRelease = null;
+
+        const anchors = body.children!.filter(e => e.type === 'tag' && e.name === 'a' && 'name' in e.attribs!);
+        for (const a of anchors) {
+            const dateAndVer = a.children![0].children![0].data!.split(' - ');
+            const timestamp = new Date(dateAndVer[0]);
+            const ver = dateAndVer[1].slice(7);
+
+            let isProdRelease = false;
+
+            if (a.next && a.next.type === 'text') {
+                if (a.next.next && a.next.next.type === 'tag' && a.next.next.name === 'span') {
+                    if (a.next.next.attribs?.class === 'grn' && a.next.next.children![0].data === '(production release)') {
+                        isProdRelease = true;
+                    }
+                }
+            }
+            
+            if (isProdRelease) {
+                if (latestProdRelease === null) {
+                    latestProdRelease = {
+                        name: 'ExifTool (production)',
+                        ver,
+                        link: `${exifEarl.getUrlString()}`,
+                        timestamp,
+                        src: 'exiftool.org',
+                    };
+                }
+            } else {
+                if (latestDevRelease === null) {
+                    latestDevRelease = {
+                        name: 'ExifTool (development)',
+                        ver,
+                        link: `${exifEarl.getUrlString()}`,
+                        timestamp,
+                        src: 'exiftool.org',
+                    };
+                }
+            }
+            if (latestProdRelease !== null && latestDevRelease !== null) break;
+        }
+
+        const results = [];
+        if (latestProdRelease !== null) results.push(latestProdRelease);
+        if (latestDevRelease !== null) results.push(latestDevRelease);
+        return results;
+    } catch (error) {
+        console.error(`[Exif]`, error);
+    }
+    return [];
+}
+
 export async function callRuby() {
     const rubyEarl = new Earl('https://www.ruby-lang.org', '/en/downloads/releases/');
     try {
