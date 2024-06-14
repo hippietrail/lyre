@@ -63,7 +63,7 @@ const ownerRepos: StringFunctionTuple[] = [
     ['raysan5/raylib', xformNameSplit],
     ['rust-lang/rust', xformRepoCapTag],
     ['unicode-org/icu', xformNameSplit],
-    ['vlang/v', xformRepoCapTag],
+    // ['vlang/v', xformRepoCapTag],    // not interested for now
     ['zed-industries/zed', xformRepoTag],
     ['ziglang/zig', xformRepoCapTag],
 ];
