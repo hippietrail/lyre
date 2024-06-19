@@ -17,10 +17,10 @@ export const data = new SlashCommandBuilder()
         .setName('length')
         .setDescription('Long vs short videos')
         .addChoices(
-            { name: 'long videos only', value: 'long' },
-            { name: 'shorts only', value: 'short' },
-            { name: 'all', value: 'all' },
-            { name: 'all, and report which are shorts', value: 'all-short' },
+            { name: 'Long videos only', value: 'long' },
+            { name: 'Shorts only', value: 'short' },
+            { name: 'All', value: 'all' },
+            { name: 'All, and report which are shorts', value: 'all-short' },
         )
     );
 

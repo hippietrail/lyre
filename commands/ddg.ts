@@ -11,14 +11,14 @@ export const data = new SlashCommandBuilder()
         .setDescription('from which list?')
         .setRequired(true)
         .addChoices(
-            { name: 'trending', value: 'trending' },
-            { name: 'latest', value: 'latest' },
-            { name: 'best/today', value: 'best/today' },
-            { name: 'best/week', value: 'best/week' },
-            { name: 'best/month', value: 'best/month' },
-            { name: 'best/year', value: 'best/year' },
-            { name: 'best/editor-choice', value: 'best/editor-choice' },
-            { name: 'videos', value: 'videos' },
+            { name: 'Trending', value: 'trending' },
+            { name: 'Latest', value: 'latest' },
+            { name: 'Best/Today', value: 'best/today' },
+            { name: 'Best/Week', value: 'best/week' },
+            { name: 'Best/Month', value: 'best/month' },
+            { name: 'Best/Year', value: 'best/year' },
+            { name: 'Best/Editor\'s Choice', value: 'best/editor-choice' },
+            { name: 'Videos', value: 'videos' },
         )
     )
     .addIntegerOption(option => option
