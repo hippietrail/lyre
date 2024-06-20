@@ -10,7 +10,7 @@ export const data = new SlashCommandBuilder()
     .setName('latest')
     .setDescription('Latest releases of various projects')
     .addStringOption(option => option
-        .setName('source-choice')
+        .setName('Source choice')
         .setDescription('Source choice')
         .setRequired(true)
         .addChoices(
@@ -24,7 +24,7 @@ export const data = new SlashCommandBuilder()
             { name: 'Wiki Dump', value: 'wikidump' },
         ))
     .addStringOption(option => option
-        .setName('sortby')
+        .setName('Sort by')
         .setDescription('Sort by')
         .setRequired(true)
         .addChoices(
