@@ -173,7 +173,7 @@ function formatReply(selectedVids: VidRedirPair[], lenOpt: string) {
 
     const vidMap = selectedVids.map(({ vid: v, isRedir: r }) => `${
         lenOpt === 'all' ? ''
-            : `(${len(r)}) `}${v.channelTitle}: [${v.title}](<${
+            : `(${len(r)}) `}${v.channelTitle.replace(/[[]/g, '\\$&')}: [${v.title}](<${
                 `https://www.youtube.com/watch?v=${v.id}`
             }>) - ${ago(now - v.timestamp)}`
     );
