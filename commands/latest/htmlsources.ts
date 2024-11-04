@@ -606,3 +606,71 @@ export async function callD() {
     }
     return [];
 }
+
+// TODO only has version number, not date
+export async function callC3() {
+    // https://c3-lang.org/
+    const c3Earl = new Earl('https://c3-lang.org');
+    try {
+        // not <html> tag, divs don't have useful ids or classes, mostly style rather than semantic
+        const versionSpan = domStroll('c3', false, await c3Earl.fetchDom(), [
+            [3, 'body'],
+            [1, 'div'],
+            [5, 'div'],
+            [1, 'div'],
+            [7, 'div'],
+            [3, 'span']
+        ])!;
+        const version = versionSpan.children![0].data!.trim();
+
+        return [{
+            name: 'C3',
+            ver: version,
+            link: c3Earl.getUrlString(),
+            timestamp: null,
+            src: 'c3-lang.org',
+        }];
+    } catch (error) {
+        console.error(`[C3]`, error);
+    }
+    return [];
+}
+
+export async function callEclipse() {
+    const eclipseEarl = new Earl('https://download.eclipse.org', '/eclipse/downloads/');
+    try {
+        const tr = domStroll('eclipse', true, await eclipseEarl.fetchDom(), [
+            [2, 'html'],
+            [3, 'body', { id: 'body_solstice' } ],
+            [5, 'main' ],
+            [1, 'div', { id: 'novaContent' }, ],
+            [15, 'table', { cls: 'downloads'} ],
+            [3, 'tr' ],
+        ])!;
+        const verAnchor = domStroll('eclipse', false, tr.children!, [
+            [1, 'td', { cls: 'name' } ],
+            [1, 'a' ],
+        ])!;
+        const dateTd = domStroll('eclipse', false, tr.children!, [
+            [5, 'td', { cls: 'date' } ],
+        ])!;
+        // the name 'td' has an 'a' whose href is the link and whose text content is the version
+        // the date 'td' has a text content that is the date
+
+        const rawDateStr = dateTd.children![0].data!.trim();
+        const [datePart, timePart] = rawDateStr.split(' -- ');
+        const [timeStr, tzStr] = timePart.split(' ');
+        const tz = tzStr.substring(1, tzStr.length - 1);
+            
+        return [{
+            name: 'Eclipse',
+            ver: verAnchor.children![0].data!.trim(),
+            link: new URL(verAnchor.attribs!.href!, eclipseEarl.getUrlString()).href,
+            timestamp: new Date(`${datePart} ${timeStr} ${tz}`),            
+            src: 'eclipse.org',
+        }]
+    } catch (error) {
+        console.error(`[Eclipse]`, error);
+    }
+    return [];
+}
