@@ -645,7 +645,7 @@ export async function callC3() {
 export async function callEclipse() {
     const eclipseEarl = new Earl('https://download.eclipse.org', '/eclipse/downloads/');
     try {
-        const tr = domStroll('eclipse', true, await eclipseEarl.fetchDom(), [
+        const tr = domStroll('eclipse', false, await eclipseEarl.fetchDom(), [
             [2, 'html'],
             [3, 'body', { id: 'body_solstice' } ],
             [5, 'main' ],
