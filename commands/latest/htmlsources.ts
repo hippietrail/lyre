@@ -520,17 +520,23 @@ export async function callPython() {
     // https://www.python.org/
     const pyEarl = new Earl('https://www.python.org');
     try {
-        const latestA = domStroll('python', false, await pyEarl.fetchDom(), [
+        const section = domStroll('python', false, await pyEarl.fetchDom(), [
             [9, 'html', { cls: 'no-js' }],
             [5, 'body', { id: 'homepage' }],
             [1, 'div', { id: 'touchnav-wrapper' }],
             [13, 'div', { id: 'content' }],
             [3, 'div', { cls: 'container' }],
             [1, 'section', { cls: 'main-content' }],
-            [1, 'div', { cls: 'row' }],
-            [3, 'div', { cls: 'download-widget'} ], // also .small-widget
-            [5, 'p' ],
-            [1, 'a' ],
+        ])!;
+
+        // Check for both the old and new structure of the div containing the row
+        // 'row' was section.div(1) but changes to sectionary.div(3) if there's a 'notification-bar'
+        const rowDiv = section.children!.find(child => child.attribs?.class?.includes('row'))!;
+
+        const latestA = domStroll('python', false, rowDiv.children!, [
+            [3, 'div', { cls: 'download-widget' }], // also .small-widget
+            [5, 'p'],
+            [1, 'a'],
         ])!;
 
         const [aVerText, aHref] = [latestA.children![0].data!.trim(), latestA.attribs!.href!.trim()];
@@ -654,9 +660,6 @@ export async function callEclipse() {
         const dateTd = domStroll('eclipse', false, tr.children!, [
             [5, 'td', { cls: 'date' } ],
         ])!;
-        // the name 'td' has an 'a' whose href is the link and whose text content is the version
-        // the date 'td' has a text content that is the date
-
         const rawDateStr = dateTd.children![0].data!.trim();
         const [datePart, timePart] = rawDateStr.split(' -- ');
         const [timeStr, tzStr] = timePart.split(' ');
