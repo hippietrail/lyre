@@ -81,8 +81,8 @@ async function latest(interaction: ChatInputCommandInteraction) {
 
     try {
         const sourceChoice = interaction.options.getString('source-choice');
-        const sortByAge = interaction.options.getString('sortby') === 'age';
-        console.log(`[latest] sources: ${sourceChoice}, sortBy: ${sortByAge}`);
+        const sortByAge = interaction.options.getString('sort-by') === 'age';
+        console.log(`[latest] sources: ${sourceChoice}, sortByAge: ${sortByAge}`);
 
         let [useGithubReleases, useGithubTags, useHtml, useJson, useWikiDump] = [false, false, false, false, false];
         switch (sourceChoice) {
