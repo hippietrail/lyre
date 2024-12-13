@@ -43,10 +43,10 @@ const ownerRepos: StringFunctionTuple[] = [
     ['discordjs/discord.js', xformRepoCapTag],
     /*['elixir-lang/elixir', xformRepoCapTag],*/
     // ['exiftool/exiftool', xformNameSplit],
-    ['gleam-lang/gleam', xformRepoCapTag],
+    // ['gleam-lang/gleam', xformRepoCapTag],
     ['JetBrains/kotlin', xformNameSplit],
     // ['JuliaLang/julia', xformRepoCapTag],    // not interested for now
-    ['lampepfl/dotty', (_: string, __: string, jt: string) => ['Scala 3', jt]],     // "tag_name": "3.3.1", "name": "3.3.1",
+    // ['lampepfl/dotty', (_: string, __: string, jt: string) => ['Scala 3', jt]],     // "tag_name": "3.3.1", "name": "3.3.1",
     ['llvm/llvm-project', xformNameSplit],
     ['lua/lua', xformNameSplit],
     ['mamedev/mame', xformNameSplit],
@@ -57,7 +57,6 @@ const ownerRepos: StringFunctionTuple[] = [
     ['oven-sh/bun', xformNameSplit],
     // ['rakudo/rakudo', xformRepoCapTag],  // not interested for now
     /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
-    // scala: not interested for now
     // ['scala/scala', (_: string, __: string, jt: string) => ['Scala 2', jt]],        // "tag_name": "v2.13.12", "name": "Scala 2.13.12",
     ['libsdl-org/SDL', xformRepoName],
     ['raysan5/raylib', xformNameSplit],
