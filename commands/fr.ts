@@ -1,5 +1,5 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
-import { Earl, IsRedirect } from '../ute/earl';
+import { type ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { Earl, type IsRedirect } from '../ute/earl';
 import { humanFriendlyListFormatter } from '../ute/amis';
 import { wikt } from '../ute/wikt';
 
@@ -79,9 +79,9 @@ async function robert(word: string): Promise<boolean | null> {
         const filtr = data.filter(e => e.type === 'def' && e.term === word);
         console.log(`[fr/robert] ${word} filtr: ${filtr.length} after filtering`);
         if (filtr.length === 0) return false;
-        else if (filtr.length > 0) return true;
+        if (filtr.length > 0) return true;
     } catch (error) {
-        console.error(`[fr/robert]`, error);
+        console.error("[fr/robert]", error);
     }
     return null;
 }
@@ -93,7 +93,7 @@ async function larousse(word: string): Promise<IsRedirect> {
     try {
         return (await larousseEarl.checkRedirect())
     } catch (error) {
-        console.error(`[fr/larousse]`, error);
+        console.error("[fr/larousse]", error);
     }
     return undefined;
 }

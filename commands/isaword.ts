@@ -1,6 +1,6 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { type ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl';
-import { DomNode, domStroll } from '../ute/dom';
+import { type DomNode, domStroll } from '../ute/dom';
 import { humanFriendlyListFormatter } from '../ute/amis';
 import { wikt } from '../ute/wikt';
 import { etym } from '../ute/etym';

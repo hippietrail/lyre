@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { type ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { GithubEarl } from '../ute/earl';
 import { ago } from '../ute/ago';
 import { config } from 'dotenv';

@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { type ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { Earl } from '../ute/earl';
 import { domStroll } from '../ute/dom';
 import { wikt } from '../ute/wikt';
@@ -53,7 +53,7 @@ async function rae(word: string): Promise<number | null> {
         const firstN = kidsTags.slice(0, -2);
         const last2 = kidsTags.slice(-2);
 
-        console.log(`[ES] first ${firstN.length}`, firstN); console.log(`[ES] last 2`, last2);
+        console.log(`[ES] first ${firstN.length}`, firstN); console.log("[ES] last 2", last2);
 
         if (['p', 'div'].some((e,i) => last2[i] !== e)) {
             console.log('hmm...');
@@ -108,7 +108,7 @@ async function americanismos(word: string): Promise<number | null> {
 
         return entry ? 1 : 0;
     } catch (error) {
-        console.error(`[ES/americanismos]`, error);
+        console.error("[ES/americanismos]", error);
     }
     return null;
 }

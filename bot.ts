@@ -5,6 +5,7 @@ import { ChannelType, MessageType } from 'discord.js';
 // uncomment if you want to use DMs
 // import { ChannelType, Partials } from 'discord.js';
 import { config } from 'dotenv';
+import * as lint from './commands/harper';
 import * as wikt from './commands/wikt';
 import * as github from './commands/github';
 import * as etym from './commands/etym';
@@ -66,6 +67,10 @@ async function handleInteraction(interaction: Interaction) {
 
 async function interactionCommand(interaction: CommandInteraction) {
     switch (interaction.commandName) {
+        case 'lint':
+            await lint.execute(interaction as ChatInputCommandInteraction);
+            break;
+
         case 'wikt':
             await wikt.execute(interaction as ChatInputCommandInteraction);
             break;
