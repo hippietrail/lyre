@@ -1,5 +1,5 @@
 {
-  "name": "hippiebot2",
+  "name": "lyre",
   "version": "1.0.0",
   "description": "",
   "main": "bot.js",
@@ -12,6 +12,7 @@
   "dependencies": {
     "discord.js": "^14.16.3",
     "dotenv": "^16.3.1",
+    "harper.js": "^0.29.1",
     "html-dom-parser": "^5.0.6",
     "html-to-text": "^9.0.5",
     "source-map-support": "^0.5.21"

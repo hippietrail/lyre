@@ -10,7 +10,6 @@ const ownerRepos: [string, string, RegExp][] = [
     //['Nim', 'nim-lang/Nim', regexVmajMinPatch],
     //['Perl', 'Perl/perl5', regexVmajMinPatch],
     //['Python', 'python/cpython', regexVmajMinPatch],
-    ['V8', 'v8/v8', regexMajMinPatch],
 ];
 
 export async function callGithubTags(debug = false) {

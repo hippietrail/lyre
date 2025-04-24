@@ -1,10 +1,9 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { type ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
 import { ago } from '../ute/ago';
 import { callGithubReleases } from './latest/githubreleases';
 import { callGithubTags } from './latest/githubtags';
 import { callWikiDump } from './latest/wikidump';
-import { callAS, callC3, callD, callEclipse, /*callElixir,*/ callExifTool, callGo, callIdea, callPython, callRuby, callRustRover, callRvm, callSdlMame, callSublime } from './latest/htmlsources';
-import { callNodejs, callGimp, callXcode, callMame, callDart, callPhp } from './latest/jsonsources';
+import { callNodejs } from './latest/jsonsources';
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -35,22 +34,15 @@ export const data = new SlashCommandBuilder()
 export const execute = latest;
 
 // TODO
-// C standard?              - https://www.open-std.org/jtc1/sc22/wg14/www/projects#9899
-// C++ standard?
-// C#
-// CC-CEDICT
-// EcmaScript standard?
-// Erlang
-// gcc
-// Groovy
-// Haskell
-// Java/JDK/JVM?
-// Objective C?             - GitHub tags only apple-oss-distributions/objc4
-// Unicode
-//  CLDR                    - unicode-org/cldr
-//  ICU4X                   - unicode-org/icu4x
-// Vim
-
+// Biome
+// Bun
+// Harper
+// just
+// LanguageTool
+// Neovim
+// Obsidian
+// Rust
+// VS Code
 interface VersionInfoLoose {
     name?: string | null;
     ver?: string | null;
@@ -187,30 +179,11 @@ async function latest(interaction: ChatInputCommandInteraction) {
         if (useJson) {
             sourcePromises.push(Promise.all([
                 //callNodejs(), // doing it another way
-                callGimp(),
-                callXcode(),
-                //callMame(),   // doing it another way
-                callDart(),
-                // callPhp(),   // not interested for now
             ]).then(async arr => await updateReply(arr, 'JSON')));
         }
 
         if (useHtml) {
             sourcePromises.push(Promise.all([
-                callAS(),
-                callC3(),
-                callD(),
-                callEclipse(),
-                // callElixir(),    // not interested for now
-                callExifTool(),
-                callGo(),
-                callIdea(),
-                callPython(),
-                // callRuby(),      // not interested for now
-                callRustRover(),
-                callRvm(),
-                callSdlMame(),
-                // callSublime(),   // not interested for now
                 callWikiDump(),     // actually HTML first then JSON
             ]).then(async arr => await updateReply(arr, 'HTML')));
         } else if (useWikiDump) {

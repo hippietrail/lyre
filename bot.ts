@@ -1,23 +1,18 @@
 import 'source-map-support/register'
 import { Client, Events, GatewayIntentBits } from 'discord.js';
-import { AutocompleteInteraction, ChatInputCommandInteraction, CommandInteraction, Interaction } from "discord.js";
+import type { AutocompleteInteraction, ChatInputCommandInteraction, CommandInteraction, Interaction } from "discord.js";
 import { ChannelType, MessageType } from 'discord.js';
 // uncomment if you want to use DMs
 // import { ChannelType, Partials } from 'discord.js';
 import { config } from 'dotenv';
 import * as wikt from './commands/wikt';
-import * as curr from './commands/curr';
 import * as github from './commands/github';
-import * as yt from './commands/yt';
-import * as tsoding from './commands/tsoding';
 import * as etym from './commands/etym';
 import * as latest from './commands/latest';
 import * as thai from './commands/thai';
 import * as isaword from './commands/isaword';
-import * as ddg from './commands/ddg';
 import * as es from './commands/es';
 import * as fr from './commands/fr';
-import * as dns from './commands/dns';
 import * as lao from './commands/lao';
 import * as viet from './commands/viet';
 
@@ -57,7 +52,7 @@ const client = new Client({
 });
 
 function readyDiscord() {
-    console.log('☮🤖 ' + client.user?.tag);
+    console.log(`☮🤖 ${client.user?.tag}`);
 }
 
 async function handleInteraction(interaction: Interaction) {
@@ -81,29 +76,8 @@ async function interactionCommand(interaction: CommandInteraction) {
             await wikt.execute3(interaction as ChatInputCommandInteraction);
             break;
 
-        case 'curr':
-            await curr.execute(interaction as ChatInputCommandInteraction);
-            break;
-        case 'curr2':
-            await curr.execute2(interaction as ChatInputCommandInteraction);
-            break;
-        case 'currplus':
-            await curr.execute3(interaction as ChatInputCommandInteraction);
-            break;
-        case 'currdiff':
-            await curr.execute4(interaction as ChatInputCommandInteraction);
-            break;
-
         case 'github':
             await github.execute(interaction as ChatInputCommandInteraction);
-            break;
-
-        case 'yt':
-            await yt.execute(interaction as ChatInputCommandInteraction);
-            break;
-
-        case 'tsoding':
-            await tsoding.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'etym':
@@ -122,23 +96,12 @@ async function interactionCommand(interaction: CommandInteraction) {
             await isaword.execute(interaction as ChatInputCommandInteraction);
             break;
 
-        case 'ddg':
-            await ddg.execute(interaction as ChatInputCommandInteraction);
-            break;
-        case 'ddgs':
-            await ddg.execute2(interaction as ChatInputCommandInteraction);
-            break;
-
         case 'es':
             await es.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'fr':
             await fr.execute(interaction as ChatInputCommandInteraction);
-            break;
-
-        case 'dns':
-            await dns.execute(interaction as ChatInputCommandInteraction);
             break;
 
         case 'lao':
@@ -156,10 +119,6 @@ async function interactionCommand(interaction: CommandInteraction) {
 
 async function interactionAutocomplete(interaction: AutocompleteInteraction) {
     switch (interaction.commandName) {
-        case 'yt':
-            await yt.autocomplete(interaction);
-            break;
-
         default:
             console.error(`Interaction Autocomplete: Unknown command ${interaction.commandName}`);
     }

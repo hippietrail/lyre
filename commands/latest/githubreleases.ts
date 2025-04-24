@@ -38,33 +38,13 @@ interface GithubJson {
 type StringFunctionTuple = [string, (gor: string, jn: string, jt: string) => string[]];
 
 const ownerRepos: StringFunctionTuple[] = [
-    ['apple/swift', xformNameSplit],
-    ['audacity/audacity', xformNameSplit],
     ['discordjs/discord.js', xformRepoCapTag],
-    /*['elixir-lang/elixir', xformRepoCapTag],*/
-    // ['exiftool/exiftool', xformNameSplit],
-    // ['gleam-lang/gleam', xformRepoCapTag],
-    ['JetBrains/kotlin', xformNameSplit],
-    // ['JuliaLang/julia', xformRepoCapTag],    // not interested for now
-    // ['lampepfl/dotty', (_: string, __: string, jt: string) => ['Scala 3', jt]],     // "tag_name": "3.3.1", "name": "3.3.1",
-    ['llvm/llvm-project', xformNameSplit],
-    ['lua/lua', xformNameSplit],
-    ['mamedev/mame', xformNameSplit],
     ['microsoft/TypeScript', xformRepoTag],
-    ['NationalSecurityAgency/ghidra', xformNameSplit],
     ['nodejs/node', (_: string, __: string, jt: string) => ['Node (Current)', jt]],
-    ['odin-lang/Odin', (_: string, __: string, jt: string) => ['Odin', jt]],
     ['oven-sh/bun', xformNameSplit],
-    // ['rakudo/rakudo', xformRepoCapTag],  // not interested for now
-    /*['ruby/ruby', xformRepoCapTagVersionUnderscore],*/
-    // ['scala/scala', (_: string, __: string, jt: string) => ['Scala 2', jt]],        // "tag_name": "v2.13.12", "name": "Scala 2.13.12",
-    ['libsdl-org/SDL', xformRepoName],
-    ['raysan5/raylib', xformNameSplit],
     ['rust-lang/rust', xformRepoCapTag],
     ['unicode-org/icu', xformNameSplit],
-    // ['vlang/v', xformRepoCapTag],    // not interested for now
     ['zed-industries/zed', xformRepoTag],
-    ['ziglang/zig', xformRepoCapTag],
 ];
 
 export async function callGithubReleases(debug = false) {
@@ -130,12 +110,11 @@ function xformRepoNameTagVer(repo: StringFunctionTuple, jsonOb: GithubJson) {
 
     if (xform) {
         return xform(githubOwnerRepo, jsonName, jsonTag);
-    } else {
-        // for newly added repos, output the name and version so we can see which
-        // transform it should use, or if we need a new one
-        const name = `${githubOwnerRepo} (GitHub owner/repo) / ${jsonName} (JSON name)`;
-        const ver = `${jsonTag} (JSON tag)`;
-        console.log(`[GitHub] New repo: ${name} / ${ver}`);
-        return [name, ver];
     }
+    // for newly added repos, output the name and version so we can see which
+    // transform it should use, or if we need a new one
+    const name = `${githubOwnerRepo} (GitHub owner/repo) / ${jsonName} (JSON name)`;
+    const ver = `${jsonTag} (JSON tag)`;
+    console.log(`[GitHub] New repo: ${name} / ${ver}`);
+    return [name, ver];
 }
