@@ -3,29 +3,37 @@ import { Earl } from '../../ute/earl';
 const githubReleasesEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/releases/latest');
 
 // GitHub JSON name field is 'name version'
-const xformNameSplit = (_: string, jn: string, __: string) => jn.split(' ');
+const xformRepoName_Tag = (gor: string, _: string, jtn: string, ___?: string) => [gor.split('/')[1], jtn];
 
 // Repo name is name, version is GitHub JSON tag
-const xformRepoTag = (gor: string, _: string, jt: string) => [gor.split('/')[1], jt];
+const xformRepoName_Name = (gor: string, jn: string, __: string, ___?: string) => [gor.split('/')[1], jn];
 
 // Repo name capitalized is name, version is GitHub JSON tag
-function xformRepoCapTag(gor: string, _: string, jt: string) {
-    // console.log(`[xformRepoCapTag]`, gor, jt);
+function xformRepoNameCap_Tag(gor: string, _: string, jtn: string, ___?: string) {
     const rn = gor.split('/')[1];
-    return [rn.charAt(0).toUpperCase() + rn.slice(1), jt];
+    return [rn.charAt(0).toUpperCase() + rn.slice(1), jtn];
 }
 
 // Repo name capitalized is name, version is GitHub JSON tag with _ converted to .
-function xformRepoCapTagVersionUnderscore(gor: string, _: string, jt: string) {
-    // console.log(`[xformRepoCapTagVersionUnderscore]`, gor, jt);
+function xformRepoNameCap_TagUnderscoreToDot(gor: string, _: string, jtn: string, ___?: string) {
     const rn = gor.split('/')[1];
-    return [rn.charAt(0).toUpperCase() + rn.slice(1), jt.replace(/_/g, '.')];
+    return [rn.charAt(0).toUpperCase() + rn.slice(1), jtn.replace(/_/g, '.')];
 }
 
 // Repo name is name, version is GitHub JSON name
-function xformRepoName(gor: string, jn: string, __: string) {
-    return [gor.split('/')[1], jn];
+function xformRepoNameCap_NameSecondWord(gor: string, jn: string, _: string, ___?: string) {
+    const rn = gor.split('/')[1];
+    return [rn.charAt(0).toUpperCase() + rn.slice(1), jn.split(' ')[1]];
 }
+
+// Repo name is name, version is each word in GitHub JSON name (split by space)
+const xformName_SplitSpace = (_: string, jn: string, __: string, ___?: string) => jn.split(' ');
+
+// Fixed name is provided as extra argument, version is GitHub JSON tag
+const xformFixedName_Tag = (_: string, __: string, jtn: string, x?: string) => [x!, jtn];
+
+// Fixed name is provided as extra argument, version is the part after ': ' in GitHub JSON name
+const xformFixedName_NameColonSplit = (_: string, jn: string, __: string, x?: string) => [x!, jn.split(': ')[1]];
 
 interface GithubJson {
     name: string;
@@ -34,17 +42,25 @@ interface GithubJson {
     html_url: string;
 }
 
-// do we need a Record or a type or an interface for these string/function tuples?
-type StringFunctionTuple = [string, (gor: string, jn: string, jt: string) => string[]];
+type StringFunctionTuple = [string, (gor: string, jn: string, jtn: string, x?: string) => string[], string?];
 
 const ownerRepos: StringFunctionTuple[] = [
-    ['discordjs/discord.js', xformRepoCapTag],
-    ['microsoft/TypeScript', xformRepoTag],
-    ['nodejs/node', (_: string, __: string, jt: string) => ['Node (Current)', jt]],
-    ['oven-sh/bun', xformNameSplit],
-    ['rust-lang/rust', xformRepoCapTag],
-    ['unicode-org/icu', xformNameSplit],
-    ['zed-industries/zed', xformRepoTag],
+    ['Automattic/harper', xformRepoNameCap_Tag],
+    ['Automattic/harper-obsidian-plugin', xformRepoName_Name],
+    ['biomejs/biome', xformRepoNameCap_NameSecondWord],
+    ['blopker/codebook', xformRepoNameCap_Tag],
+    ['casey/just', xformRepoNameCap_Tag],
+    ['discordjs/discord.js', xformRepoNameCap_Tag],
+    ['helix-editor/helix', xformRepoNameCap_Tag],
+    ['microsoft/TypeScript', xformRepoName_Tag],
+    ['neovim/neovim', xformRepoNameCap_Tag],
+    ['nodejs/node', xformFixedName_Tag, 'Node (Current)'],
+    ['oven-sh/bun', xformName_SplitSpace],
+    ['rust-lang/rust', xformRepoNameCap_Tag],
+    ['Stef16Robbe/harper_zed', xformRepoName_Name],
+    ['streetsidesoftware/vscode-spell-checker', xformFixedName_NameColonSplit, 'vscode-spell-checker'],
+    ['unicode-org/icu', xformName_SplitSpace],
+    ['zed-industries/zed', xformRepoName_Tag],
 ];
 
 export async function callGithubReleases(debug = false) {
@@ -105,16 +121,16 @@ function githubJsonToVersionInfo(repoEntry: StringFunctionTuple, jsonObj: Github
 // or from the name and tag fields in the JSON.
 // Will call one of: xformNameSplit, xformRepoTag, xformRepoCapTag, etc
 function xformRepoNameTagVer(repo: StringFunctionTuple, jsonOb: GithubJson) {
-    const [githubOwnerRepo, xform] = repo;
-    const [jsonName, jsonTag] = [jsonOb.name, jsonOb.tag_name];
+    const [githubOwnerRepo, xform, extra] = repo;
+    const [jsonName, jsonTagName] = [jsonOb.name, jsonOb.tag_name];
 
     if (xform) {
-        return xform(githubOwnerRepo, jsonName, jsonTag);
+        return xform(githubOwnerRepo, jsonName, jsonTagName, extra);
     }
     // for newly added repos, output the name and version so we can see which
     // transform it should use, or if we need a new one
     const name = `${githubOwnerRepo} (GitHub owner/repo) / ${jsonName} (JSON name)`;
-    const ver = `${jsonTag} (JSON tag)`;
+    const ver = `${jsonTagName} (JSON tag)`;
     console.log(`[GitHub] New repo: ${name} / ${ver}`);
     return [name, ver];
 }

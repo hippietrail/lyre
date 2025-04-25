@@ -34,11 +34,6 @@ export const data = new SlashCommandBuilder()
 export const execute = latest;
 
 // TODO
-// Biome
-// Bun
-// Harper
-// just
-// LanguageTool
 // Neovim
 // Obsidian
 // Rust
@@ -62,12 +57,12 @@ interface VersionInfoTight {
 interface VersionInfoTightArray extends Array<VersionInfoTight> {
     toSorted(compareFn: (a: VersionInfoTight, b: VersionInfoTight) => number): VersionInfoTight[];
 }
-  
+
 function toSorted(arr: VersionInfoTight[], compareFn: (a: VersionInfoTight, b: VersionInfoTight) => number): VersionInfoTight[] {
     const sortedArr = [...arr].sort(compareFn);
     return sortedArr;
 }
-    
+
 async function latest(interaction: ChatInputCommandInteraction) {
     await interaction.deferReply();
 
@@ -164,7 +159,7 @@ async function latest(interaction: ChatInputCommandInteraction) {
                 console.log(`[latest] trimmed ${numRemoved} lines (${initialReplyLength - reply.length} chars) from end of reply`);
 
             if (reply === '') reply = 'Odd. Nothing found.';
-            
+
             await interaction.editReply(reply);
         }
 
@@ -175,7 +170,7 @@ async function latest(interaction: ChatInputCommandInteraction) {
 
         if (useGithubTags)
             sourcePromises.push(callGithubTags(false).then(async arr => await updateReply([arr], 'GitHub Tags')));
-        
+
         if (useJson) {
             sourcePromises.push(Promise.all([
                 //callNodejs(), // doing it another way

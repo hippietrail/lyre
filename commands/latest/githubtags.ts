@@ -3,13 +3,12 @@ import { ago } from '../../ute/ago';
 
 const githubTagsEarl = new Earl('https://api.github.com', '/repos/OWNER/REPO/tags');
 
-const regexMajMinPatch = /^(\d+)\.(\d+)\.(\d+)$/
+const regexMajMinPatch = /^v?(\d+)\.(\d+)\.(\d+)$/
 const regexVmajMinPatch = /^v(\d+)\.(\d+)\.(\d+)$/
+const regexVmajMinOptPatch = /^v(\d+)\.(\d+)(?:\.(\d+))?$/;
 
 const ownerRepos: [string, string, RegExp][] = [
-    //['Nim', 'nim-lang/Nim', regexVmajMinPatch],
-    //['Perl', 'Perl/perl5', regexVmajMinPatch],
-    //['Python', 'python/cpython', regexVmajMinPatch],
+    ['languagetool', 'languagetool-org/languagetool', regexVmajMinOptPatch],
 ];
 
 export async function callGithubTags(debug = false) {
