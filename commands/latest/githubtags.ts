@@ -12,7 +12,7 @@ const ownerRepos: [string, string, RegExp][] = [
 ];
 
 export async function callGithubTags(debug = false) {
-    let result = [];
+    const result = [];
 
     // in debug mode, just take the first entry
     const chosenOwnerRepos = debug ? [ownerRepos[0]] : ownerRepos;

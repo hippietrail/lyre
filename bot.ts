@@ -53,7 +53,7 @@ const client = new Client({
 });
 
 function readyDiscord() {
-    console.log(`☮🤖 ${client.user?.tag}`);
+    console.log(`𓏢🤖 ${client.user?.tag}`);
 }
 
 async function handleInteraction(interaction: Interaction) {

@@ -53,18 +53,21 @@ const ownerRepos: StringFunctionTuple[] = [
     ['discordjs/discord.js', xformRepoNameCap_Tag],
     ['helix-editor/helix', xformRepoNameCap_Tag],
     ['microsoft/TypeScript', xformRepoName_Tag],
+    ['microsoft/vscode', xformFixedName_Tag, 'VS Code'],
     ['neovim/neovim', xformRepoNameCap_Tag],
-    ['nodejs/node', xformFixedName_Tag, 'Node (Current)'],
+    ['neovim/nvim-lspconfig', xformRepoName_Tag],
+    ['nodejs/node', xformFixedName_Tag, "Node.js"],
     ['oven-sh/bun', xformName_SplitSpace],
     ['rust-lang/rust', xformRepoNameCap_Tag],
     ['Stef16Robbe/harper_zed', xformRepoName_Name],
-    ['streetsidesoftware/vscode-spell-checker', xformFixedName_NameColonSplit, 'vscode-spell-checker'],
+    ['streetsidesoftware/vscode-spell-checker', xformFixedName_NameColonSplit, 'Code Spell Checker'],
+    ['typst/typst', xformRepoNameCap_Tag],
     ['unicode-org/icu', xformName_SplitSpace],
     ['zed-industries/zed', xformRepoName_Tag],
 ];
 
 export async function callGithubReleases(debug = false) {
-    let result = [];
+    const result = [];
 
     // in debug mode, just take the first entry
     const chosenOwnerRepos = debug ? [ownerRepos[0]] : ownerRepos;
