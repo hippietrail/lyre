@@ -3,6 +3,7 @@ import { ago } from '../ute/ago';
 import { callGithubReleases } from './latest/githubreleases';
 import { callGithubTags } from './latest/githubtags';
 import { callWikiDump } from './latest/wikidump';
+import { callHarper } from './latest/htmlsources';
 import { callNodejs } from './latest/jsonsources';
 
 export const data = new SlashCommandBuilder()
@@ -181,6 +182,7 @@ async function latest(interaction: ChatInputCommandInteraction) {
         if (useHtml) {
             sourcePromises.push(Promise.all([
                 callWikiDump(),     // actually HTML first then JSON
+                callHarper(),
             ]).then(async arr => await updateReply(arr, 'HTML')));
         } else if (useWikiDump) {
             sourcePromises.push(callWikiDump().then(async arr => await updateReply([arr], 'HTML')));
