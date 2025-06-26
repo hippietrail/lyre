@@ -53,6 +53,7 @@ const ownerRepos: StringFunctionTuple[] = [
     ['discordjs/discord.js', xformRepoNameCap_Tag],
     ['helix-editor/helix', xformRepoNameCap_Tag],
     ['jasmine/jasmine', xformFixedName_Tag, 'Jasmine'],
+    ['microsoft/playwright', xformFixedName_Tag, 'Playwright'],
     ['microsoft/TypeScript', xformRepoName_Tag],
     ['microsoft/vscode', xformFixedName_Tag, 'VS Code'],
     ['microsoft/vscode-vsce', xformFixedName_Tag, '@vscode/vsce'],
