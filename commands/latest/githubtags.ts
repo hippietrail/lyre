@@ -9,6 +9,7 @@ const regexVmajMinOptPatch = /^v(\d+)\.(\d+)(?:\.(\d+))?$/;
 
 const ownerRepos: [string, string, RegExp][] = [
     ['languagetool', 'languagetool-org/languagetool', regexVmajMinOptPatch],
+    ['write good', 'btford/write-good', regexVmajMinPatch]
 ];
 
 export async function callGithubTags(debug = false) {

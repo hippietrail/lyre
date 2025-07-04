@@ -45,12 +45,14 @@ interface GithubJson {
 type StringFunctionTuple = [string, (gor: string, jn: string, jtn: string, x?: string) => string[], string?];
 
 const ownerRepos: StringFunctionTuple[] = [
+    ['amperser/proselint', xformRepoNameCap_Tag],
     ['Automattic/harper', xformRepoNameCap_Tag],
     ['Automattic/harper-obsidian-plugin', xformRepoName_Name],
     ['biomejs/biome', xformRepoNameCap_NameSecondWord],
     ['blopker/codebook', xformRepoNameCap_Tag],
     ['casey/just', xformRepoNameCap_Tag],
     ['discordjs/discord.js', xformRepoNameCap_Tag],
+    ['errata-ai/vale', xformRepoNameCap_Tag],
     ['helix-editor/helix', xformRepoNameCap_Tag],
     ['jasmine/jasmine', xformFixedName_Tag, 'Jasmine'],
     ['microsoft/playwright', xformFixedName_Tag, 'Playwright'],
@@ -64,7 +66,8 @@ const ownerRepos: StringFunctionTuple[] = [
     ['rust-lang/rust', xformRepoNameCap_Tag],
     ['Stef16Robbe/harper_zed', xformRepoName_Name],
     ['streetsidesoftware/vscode-spell-checker', xformFixedName_NameColonSplit, 'Code Spell Checker'],
-    ['typst/typst', xformRepoNameCap_Tag],
+    ['textlint/textlint', xformRepoNameCap_Tag],
+    ['typst/typst', xformRepoName_Name],
     ['unicode-org/icu', xformName_SplitSpace],
     ['zed-industries/zed', xformRepoName_Tag],
 ];
