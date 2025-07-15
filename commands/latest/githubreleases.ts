@@ -63,6 +63,7 @@ const ownerRepos: StringFunctionTuple[] = [
     ['neovim/nvim-lspconfig', xformRepoName_Tag],
     ['nodejs/node', xformFixedName_Tag, "Node.js"],
     ['oven-sh/bun', xformName_SplitSpace],
+    ['rust-ammonia/ammonia', xformRepoNameCap_Tag],
     ['rust-lang/rust', xformRepoNameCap_Tag],
     ['Stef16Robbe/harper_zed', xformRepoName_Name],
     ['streetsidesoftware/vscode-spell-checker', xformFixedName_NameColonSplit, 'Code Spell Checker'],
