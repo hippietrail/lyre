@@ -71,8 +71,10 @@ const ownerRepos: StringFunctionTuple[] = [
     ['streetsidesoftware/vscode-spell-checker', xformFixedName_NameColonSplit, 'Code Spell Checker'],
     ['textlint/textlint', xformRepoNameCap_Tag],
     ['theoreticallyjosh/logseq-plugin-harper', xformRepoName_Name],
+    // tekumara/typos-lsp
     ['typst/typst', xformRepoName_Name],
     ['unicode-org/icu', xformName_SplitSpace],
+    ['writingtool-org/writingtool', xformName_SplitSpace],
     ['zed-industries/zed', xformRepoName_Tag],
 ];
 
