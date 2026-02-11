@@ -51,6 +51,7 @@ const ownerRepos: StringFunctionTuple[] = [
     ['biomejs/biome', xformRepoNameCap_NameSecondWord],
     ['blopker/codebook', xformRepoNameCap_Tag],
     ['casey/just', xformRepoNameCap_Tag],
+    ['codespell-project/codespell', xformRepoName_Name],
     ['discordjs/discord.js', xformRepoNameCap_Tag],
     ['errata-ai/vale', xformRepoNameCap_Tag],
     ['helix-editor/helix', xformRepoNameCap_Tag],
