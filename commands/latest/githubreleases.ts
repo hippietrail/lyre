@@ -70,6 +70,7 @@ const ownerRepos: StringFunctionTuple[] = [
     ['Stef16Robbe/harper_zed', xformRepoName_Name],
     ['streetsidesoftware/cspell-dicts', xformFixedName_NameColonSplit, 'cspell-dicts'],
     ['streetsidesoftware/vscode-spell-checker', xformFixedName_NameColonSplit, 'Code Spell Checker'],
+    ['tauri-apps/tauri', xformRepoNameCap_Tag],
     ['tekumara/typos-lsp', xformRepoName_Name],
     ['textlint/textlint', xformRepoNameCap_Tag],
     ['theoreticallyjosh/logseq-plugin-harper', xformRepoName_Name],

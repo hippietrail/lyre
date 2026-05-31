@@ -5,6 +5,7 @@ import { callGithubTags } from './latest/githubtags';
 import { callWikiDump } from './latest/wikidump';
 import { callHarper } from './latest/htmlsources';
 import { callNodejs } from './latest/jsonsources';
+import { callHarperCore } from './latest/jsonsources';
 
 export const data = new SlashCommandBuilder()
     .setName('latest')
@@ -36,10 +37,10 @@ export const execute = latest;
 
 // TODO
 // Obsidian
-    // `https://obsidian.md/` `body > div.pt-24.sm\:pt-24.relative.overflow-hidden.bg-basalt > div.container.mb-12 > div > div.py-6.mt-4.flex.items-center.gap-6.flex-col.sm\:flex-row > a.download-button.button.button-primary.text-xl.py-4.px-6`
-    // `https://obsidian.md/download`
-        // `body > div > div.container.my-24 > div.flex.justify-center.sm\:pt-16.pb-12.cards.select-none > a`
-        // `body > div > div.container.my-24 > div.text-center > div > a`
+// `https://obsidian.md/` `body > div.pt-24.sm\:pt-24.relative.overflow-hidden.bg-basalt > div.container.mb-12 > div > div.py-6.mt-4.flex.items-center.gap-6.flex-col.sm\:flex-row > a.download-button.button.button-primary.text-xl.py-4.px-6`
+// `https://obsidian.md/download`
+// `body > div > div.container.my-24 > div.flex.justify-center.sm\:pt-16.pb-12.cards.select-none > a`
+// `body > div > div.container.my-24 > div.text-center > div > a`
 interface VersionInfoLoose {
     name?: string | null;
     ver?: string | null;
@@ -176,6 +177,7 @@ async function latest(interaction: ChatInputCommandInteraction) {
         if (useJson) {
             sourcePromises.push(Promise.all([
                 //callNodejs(), // doing it another way
+                callHarperCore(),
             ]).then(async arr => await updateReply(arr, 'JSON')));
         }
 
